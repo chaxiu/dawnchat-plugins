@@ -339,33 +339,18 @@ class InProcessTransport(BaseTransport):
         on_progress: Optional[ProgressCallback] = None,
     ) -> Any:
         tools_module = importlib.import_module("app.tools")
-        models_module = importlib.import_module("app.tools.models")
-        task_module = importlib.import_module("app.services.task_manager")
         manager = tools_module.get_tool_manager()
-        ExecutionStrategy = models_module.ExecutionStrategy
-        get_task_manager = task_module.get_task_manager
-        tool_def = manager.get_tool(tool_name)
-        if tool_def and tool_def.execution_strategy == ExecutionStrategy.ASYNC_QUEUE:
-            task_manager = get_task_manager()
-
-            async def executor(**kwargs):
-                result = await manager.call_tool(
-                    tool_name=tool_name,
-                    arguments=kwargs,
-                    timeout=timeout,
-                )
-                return {
-                    "status": result.status.value,
-                    "content": result.content,
-                    "error": result.error,
-                    "execution_time_ms": result.execution_time_ms,
-                }
-
-            task_id = await task_manager.submit(
+        decision = manager.get_dispatch_decision(
+            tool_name,
+            context={"caller": "sdk_inprocess", "plugin_id": self._plugin_id, "prefer_async": True},
+        )
+        if decision.run_async:
+            task_id = await manager.submit_tool_call(
                 tool_name=tool_name,
                 arguments=arguments or {},
+                timeout=timeout,
                 plugin_id=self._plugin_id,
-                executor_func=executor,
+                context={"caller": "sdk_inprocess", "route_reason": decision.reason},
             )
             return await self._wait_for_task_completion(
                 task_id=task_id,

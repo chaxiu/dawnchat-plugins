@@ -25,6 +25,30 @@
         "executionStrategy": "sync",
         "durationHint": "fast",
         "supportsProgress": false
+      },
+      {
+        "name": "hello_world_async",
+        "description": "异步返回问候语（用于长任务链路测试）",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "姓名"
+            },
+            "delay_seconds": {
+              "type": "number",
+              "description": "延迟秒数，默认 2 秒",
+              "default": 2
+            }
+          }
+        },
+        "category": "utility",
+        "priority": 55,
+        "resultDescription": "异步问候结果：{{ data.greeting }}",
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": false
       }
     ]
   },

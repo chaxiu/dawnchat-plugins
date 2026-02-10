@@ -31,7 +31,7 @@
         "category": "tts",
         "priority": 50,
         "resultDescription": "音频输出路径：{{ data.output_path }}",
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "long",
         "supportsProgress": false
       },
@@ -41,7 +41,7 @@
         "inputSchema": { "type": "object", "properties": {} },
         "category": "tts",
         "priority": 80,
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "fast",
         "supportsProgress": false
       }

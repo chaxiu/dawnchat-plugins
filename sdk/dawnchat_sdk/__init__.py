@@ -14,6 +14,7 @@ from .host import (
 )
 from .cards import Card as AdaptiveCard, TextBlock, Container, Action
 from .logging import setup_plugin_logging
+from .mcp_router import build_mcp_router
 
 __version__ = "1.0.0"
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     "Container",
     "Action",
     "setup_plugin_logging",
+    "build_mcp_router",
 ]
 
 # UI module is optional and imported separately

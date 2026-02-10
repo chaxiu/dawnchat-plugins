@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -58,7 +59,21 @@ def create_app(base_dir: Path) -> FastAPI:
         name = str(arguments.get("name", "")).strip() or "World"
         return {"greeting": f"Hello, {name}!"}
 
-    tool_handlers = {"hello_world": _tool_hello_world}
+    async def _tool_hello_world_async(arguments: dict) -> dict:
+        name = str(arguments.get("name", "")).strip() or "World"
+        delay_seconds = arguments.get("delay_seconds", 2)
+        try:
+            delay = float(delay_seconds)
+        except (TypeError, ValueError):
+            delay = 2.0
+        delay = max(0.0, min(delay, 30.0))
+        await asyncio.sleep(delay)
+        return {"greeting": f"Hello async, {name}!", "delay_seconds": delay}
+
+    tool_handlers = {
+        "hello_world": _tool_hello_world,
+        "hello_world_async": _tool_hello_world_async,
+    }
 
     api_router = APIRouter(prefix="/api")
 

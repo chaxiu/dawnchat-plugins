@@ -28,7 +28,7 @@
         "category": "media",
         "priority": 50,
         "resultDescription": "生成的图片路径：{{ data.images }}",
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "long",
         "supportsProgress": false
       },
@@ -55,7 +55,7 @@
         "category": "media",
         "priority": 55,
         "resultDescription": "生成的图片路径：{{ data.images }}",
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "long",
         "supportsProgress": false
       },
@@ -83,7 +83,7 @@
         "category": "media",
         "priority": 60,
         "resultDescription": "生成的图片路径：{{ data.images }}",
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "long",
         "supportsProgress": false
       },
@@ -103,7 +103,7 @@
         "category": "media",
         "priority": 65,
         "resultDescription": "生成的图片路径：{{ data.images }}",
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "long",
         "supportsProgress": false
       },
@@ -113,7 +113,7 @@
         "inputSchema": { "type": "object", "properties": {} },
         "category": "media",
         "priority": 80,
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "fast",
         "supportsProgress": false
       },
@@ -128,7 +128,7 @@
         },
         "category": "media",
         "priority": 85,
-        "executionStrategy": "sync",
+        "executionStrategy": "async",
         "durationHint": "fast",
         "supportsProgress": false
       }
