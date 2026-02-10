@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from dawnchat_sdk import host
-from .mcp import build_mcp_router
+from mcp import build_mcp_router
 
 
 class ChatRequest(BaseModel):
@@ -23,6 +23,12 @@ class ChatRequest(BaseModel):
 class KVSetRequest(BaseModel):
     key: str
     value: Any
+
+
+class ToolCallRequest(BaseModel):
+    name: str
+    arguments: dict[str, Any] | None = None
+    timeout: float | None = None
 
 def load_manifest(base_dir: Path) -> dict:
     manifest_path = base_dir / "manifest.json"
@@ -88,7 +94,7 @@ def create_app(base_dir: Path) -> FastAPI:
             return {"status": "error", "message": str(exc)}
 
     @api_router.get("/sdk/tools")
-    async def sdk_tools(limit: Optional[int] = 8):
+    async def sdk_tools(limit: Optional[int] = 100):
         try:
             tools = await host.tools.list()
             if limit is not None:
@@ -96,6 +102,24 @@ def create_app(base_dir: Path) -> FastAPI:
             return {"status": "ok", "tools": tools}
         except Exception as exc:
             return {"status": "error", "message": str(exc), "tools": []}
+
+    @api_router.post("/sdk/tools/call")
+    async def sdk_tools_call(request: ToolCallRequest):
+        try:
+            if request.timeout is None:
+                result = await host.tools.call(
+                    request.name,
+                    arguments=request.arguments or {},
+                )
+            else:
+                result = await host.tools.call(
+                    request.name,
+                    arguments=request.arguments or {},
+                    timeout=request.timeout,
+                )
+            return {"status": "ok", "result": result}
+        except Exception as exc:
+            return {"status": "error", "message": str(exc), "result": None}
 
     @api_router.get("/sdk/kv")
     async def sdk_kv_get(key: str):
