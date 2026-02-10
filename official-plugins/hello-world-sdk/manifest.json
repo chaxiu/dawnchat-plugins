@@ -1,0 +1,16 @@
+{
+  "id": "com.dawnchat.hello-world-sdk",
+  "name": "Hello World (SDK Demo)",
+  "version": "1.0.0",
+  "description": "Demonstrates SDK host capabilities (AI, Tools) and NiceGUI theming",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "permissions": ["ai.chat", "tools.call"],
+  "icon": "🚀"
+}

@@ -1,0 +1,6 @@
+{
+  "folders": [
+    { "name": "cursor-workspace-demo", "path": "." },
+    { "name": "host", "path": "../../../" },
+  ]
+}

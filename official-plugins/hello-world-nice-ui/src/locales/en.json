@@ -1,0 +1,8 @@
+{
+    "title": "Hello World",
+    "subtitle": "Powered by NiceGUI",
+    "label": "What is your name?",
+    "btn": "Say Hello",
+    "notify": "Hello, {}! Welcome to DawnChat plugins.",
+    "debug": "Debug Info"
+}

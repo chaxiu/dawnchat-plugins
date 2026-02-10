@@ -1,0 +1,8 @@
+{
+    "title": "你好，世界",
+    "subtitle": "Powered by NiceGUI",
+    "label": "你叫什么名字？",
+    "btn": "打招呼",
+    "notify": "你好，{}！欢迎使用 DawnChat 插件。",
+    "debug": "调试信息"
+}

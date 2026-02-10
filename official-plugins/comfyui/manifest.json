@@ -1,0 +1,140 @@
+{
+  "id": "com.dawnchat.comfyui",
+  "name": "ComfyUI",
+  "version": "1.0.0",
+  "description": "ComfyUI image generation plugin",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": [
+      {
+        "name": "text_to_image",
+        "description": "Generate images from text descriptions using ComfyUI.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "prompt": { "type": "string" },
+            "negative_prompt": { "type": "string", "default": "" },
+            "width": { "type": "integer", "default": 1024 },
+            "height": { "type": "integer", "default": 1024 },
+            "steps": { "type": "integer", "default": 20 },
+            "cfg_scale": { "type": "number", "default": 7.0 },
+            "seed": { "type": "integer", "default": -1 },
+            "model_name": { "type": "string", "default": "sd_xl_base_1.0.safetensors" },
+            "workflow_id": { "type": "string", "default": "sdxl_t2i_basic" }
+          },
+          "required": ["prompt"]
+        },
+        "category": "media",
+        "priority": 50,
+        "resultDescription": "生成的图片路径：{{ data.images }}",
+        "executionStrategy": "sync",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "image_to_image",
+        "description": "Generate new images based on a reference image.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "image_path": { "type": "string" },
+            "prompt": { "type": "string" },
+            "negative_prompt": { "type": "string", "default": "" },
+            "width": { "type": "integer", "default": 1024 },
+            "height": { "type": "integer", "default": 1024 },
+            "strength": { "type": "number", "default": 0.6 },
+            "steps": { "type": "integer", "default": 20 },
+            "cfg_scale": { "type": "number", "default": 7.0 },
+            "seed": { "type": "integer", "default": -1 },
+            "model_name": { "type": "string", "default": "sd_xl_base_1.0.safetensors" },
+            "workflow_id": { "type": "string", "default": "sdxl_i2i_basic" }
+          },
+          "required": ["image_path", "prompt"]
+        },
+        "category": "media",
+        "priority": 55,
+        "resultDescription": "生成的图片路径：{{ data.images }}",
+        "executionStrategy": "sync",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "inpaint",
+        "description": "Modify specific areas of an image using a mask.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "image_path": { "type": "string" },
+            "mask_path": { "type": "string" },
+            "prompt": { "type": "string" },
+            "negative_prompt": { "type": "string", "default": "" },
+            "width": { "type": "integer", "default": 1024 },
+            "height": { "type": "integer", "default": 1024 },
+            "strength": { "type": "number", "default": 0.8 },
+            "steps": { "type": "integer", "default": 25 },
+            "cfg_scale": { "type": "number", "default": 7.0 },
+            "seed": { "type": "integer", "default": -1 },
+            "model_name": { "type": "string", "default": "sd_xl_inpaint_1.0.safetensors" },
+            "workflow_id": { "type": "string", "default": "sdxl_inpaint_basic" }
+          },
+          "required": ["image_path", "mask_path", "prompt"]
+        },
+        "category": "media",
+        "priority": 60,
+        "resultDescription": "生成的图片路径：{{ data.images }}",
+        "executionStrategy": "sync",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "upscale",
+        "description": "Upscale an image to higher resolution.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "image_path": { "type": "string" },
+            "scale": { "type": "integer", "default": 4 },
+            "model_name": { "type": "string", "default": "RealESRGAN_x4plus.pth" },
+            "workflow_id": { "type": "string", "default": "upscale_4x" }
+          },
+          "required": ["image_path"]
+        },
+        "category": "media",
+        "priority": 65,
+        "resultDescription": "生成的图片路径：{{ data.images }}",
+        "executionStrategy": "sync",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "status",
+        "description": "Get status of the ComfyUI service.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "media",
+        "priority": 80,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "list_workflows",
+        "description": "List available workflow templates.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "task_type": { "type": "string" }
+          }
+        },
+        "category": "media",
+        "priority": 85,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      }
+    ]
+  },
+  "permissions": [],
+  "icon": "🧩",
+  "tags": ["image", "comfyui", "media"]
+}

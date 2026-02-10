@@ -1,0 +1,21 @@
+{
+  "id": "com.dawnchat.video-summarizer",
+  "name": "音视频摘要",
+  "version": "1.0.0",
+  "description": "将音视频内容转为结构化笔记，支持本地文件和在线视频",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "permissions": ["ai.chat", "tools.call", "storage.kv"],
+  "requires": {
+    "ai": "required",
+    "asr": "required",
+    "ffmpeg": "required"
+  },
+  "icon": "📹"
+}

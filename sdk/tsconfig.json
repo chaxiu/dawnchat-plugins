@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@dawnchat/shared-protocol": ["../shared-protocol/src/index.ts"],
+      "@dawnchat/shared-ui": ["../shared-ui/src/index.ts"]
+    },
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vue"]
+  },
+  "include": [
+    "dawnchat_sdk/ui/vue/**/*.ts",
+    "dawnchat_sdk/ui/vue/**/*.vue",
+    "dawnchat_sdk/ui/vue/**/*.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "com.dawnchat.hello-world-nice-ui",
+  "name": "Hello World (NiceGUI)",
+  "version": "1.0.0",
+  "description": "A Hello World plugin built with NiceGUI",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "icon": "👋"
+}

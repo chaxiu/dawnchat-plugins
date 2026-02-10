@@ -1,0 +1,41 @@
+{
+    "title": "AI Image Studio",
+    "dashboard": {
+        "title": "Create & Edit",
+        "text_to_image": "Text to Image",
+        "image_to_image": "Image to Image",
+        "inpaint": "Inpaint",
+        "upscale": "Upscale",
+        "desc_t2i": "Generate images from text descriptions",
+        "desc_i2i": "Generate new images based on reference",
+        "desc_inpaint": "Edit specific areas of an image",
+        "desc_upscale": "Enhance resolution and details"
+    },
+    "setup": {
+        "title": "Setup Required",
+        "message": "No image generation models found.",
+        "instruction": "Please go to Settings -> Environment Manager -> Image Gen to download models.",
+        "check_again": "Check Again"
+    },
+    "common": {
+        "back": "Back",
+        "generate": "Generate",
+        "save": "Save",
+        "upload": "Upload Image",
+        "downloading": "Downloading...",
+        "processing": "Processing...",
+        "success": "Success",
+        "error": "Error",
+        "settings": "Settings",
+        "prompt": "Prompt",
+        "negative_prompt": "Negative Prompt",
+        "width": "Width",
+        "height": "Height",
+        "steps": "Steps",
+        "cfg": "Guidance Scale (CFG)",
+        "seed": "Seed",
+        "model": "Model",
+        "scale": "Scale Factor",
+        "strength": "Denoising Strength"
+    }
+}

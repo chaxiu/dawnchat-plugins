@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "title": "SDXL Inpaint Basic",
+    "description": "Basic SDXL inpainting workflow",
+    "version": "1.0.0"
+  },
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{{image_path}}"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{{mask_path}}"
+    }
+  },
+  "3": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "{{model_name}}"
+    }
+  },
+  "4": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["1", 0],
+      "vae": ["3", 2]
+    }
+  },
+  "5": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": {
+      "mask": ["2", 1],
+      "samples": ["4", 0]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "{{prompt}}"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["3", 1],
+      "text": "{{negative_prompt}}"
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "cfg": "{{cfg_scale}}",
+      "denoise": "{{strength}}",
+      "latent_image": ["5", 0],
+      "model": ["3", 0],
+      "negative": ["7", 0],
+      "positive": ["6", 0],
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "seed": "{{seed}}",
+      "steps": "{{steps}}"
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["8", 0],
+      "vae": ["3", 2]
+    }
+  },
+  "10": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "dawnchat_inpaint",
+      "images": ["9", 0]
+    }
+  }
+}
+

@@ -1,0 +1,70 @@
+{
+  "id": "com.dawnchat.vibevoice",
+  "name": "VibeVoice",
+  "version": "1.0.0",
+  "description": "VibeVoice TTS plugin",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": [
+      {
+        "name": "tts_synthesize",
+        "description": "Synthesize speech using VibeVoice.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string" },
+            "speaker": { "type": "string", "default": "Emma" },
+            "quality": { "type": "string" },
+            "model_size": { "type": "string" },
+            "model_path": { "type": "string" },
+            "voices_dir": { "type": "string" },
+            "output_path": { "type": "string" },
+            "cfg_scale": { "type": "number" },
+            "ddpm_steps": { "type": "integer" },
+            "timeout_seconds": { "type": "number" }
+          },
+          "required": ["text", "model_path", "voices_dir"]
+        },
+        "category": "tts",
+        "priority": 50,
+        "resultDescription": "音频输出路径：{{ data.output_path }}",
+        "executionStrategy": "sync",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "tts_list_voices",
+        "description": "List available voice presets.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "voices_dir": { "type": "string" }
+          },
+          "required": ["voices_dir"]
+        },
+        "category": "tts",
+        "priority": 70,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "tts_status",
+        "description": "Get VibeVoice engine status.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "tts",
+        "priority": 80,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      }
+    ]
+  },
+  "permissions": [],
+  "runtime": {
+    "system_site_packages": false
+  },
+  "icon": "🗣️",
+  "tags": ["tts", "audio", "vibevoice"]
+}

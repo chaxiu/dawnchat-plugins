@@ -1,0 +1,41 @@
+{
+    "title": "AI 图像工作室",
+    "dashboard": {
+        "title": "创作与编辑",
+        "text_to_image": "文生图",
+        "image_to_image": "图生图",
+        "inpaint": "局部重绘",
+        "upscale": "超分辨率",
+        "desc_t2i": "根据文字描述生成图片",
+        "desc_i2i": "基于参考图生成新图片",
+        "desc_inpaint": "涂抹修改图片指定区域",
+        "desc_upscale": "放大图片并增强细节"
+    },
+    "setup": {
+        "title": "需要设置",
+        "message": "未检测到图像生成模型。",
+        "instruction": "请前往 设置 -> 环境管理 -> 图像生成 下载模型。",
+        "check_again": "再次检查"
+    },
+    "common": {
+        "back": "返回",
+        "generate": "生成",
+        "save": "保存",
+        "upload": "上传图片",
+        "downloading": "下载中...",
+        "processing": "处理中...",
+        "success": "成功",
+        "error": "错误",
+        "settings": "设置",
+        "prompt": "提示词",
+        "negative_prompt": "反向提示词",
+        "width": "宽度",
+        "height": "高度",
+        "steps": "步数",
+        "cfg": "提示词相关性 (CFG)",
+        "seed": "随机种子",
+        "model": "模型",
+        "scale": "放大倍数",
+        "strength": "重绘强度"
+    }
+}

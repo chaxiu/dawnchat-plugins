@@ -1,0 +1,16 @@
+{
+  "id": "com.dawnchat.hello-tts",
+  "name": "Hello TTS",
+  "version": "1.0.0",
+  "description": "A simple TTS demo plugin for VibeVoice and CosyVoice",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "permissions": ["tools.call"],
+  "icon": "🔊"
+}

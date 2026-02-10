@@ -1,0 +1,12 @@
+[submodule "official-plugins/vibevoice/src/vibevoice"]
+	path = official-plugins/vibevoice/src/vibevoice
+	url = git@github.com:chaxiu/VibeVoice.git
+	branch = local-sync-20260209b
+[submodule "official-plugins/cosyvoice/src/cosyvoice"]
+	path = official-plugins/cosyvoice/src/cosyvoice
+	url = git@github.com:chaxiu/CosyVoice.git
+	branch = local-sync-20260209b
+[submodule "official-plugins/comfyui/src/comfyui"]
+	path = official-plugins/comfyui/src/comfyui
+	url = git@github.com:chaxiu/ComfyUI.git
+	branch = local-sync-20260209b

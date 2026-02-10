@@ -1,0 +1,23 @@
+{
+    "title": "Hello World SDK Demo",
+    "subtitle": "DawnChat Plugin SDK Feature Demo",
+    "ai_demo": "AI Chat Demo",
+    "ai_desc": "Call Host LLM via host.ai.chat()",
+    "ai_input_label": "Input Text",
+    "ai_input_placeholder": "Enter text for AI to process...",
+    "ai_default_text": "Summarize in one sentence: AI is changing our lifestyle, from smartphones to autonomous cars, AI technology has penetrated every aspect of daily life.",
+    "ai_loading": "Calling AI...",
+    "ai_response": "AI Response",
+    "ai_model": "Model",
+    "ai_success": "AI Call Successful!",
+    "ai_failed": "Call Failed",
+    "call_ai": "Call AI",
+    "tool_demo": "Tool Call Demo",
+    "tool_desc": "Call MCP Tools via host.tools.call()",
+    "tool_loading": "Calling Tool...",
+    "tool_result": "Tool Result",
+    "tool_success": "Tool Call Successful!",
+    "call_tool": "Call Date Tool",
+    "enter_text": "Please enter text",
+    "theme_toggle": "Toggle Theme"
+}

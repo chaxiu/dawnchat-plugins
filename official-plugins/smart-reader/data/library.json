@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "id": "25ef39a296544746b5cb50c598c93e2c",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/25ef39a296544746b5cb50c598c93e2c/2601.07372v1.pdf",
+      "status": "error",
+      "message": "AI embedding failed: ❌ Embedding 请求失败: litellm.APIError: APIError: OpenAIException - Error code: 501 - {'error': {'code': 501, 'message': 'This server does not support embeddings. Start it with `--embeddings`', 'type': 'not_supported_error'}}",
+      "page_count": 0,
+      "created_at": 1770451694.4814432
+    },
+    {
+      "id": "e58bff121b05488bb7dbd0ef6c3f533d",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/e58bff121b05488bb7dbd0ef6c3f533d/2601.07372v1.pdf",
+      "status": "error",
+      "message": "AI embedding failed: ❌ Embedding 请求失败: litellm.InternalServerError: InternalServerError: OpenAIException - Error code: 500 - {'error': {'code': 500, 'message': '[json.exception.type_error.302] type must be string, but is null', 'type': 'server_error'}}",
+      "page_count": 0,
+      "created_at": 1770453432.09887
+    },
+    {
+      "id": "c7f8a712d1a14ac3ab09e4db1fbd3eae",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/c7f8a712d1a14ac3ab09e4db1fbd3eae/2601.07372v1.pdf",
+      "status": "error",
+      "message": "'list' object has no attribute 'get'",
+      "page_count": 0,
+      "created_at": 1770453658.5715468
+    },
+    {
+      "id": "2f7aed5e4491420e8d175e2db99c76ce",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/2f7aed5e4491420e8d175e2db99c76ce/2601.07372v1.pdf",
+      "status": "ready",
+      "message": "",
+      "page_count": 33,
+      "created_at": 1770455265.019027
+    },
+    {
+      "id": "a6e6a87eb89344d58d7d7ca4d2583662",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/a6e6a87eb89344d58d7d7ca4d2583662/2601.07372v1.pdf",
+      "status": "ready",
+      "message": "",
+      "page_count": 33,
+      "created_at": 1770457066.324167
+    },
+    {
+      "id": "2405306f1bb84db2a8bd5e024908ac49",
+      "name": "2601.07372v1.pdf",
+      "path": "/Users/zhutao/Cursor/ZenMind/dawnchat-plugins/official-plugins/smart-reader/data/library/2405306f1bb84db2a8bd5e024908ac49/2601.07372v1.pdf",
+      "status": "ready",
+      "message": "",
+      "page_count": 33,
+      "created_at": 1770465091.851138
+    }
+  ]
+}

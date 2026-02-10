@@ -1,0 +1,39 @@
+{
+  "id": "com.dawnchat.hello-world-vue",
+  "name": "Hello World (Vue)",
+  "version": "1.0.0",
+  "description": "Independent frontend/backend demo with Vue and FastAPI",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": [
+      {
+        "name": "hello_world",
+        "description": "返回问候语",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "姓名"
+            }
+          }
+        },
+        "category": "utility",
+        "priority": 50,
+        "resultDescription": "问候结果：{{ data.greeting }}",
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      }
+    ]
+  },
+  "permissions": [],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "icon": "🧩",
+  "tags": ["demo", "vue", "web"]
+}

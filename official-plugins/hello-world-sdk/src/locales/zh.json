@@ -1,0 +1,23 @@
+{
+    "title": "Hello World SDK 演示",
+    "subtitle": "DawnChat Plugin SDK 功能演示",
+    "ai_demo": "AI 对话演示",
+    "ai_desc": "使用 host.ai.chat() 调用 Host 的 LLM 能力",
+    "ai_input_label": "输入文本",
+    "ai_input_placeholder": "输入要让 AI 处理的文本...",
+    "ai_default_text": "请用一句话概括：人工智能正在改变我们的生活方式，从智能手机到自动驾驶汽车，AI 技术已经渗透到日常生活的方方面面。",
+    "ai_loading": "正在调用 AI...",
+    "ai_response": "AI 响应",
+    "ai_model": "模型",
+    "ai_success": "AI 调用成功！",
+    "ai_failed": "调用失败",
+    "call_ai": "调用 AI",
+    "tool_demo": "工具调用演示",
+    "tool_desc": "使用 host.tools.call() 调用 MCP 工具",
+    "tool_loading": "正在调用工具...",
+    "tool_result": "工具调用结果",
+    "tool_success": "工具调用成功！",
+    "call_tool": "调用日期工具",
+    "enter_text": "请输入文本",
+    "theme_toggle": "切换主题"
+}

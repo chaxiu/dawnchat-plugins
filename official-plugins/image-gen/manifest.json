@@ -1,0 +1,19 @@
+{
+  "id": "com.dawnchat.image-gen",
+  "name": "AI 图像工作室",
+  "version": "1.0.0",
+  "description": "本地 AI 图像生成与编辑工具",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "permissions": ["tools.call", "storage.kv"],
+  "requires": {
+    "image_gen": "required"
+  },
+  "icon": "🎨"
+}

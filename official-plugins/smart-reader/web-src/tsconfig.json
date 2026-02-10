@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@dawnchat/sdk/ui/vue": ["../../../sdk/dawnchat_sdk/ui/vue"],
+      "@dawnchat/shared-ui": ["../../../shared-ui/src"],
+      "@dawnchat/shared-protocol": ["../../../shared-protocol/src"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.js", "src/**/*.vue"]
+}

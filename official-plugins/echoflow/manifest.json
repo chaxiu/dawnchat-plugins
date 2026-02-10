@@ -1,0 +1,22 @@
+{
+  "id": "com.dawnchat.echoflow",
+  "name": "英语跟读训练",
+  "version": "1.0.0",
+  "description": "AI 驱动的英语发音评估与跟读训练，支持 YouTube/Bilibili 视频导入",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "nicegui": {
+      "enabled": true,
+      "entry": "src/main.py"
+    }
+  },
+  "permissions": ["tools.call", "storage.kv"],
+  "requires": {
+    "ffmpeg": "required"
+  },
+  "icon": "🎤"
+}
+
+
+

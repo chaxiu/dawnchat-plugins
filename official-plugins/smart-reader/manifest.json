@@ -1,0 +1,19 @@
+{
+  "id": "com.dawnchat.smart-reader",
+  "name": "Smart Reader",
+  "version": "0.1.0",
+  "description": "Local-first PDF interactive reading with AI sidecar",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": []
+  },
+  "permissions": [],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "icon": "📖",
+  "tags": ["pdf", "ai", "mvp", "smart-reader"]
+}

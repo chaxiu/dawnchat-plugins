@@ -1,0 +1,35 @@
+{
+  "id": "com.dawnchat.hello-world",
+  "name": "Hello World",
+  "version": "1.0.0",
+  "description": "A simple Hello World plugin demonstrating DawnChat Plugin Platform",
+  "author": "DawnChat Team",
+  "license": "MIT",
+  
+  "sdk_version": "^1.0.0",
+  "min_host_version": "1.0.0",
+  
+  "permissions": [],
+  
+  "capabilities": {
+    "gradio": {
+      "enabled": true,
+      "entry": "src/app.py"
+    },
+    "cards": {
+      "enabled": false
+    },
+    "chat": {
+      "enabled": false
+    },
+    "tools": []
+  },
+  
+  "mobile": {
+    "enabled": false
+  },
+  
+  "icon": "👋",
+  "tags": ["demo", "hello-world"]
+}
+
