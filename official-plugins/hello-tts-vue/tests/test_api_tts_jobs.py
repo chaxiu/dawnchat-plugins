@@ -1,19 +1,33 @@
-import asyncio
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 
-class _FakeTools:
+class _FakeHostClient:
     def __init__(self, output_path: Path):
         self.output_path = output_path
+        self._tasks: dict[str, dict] = {
+            "task-ok": {
+                "status": "completed",
+                "progress": 1.0,
+                "progress_message": "done",
+                "result": {
+                    "content": {
+                        "code": 200,
+                        "message": "success",
+                        "data": {"output_path": str(output_path)},
+                    }
+                },
+                "error": None,
+            }
+        }
 
-    async def call(self, name, arguments=None, timeout=120.0, on_progress=None):
-        if name == "dawnchat.tts.list_models":
+    async def _call_tool(self, tool_name, arguments=None, timeout=120.0, on_progress=None):
+        if tool_name == "dawnchat.tts.list_models":
             return {
                 "code": 200,
                 "message": "success",
@@ -27,58 +41,51 @@ class _FakeTools:
                     ]
                 },
             }
-
-        if name == "dawnchat.tts.list_speakers":
+        if tool_name == "dawnchat.tts.list_speakers":
             return {
                 "code": 200,
                 "message": "success",
                 "data": {"speakers": ["female_1", "male_1"]},
             }
-
-        if name == "dawnchat.tts.list_voices":
+        if tool_name == "dawnchat.tts.list_voices":
             return {
                 "code": 200,
                 "message": "success",
-                "data": {
-                    "voices": ["Emma", "Carter"],
-                    "by_quality": {
-                        "fast": ["Emma"],
-                        "standard": ["Carter"],
-                        "high": ["Carter"],
-                    },
-                },
+                "data": {"voices": ["Emma", "Carter"], "by_quality": {"fast": ["Emma"]}},
             }
-
-        if name == "dawnchat.tts.synthesize":
-            if on_progress:
-                on_progress(0.2, "preparing")
-                on_progress(20, "normalizing progress")
-                on_progress(0.9, "rendering")
-            await asyncio.sleep(0.02)
+        if tool_name == "dawnchat.tts.synthesize":
             return {
                 "code": 200,
                 "message": "success",
                 "data": {"output_path": str(self.output_path)},
             }
+        raise RuntimeError(f"unexpected tool {tool_name}")
 
-        raise RuntimeError(f"unexpected tool call: {name}")
+    async def _request(self, method, path, json=None, params=None):
+        if method == "POST" and path == "/sdk/tools/call":
+            tool_name = (json or {}).get("tool_name")
+            if tool_name == "dawnchat.tts.synthesize":
+                return {"status": "accepted", "mode": "async", "task_id": "task-ok"}
+            result = await self._call_tool(tool_name, arguments=(json or {}).get("arguments") or {})
+            return {"status": "success", "mode": "sync", "result": {"content": result}}
 
+        if method == "GET" and path.startswith("/sdk/tasks/"):
+            task_id = path.split("/")[-1]
+            task = self._tasks.get(task_id)
+            if not task:
+                raise RuntimeError("task not found")
+            return {"status": "success", "task": task}
 
-class _FakeHost:
-    def __init__(self, output_path: Path):
-        self.tools = _FakeTools(output_path)
+        if method == "DELETE" and path.startswith("/sdk/tasks/"):
+            task_id = path.split("/")[-1]
+            task = self._tasks.get(task_id)
+            if not task:
+                raise RuntimeError("task not found")
+            task["status"] = "cancelled"
+            task["error"] = "cancelled by test"
+            return {"status": "success", "message": "cancelled"}
 
-
-class _FailingTools(_FakeTools):
-    async def call(self, name, arguments=None, timeout=120.0, on_progress=None):
-        if name == "dawnchat.tts.synthesize":
-            raise RuntimeError("boom")
-        return await super().call(name, arguments, timeout, on_progress)
-
-
-class _FailingHost:
-    def __init__(self, output_path: Path):
-        self.tools = _FailingTools(output_path)
+        raise RuntimeError(f"unexpected request: {method} {path}")
 
 
 def _load_main_module():
@@ -101,86 +108,63 @@ def _load_main_module():
 
 
 @pytest.mark.asyncio
-async def test_tts_job_progress_and_audio_endpoint(tmp_path: Path):
+async def test_tool_proxy_and_audio_endpoint(tmp_path: Path):
     module = _load_main_module()
     output_path = tmp_path / "demo.wav"
     output_path.write_bytes(b"RIFF....WAVEfmt ")
 
-    module.host = _FakeHost(output_path)
-    app = module.create_app(Path(__file__).resolve().parent.parent)
+    fake_host = _FakeHostClient(output_path)
+    app = module.create_app(Path(__file__).resolve().parent.parent, host_client=fake_host)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        models_resp = await client.get("/api/tts/models", params={"engine": "cosyvoice"})
-        assert models_resp.status_code == 200
-        assert models_resp.json()["models"][0]["model_id"] == "cosyvoice-300m"
-
-        speakers_resp = await client.get(
-            "/api/tts/speakers",
-            params={"engine": "vibevoice", "quality": "fast"},
+        models_resp = await client.post(
+            "/api/sdk/tools/call",
+            json={
+                "tool_name": "dawnchat.tts.list_models",
+                "arguments": {"engine": "cosyvoice"},
+                "mode": "sync",
+            },
         )
-        assert speakers_resp.status_code == 200
-        assert speakers_resp.json()["speakers"] == ["Emma"]
+        assert models_resp.status_code == 200
+        models_payload = models_resp.json()["result"]
+        assert models_payload["data"]["models"][0]["model_id"] == "cosyvoice-300m"
 
         submit_resp = await client.post(
-            "/api/tts/synthesize",
+            "/api/sdk/tools/submit",
             json={
-                "text": "hello",
-                "engine": "vibevoice",
-                "quality": "fast",
-                "speaker": "Emma",
+                "tool_name": "dawnchat.tts.synthesize",
+                "arguments": {"text": "hello", "engine": "vibevoice"},
             },
         )
         assert submit_resp.status_code == 200
-        job_id = submit_resp.json()["job_id"]
+        assert submit_resp.json()["mode"] == "async"
+        task_id = submit_resp.json()["task_id"]
 
-        final_job = None
-        for _ in range(40):
-            status_resp = await client.get(f"/api/tts/jobs/{job_id}")
-            assert status_resp.status_code == 200
-            job = status_resp.json()["job"]
-            assert 0.0 <= job["progress"] <= 1.0
-            if job["status"] == "completed":
-                final_job = job
-                break
-            await asyncio.sleep(0.02)
+        task_resp = await client.get(f"/api/sdk/tasks/{task_id}")
+        assert task_resp.status_code == 200
+        assert task_resp.json()["task"]["status"] == "completed"
 
-        assert final_job is not None
-        assert final_job["progress"] == 1.0
-        assert final_job["output_path"] == str(output_path)
-
-        audio_resp = await client.get(f"/api/tts/audio/{job_id}")
+        audio_resp = await client.get(f"/api/tts/audio/{task_id}")
         assert audio_resp.status_code == 200
         assert audio_resp.content.startswith(b"RIFF")
 
 
 @pytest.mark.asyncio
-async def test_tts_job_failed(tmp_path: Path):
+async def test_audio_not_found_for_task_without_output(tmp_path: Path):
     module = _load_main_module()
-    output_path = tmp_path / "unused.wav"
-    module.host = _FailingHost(output_path)
+    output_path = tmp_path / "demo.wav"
+    output_path.write_bytes(b"RIFF....WAVEfmt ")
+    fake_host = _FakeHostClient(output_path)
+    fake_host._tasks["task-no-audio"] = {
+        "status": "completed",
+        "progress": 1.0,
+        "progress_message": "done",
+        "result": {"content": {"code": 200, "message": "success", "data": {}}},
+        "error": None,
+    }
 
-    app = module.create_app(Path(__file__).resolve().parent.parent)
+    app = module.create_app(Path(__file__).resolve().parent.parent, host_client=fake_host)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        submit_resp = await client.post(
-            "/api/tts/synthesize",
-            json={
-                "text": "hello",
-                "engine": "cosyvoice",
-                "mode": "instruct2",
-                "model_id": "cosyvoice-300m",
-            },
-        )
-        assert submit_resp.status_code == 200
-        job_id = submit_resp.json()["job_id"]
-
-        for _ in range(40):
-            status_resp = await client.get(f"/api/tts/jobs/{job_id}")
-            assert status_resp.status_code == 200
-            job = status_resp.json()["job"]
-            if job["status"] == "failed":
-                assert job["error"] == "boom"
-                return
-            await asyncio.sleep(0.02)
-
-        raise AssertionError("job did not fail in time")
+        response = await client.get("/api/tts/audio/task-no-audio")
+        assert response.status_code == 404

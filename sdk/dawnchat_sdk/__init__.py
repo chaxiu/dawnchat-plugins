@@ -15,6 +15,16 @@ from .host import (
 from .cards import Card as AdaptiveCard, TextBlock, Container, Action
 from .logging import setup_plugin_logging
 from .mcp_router import build_mcp_router, report_task_progress
+from .api_router import create_tool_proxy_router
+from .task_handle import TaskSnapshot, ToolTaskHandle
+from .tool_errors import (
+    ToolCallError,
+    ToolCancelledError,
+    ToolExecutionError,
+    ToolTimeoutError,
+    ToolTransportError,
+)
+from .tool_gateway import ToolCallMode, ToolCallOptions, ToolGateway
 
 __version__ = "1.0.0"
 __all__ = [
@@ -35,6 +45,17 @@ __all__ = [
     "setup_plugin_logging",
     "build_mcp_router",
     "report_task_progress",
+    "create_tool_proxy_router",
+    "ToolGateway",
+    "ToolCallMode",
+    "ToolCallOptions",
+    "ToolTaskHandle",
+    "TaskSnapshot",
+    "ToolCallError",
+    "ToolTimeoutError",
+    "ToolCancelledError",
+    "ToolExecutionError",
+    "ToolTransportError",
 ]
 
 # UI module is optional and imported separately

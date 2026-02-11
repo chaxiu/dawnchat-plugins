@@ -14,6 +14,7 @@ from .host_capabilities import (
     ToolsCapability,
 )
 from .host_transport import DEFAULT_TIMEOUT, HttpTransport, InProcessTransport, ProgressCallback
+from .tool_gateway import ToolGateway
 
 logger = logging.getLogger("dawnchat_sdk")
 
@@ -54,6 +55,7 @@ class HostClient:
         self.models = ModelsCapability(self)
         self.image_gen = ImageGenCapability(self)
         self.scoring = ScoringCapability(self)
+        self.gateway = ToolGateway(self)
         self._initialized = True
         logger.info(f"HostClient initialized: {self._host_url}, plugin_id={self._plugin_id}")
 
