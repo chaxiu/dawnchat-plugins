@@ -243,8 +243,12 @@ async def render_inpaint(on_back):
                         
                     # 2. Call Backend
                     def on_progress(p, msg):
-                        progress_bar.value = p / 100.0
-                        status_label.text = f"{msg} ({int(p)}%)"
+                        normalized = float(p or 0.0)
+                        if normalized > 1.0:
+                            normalized = normalized / 100.0
+                        normalized = max(0.0, min(1.0, normalized))
+                        progress_bar.value = normalized
+                        status_label.text = f"{msg} ({int(normalized * 100)}%)"
 
                     # Determine workflow_id
                     workflow_id = "sdxl_inpaint_basic"

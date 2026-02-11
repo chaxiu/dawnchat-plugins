@@ -566,6 +566,7 @@ class ImageGenCapability:
         scale: int = 4,
         model_name: Optional[str] = None,
         workflow_id: Optional[str] = None,
+        on_progress: Optional[ProgressCallback] = None,
     ) -> dict[str, Any]:
         args: dict[str, Any] = {
             "image_path": image_path,
@@ -578,6 +579,7 @@ class ImageGenCapability:
         return await self._client.tools.call(
             "dawnchat.image_gen.upscale",
             arguments=args,
+            on_progress=on_progress,
         )
 
     async def get_status(self) -> dict[str, Any]:

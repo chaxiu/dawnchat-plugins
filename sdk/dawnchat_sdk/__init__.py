@@ -14,7 +14,7 @@ from .host import (
 )
 from .cards import Card as AdaptiveCard, TextBlock, Container, Action
 from .logging import setup_plugin_logging
-from .mcp_router import build_mcp_router
+from .mcp_router import build_mcp_router, report_task_progress
 
 __version__ = "1.0.0"
 __all__ = [
@@ -34,6 +34,7 @@ __all__ = [
     "Action",
     "setup_plugin_logging",
     "build_mcp_router",
+    "report_task_progress",
 ]
 
 # UI module is optional and imported separately

@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from dawnchat_sdk import host
+from dawnchat_sdk import host, report_task_progress
 from mcp import build_mcp_router
 
 
@@ -67,7 +67,14 @@ def create_app(base_dir: Path) -> FastAPI:
         except (TypeError, ValueError):
             delay = 2.0
         delay = max(0.0, min(delay, 30.0))
-        await asyncio.sleep(delay)
+        await report_task_progress(0.1, "preparing async greeting")
+        steps = 5
+        for idx in range(steps):
+            await asyncio.sleep(delay / steps if steps > 0 else delay)
+            await report_task_progress(
+                0.1 + 0.8 * ((idx + 1) / steps),
+                f"processing {idx + 1}/{steps}",
+            )
         return {"greeting": f"Hello async, {name}!", "delay_seconds": delay}
 
     tool_handlers = {

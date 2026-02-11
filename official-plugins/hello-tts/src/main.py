@@ -68,7 +68,9 @@ def main():
         state: Dict[str, Any] = {
             "models": [],
             "voices": {},
+            "models_loading": False,
         }
+        synth_button = None
 
         def _engine_value() -> str:
             return str(engine_select.value or "vibevoice").strip().lower()
@@ -79,11 +81,36 @@ def main():
         def _quality_value() -> str:
             return str(quality_select.value or "fast").strip().lower()
 
-        async def _call_tool(name: str, arguments: Optional[dict] = None) -> Dict[str, Any]:
-            result = await host.tools.call(name, arguments=arguments or {})
-            if isinstance(result, dict) and "code" in result:
-                return result
-            return {"code": 200, "message": "success", "data": result}
+        def _sanitize_tool_arguments(name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+            # Avoid dumping full synthesis text into logs while preserving key debug signals.
+            if name != "dawnchat.tts.synthesize":
+                return arguments
+            safe = dict(arguments)
+            text = str(safe.get("text") or "")
+            if text:
+                safe["text"] = f"<len={len(text)}>"
+            return safe
+
+        async def _call_tool(
+            name: str,
+            arguments: Optional[dict] = None,
+            on_progress=None,
+        ) -> Dict[str, Any]:
+            payload = arguments or {}
+            logger.info("tool call start: %s args=%s", name, _sanitize_tool_arguments(name, payload))
+            try:
+                result = await host.tools.call(name, arguments=payload, on_progress=on_progress)
+                normalized = result if isinstance(result, dict) and "code" in result else {"code": 200, "message": "success", "data": result}
+                logger.info(
+                    "tool call done: %s code=%s message=%s",
+                    name,
+                    normalized.get("code"),
+                    normalized.get("message"),
+                )
+                return normalized
+            except Exception:
+                logger.exception("tool call failed: %s", name)
+                raise
 
         def _build_model_options(models: List[Dict[str, Any]]) -> Dict[str, str]:
             options: Dict[str, str] = {}
@@ -121,15 +148,72 @@ def main():
                         valid_ids.add(value)
             return candidate if candidate in valid_ids else None
 
+        def _preferred_cosy_model_id(models: List[Dict[str, Any]]) -> Optional[str]:
+            installed_id = None
+            any_id = None
+            for model in models:
+                if not isinstance(model, dict):
+                    continue
+                mid = str(model.get("model_id") or model.get("id") or model.get("size") or "").strip()
+                if not mid:
+                    continue
+                if any_id is None:
+                    any_id = mid
+                if bool(model.get("installed")):
+                    installed_id = mid
+                    break
+            return installed_id or any_id
+
+        def _has_installed_cosy_model(models: List[Dict[str, Any]]) -> bool:
+            for model in models:
+                if isinstance(model, dict) and bool(model.get("installed")):
+                    return True
+            return False
+
+        def _update_synthesize_enabled() -> None:
+            if synth_button is None:
+                return
+            engine = _engine_value()
+            if engine != "cosyvoice":
+                synth_button.set_enabled(True)
+                return
+            if bool(state.get("models_loading")):
+                synth_button.set_enabled(False)
+                return
+            selected = _valid_model_id(_model_value())
+            if selected:
+                synth_button.set_enabled(True)
+                return
+            synth_button.set_enabled(_has_installed_cosy_model(state.get("models", [])))
+
+        async def _ensure_valid_cosy_model() -> Optional[str]:
+            model_id = _valid_model_id(_model_value())
+            if model_id:
+                return model_id
+            await refresh_models()
+            model_id = _valid_model_id(_model_value())
+            if model_id:
+                return model_id
+            fallback = _preferred_cosy_model_id(state.get("models", []))
+            if fallback and fallback in model_select.options:
+                model_select.value = fallback
+                model_select.update()
+                return fallback
+            return None
+
         async def refresh_models() -> None:
             engine = _engine_value()
             state["models"] = []
+            state["models_loading"] = engine == "cosyvoice"
+            _update_synthesize_enabled()
             model_select.options = {"": _t("loading")}
             model_select.value = ""
             model_select.update()
             if engine != "cosyvoice":
+                state["models_loading"] = False
                 _apply_select_options(model_select, {"": _t("empty_models")}, _t("empty_models"))
                 await refresh_voices()
+                _update_synthesize_enabled()
                 return
             try:
                 resp = await _call_tool("dawnchat.tts.list_models", {"engine": engine})
@@ -139,11 +223,18 @@ def main():
                 state["models"] = models
                 options = _build_model_options(models)
                 _apply_select_options(model_select, options, _t("empty_models"))
+                preferred = _preferred_cosy_model_id(models)
+                if preferred and preferred in model_select.options:
+                    model_select.value = preferred
+                    model_select.update()
                 await refresh_voices()
             except Exception as exc:
                 logger.warning("list_models failed: %s", exc)
                 state["models"] = []
                 _apply_select_options(model_select, {"": _t("empty_models")}, _t("empty_models"))
+            finally:
+                state["models_loading"] = False
+                _update_synthesize_enabled()
 
         def _extract_vibevoice_voices(payload: Dict[str, Any]) -> List[str]:
             by_quality = payload.get("by_quality")
@@ -234,6 +325,11 @@ def main():
 
             result_container.clear()
             output_container.clear()
+            progress_bar = None
+            progress_label = None
+            with result_container:
+                progress_bar = ui.linear_progress(value=0).classes("w-full mb-2")
+                progress_label = ui.label(_t("loading")).classes("text-sm").style(f"color:{c.text_secondary};")
 
             engine = _engine_value()
             speaker = str(speaker_select.value or "").strip()
@@ -243,17 +339,38 @@ def main():
             args: Dict[str, Any] = {"text": text, "engine": engine}
 
             if engine == "cosyvoice":
+                if bool(state.get("models_loading")):
+                    ui.notify(_t("loading"), type="warning")
+                    return
                 if speaker:
                     args["speaker"] = speaker
+                if not model_id:
+                    model_id = await _ensure_valid_cosy_model()
+                    if model_id and model_id in model_select.options:
+                        model_select.value = model_id
+                        model_select.update()
                 if model_id:
                     args["model_id"] = model_id
+                else:
+                    ui.notify(_t("empty_models"), type="warning")
+                    return
                 args["mode"] = str(mode_select.value or "instruct2").strip().lower() or "instruct2"
             else:
                 args["speaker"] = speaker or "Emma"
                 args["quality"] = quality
 
             try:
-                resp = await _call_tool("dawnchat.tts.synthesize", args)
+                def on_progress(progress: float, message: str) -> None:
+                    if progress_bar is None or progress_label is None:
+                        return
+                    normalized = float(progress or 0.0)
+                    if normalized > 1.0:
+                        normalized = normalized / 100.0
+                    normalized = max(0.0, min(1.0, normalized))
+                    progress_bar.value = normalized
+                    progress_label.text = f"{message or _t('loading')} ({int(normalized * 100)}%)"
+
+                resp = await _call_tool("dawnchat.tts.synthesize", args, on_progress=on_progress)
             except Exception as exc:
                 resp = {"code": 500, "message": str(exc), "data": None}
 
@@ -287,6 +404,9 @@ def main():
                             ui.label(_t("model")).classes("text-sm mt-3").style(f"color:{c.text_secondary};")
 
                             def _model_changed() -> None:
+                                if _engine_value() != "cosyvoice":
+                                    return
+                                _update_synthesize_enabled()
                                 asyncio.create_task(refresh_voices())
 
                             model_select = ui.select(
@@ -306,10 +426,14 @@ def main():
 
                         with quality_container:
                             ui.label(_t("quality")).classes("text-sm mt-3").style(f"color:{c.text_secondary};")
+                            def _quality_changed() -> None:
+                                if _engine_value() != "vibevoice":
+                                    return
+                                asyncio.create_task(refresh_voices())
                             quality_select = ui.select(
                                 options=quality_options,
                                 value="fast",
-                                on_change=lambda e: asyncio.create_task(refresh_voices()),
+                                on_change=lambda e: _quality_changed(),
                             ).props("outlined dense").classes("w-full")
 
                         with mode_container:
@@ -325,13 +449,13 @@ def main():
                             mode_container.set_visibility(not is_vibe)
                             model_container.set_visibility(not is_vibe)
 
+                        engine_select.on("change", lambda e: _engine_changed())
                         _toggle_engine_fields()
 
                         def _engine_changed() -> None:
                             _toggle_engine_fields()
+                            _update_synthesize_enabled()
                             asyncio.create_task(refresh_models())
-
-                        engine_select.on("change", lambda e: _engine_changed())
 
                         ui.label(_t("text")).classes("text-sm mt-4").style(f"color:{c.text_secondary};")
                         text_input = ui.textarea(
@@ -341,7 +465,7 @@ def main():
 
                         with ui.row().classes("w-full items-center gap-3 mt-4"):
                             ui.button(_t("refresh"), on_click=refresh_models).props("outline")
-                            ui.button(_t("synthesize"), on_click=synthesize).props("color=primary")
+                            synth_button = ui.button(_t("synthesize"), on_click=synthesize).props("color=primary")
 
                 with ui.column().classes("flex-1 min-w-80"):
                     with ui.element("div").classes("tts-card"):
@@ -364,6 +488,7 @@ def main():
                                 pause_button.set_enabled(False)
 
         await refresh_models()
+        _update_synthesize_enabled()
 
     def on_startup():
         print(json.dumps({"status": "ready"}), file=sys.stderr, flush=True)

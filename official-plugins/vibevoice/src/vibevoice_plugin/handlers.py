@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
+from dawnchat_sdk import report_task_progress
 from vibevoice_worker.engine import VibeVoiceEngine
 
 logger = logging.getLogger("vibevoice_handlers")
@@ -22,6 +23,7 @@ def _quality_to_model_size(quality: Optional[str]) -> str:
 
 
 async def synthesize(args: dict[str, Any]) -> dict[str, Any]:
+    await report_task_progress(0.05, "validating request")
     text = str(args.get("text", "")).strip()
     if not text:
         return {"code": 400, "message": "text_required", "data": None}
@@ -45,6 +47,7 @@ async def synthesize(args: dict[str, Any]) -> dict[str, Any]:
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / f"tts_{int(time.time())}.wav"
 
+    await report_task_progress(0.25, "initializing model and voice")
     result = await engine.synthesize(
         text=text,
         speaker=speaker,
@@ -56,6 +59,8 @@ async def synthesize(args: dict[str, Any]) -> dict[str, Any]:
         ddpm_steps=args.get("ddpm_steps"),
         timeout_seconds=args.get("timeout_seconds"),
     )
+    if isinstance(result, dict) and result.get("code") == 200:
+        await report_task_progress(1.0, "synthesis completed")
     return result
 
 

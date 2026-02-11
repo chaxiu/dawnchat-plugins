@@ -119,8 +119,16 @@ async def render_upscale(on_back):
             
         with result_container:
             result_container.clear()
-            ui.spinner('dots', size='lg')
-            ui.label(i18n.t('common.processing')).classes('dc-text-secondary')
+            progress_bar = ui.linear_progress(value=0).classes('w-full')
+            status_label = ui.label(i18n.t('common.processing')).classes('dc-text-secondary text-sm')
+
+        def on_progress(p, msg):
+            normalized = float(p or 0.0)
+            if normalized > 1.0:
+                normalized = normalized / 100.0
+            normalized = max(0.0, min(1.0, normalized))
+            progress_bar.value = normalized
+            status_label.text = f"{msg} ({int(normalized * 100)}%)"
             
         try:
             # Determine workflow_id
@@ -133,7 +141,8 @@ async def render_upscale(on_back):
             result = await host.image_gen.upscale(
                 image_path=uploaded_file['path'],
                 scale=scale.value,
-                workflow_id=workflow_id
+                workflow_id=workflow_id,
+                on_progress=on_progress,
             )
             
             result_container.clear()

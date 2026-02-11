@@ -11,39 +11,51 @@ from cosyvoice_worker.engine import CosyVoiceEngine
 
 
 def _inject_cosyvoice_paths() -> None:
+    def _prepend_path(path: Path) -> None:
+        path_str = str(path)
+        if path_str and path_str not in sys.path:
+            sys.path.insert(0, path_str)
+
     app_root = Path(__file__).resolve().parent.parent
-    app_root_str = str(app_root)
-    if app_root_str and app_root_str not in sys.path:
-        sys.path.insert(0, app_root_str)
+    _prepend_path(app_root)
+    # CosyVoice upstream repo is vendored as `src/cosyvoice/cosyvoice/...`.
+    # Add `src/cosyvoice` so `import cosyvoice.cli...` resolves correctly.
+    vendored_source_root = app_root / "cosyvoice"
+    if vendored_source_root.exists():
+        _prepend_path(vendored_source_root)
+    local_overrides_root = app_root / "local_overrides"
+    if local_overrides_root.exists():
+        _prepend_path(local_overrides_root)
 
     source_dir = os.getenv("COSYVOICE_SOURCE_DIR", "")
     if source_dir:
         root = Path(source_dir).expanduser()
-        root_str = str(root)
-        if root_str and root_str not in sys.path:
-            sys.path.insert(0, root_str)
+        _prepend_path(root)
+        nested_root = root / "cosyvoice"
+        if nested_root.exists():
+            _prepend_path(nested_root)
 
         matcha_root = root / "third_party" / "Matcha-TTS"
         if matcha_root.exists():
-            matcha_root_str = str(matcha_root)
-            if matcha_root_str not in sys.path:
-                sys.path.insert(0, matcha_root_str)
+            _prepend_path(matcha_root)
             matcha_src = matcha_root / "src"
             if matcha_src.exists():
-                matcha_src_str = str(matcha_src)
-                if matcha_src_str not in sys.path:
-                    sys.path.insert(0, matcha_src_str)
+                _prepend_path(matcha_src)
+
+    # Matcha-TTS is vendored inside `src/cosyvoice/third_party/Matcha-TTS`.
+    vendored_matcha_root = vendored_source_root / "third_party" / "Matcha-TTS"
+    if vendored_matcha_root.exists():
+        _prepend_path(vendored_matcha_root)
+        vendored_matcha_src = vendored_matcha_root / "src"
+        if vendored_matcha_src.exists():
+            _prepend_path(vendored_matcha_src)
 
     bundled_matcha_root = app_root / "third_party" / "Matcha-TTS"
     if bundled_matcha_root.exists():
-        bundled_matcha_root_str = str(bundled_matcha_root)
-        if bundled_matcha_root_str not in sys.path:
-            sys.path.insert(0, bundled_matcha_root_str)
+        _prepend_path(bundled_matcha_root)
         bundled_matcha_src = bundled_matcha_root / "src"
         if bundled_matcha_src.exists():
-            bundled_matcha_src_str = str(bundled_matcha_src)
-            if bundled_matcha_src_str not in sys.path:
-                sys.path.insert(0, bundled_matcha_src_str)
+            _prepend_path(bundled_matcha_src)
 
 
 def _patch_yaml_loader_max_depth() -> None:

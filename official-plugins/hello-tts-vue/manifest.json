@@ -1,0 +1,19 @@
+{
+  "id": "com.dawnchat.hello-tts-vue",
+  "name": "Hello TTS (Vue)",
+  "version": "1.0.0",
+  "description": "Vue-based TTS testing plugin for VibeVoice and CosyVoice",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": []
+  },
+  "permissions": ["tools.call"],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "icon": "🔊",
+  "tags": ["tts", "vue", "demo", "vibevoice", "cosyvoice"]
+}

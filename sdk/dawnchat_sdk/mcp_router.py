@@ -1,8 +1,10 @@
 import asyncio
+import contextvars
 from dataclasses import dataclass, field
 from datetime import datetime
 import inspect
 import json
+import logging
 from typing import Any, Awaitable, Callable, Optional
 import uuid
 
@@ -10,6 +12,23 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 ToolHandler = Callable[[dict[str, Any]], Any]
+TaskProgressCallback = Callable[[str, float, str], Any]
+TaskEventCallback = Callable[[dict[str, Any]], Any]
+
+logger = logging.getLogger(__name__)
+
+_current_task: contextvars.ContextVar[Optional["PluginTask"]] = contextvars.ContextVar(
+    "dawnchat_sdk_current_mcp_task",
+    default=None,
+)
+_current_progress_callback: contextvars.ContextVar[Optional[TaskProgressCallback]] = contextvars.ContextVar(
+    "dawnchat_sdk_current_task_progress_callback",
+    default=None,
+)
+_current_event_callback: contextvars.ContextVar[Optional[TaskEventCallback]] = contextvars.ContextVar(
+    "dawnchat_sdk_current_task_event_callback",
+    default=None,
+)
 
 
 class JsonRpcRequest(BaseModel):
@@ -35,11 +54,67 @@ class PluginTask:
     runner: Optional[asyncio.Task] = None
 
 
+def _build_task_event(task: "PluginTask", event: str) -> dict[str, Any]:
+    return {
+        "event": event,
+        "task_id": task.task_id,
+        "tool_name": task.tool_name,
+        "status": task.status,
+        "progress": task.progress,
+        "message": task.message,
+        "result": task.result,
+        "error": task.error,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+async def _emit_task_event(task: "PluginTask", event: str) -> None:
+    callback = _current_event_callback.get()
+    if callback is None:
+        return
+    payload = _build_task_event(task, event)
+    try:
+        callback_result = callback(payload)
+        if inspect.isawaitable(callback_result):
+            await callback_result
+    except Exception:
+        logger.warning("task event callback failed for task %s", task.task_id, exc_info=True)
+
+
+async def report_task_progress(progress: float, message: str = "") -> bool:
+    """
+    在插件异步任务上下文中上报进度。
+
+    返回：
+    - True: 已更新当前任务进度
+    - False: 当前不在异步任务上下文
+    """
+    task = _current_task.get()
+    if task is None:
+        return False
+
+    normalized = max(0.0, min(1.0, float(progress)))
+    task.progress = normalized
+    task.message = message
+    callback = _current_progress_callback.get()
+    if callback:
+        try:
+            callback_result = callback(task.task_id, normalized, message)
+            if inspect.isawaitable(callback_result):
+                await callback_result
+        except Exception:
+            logger.warning("task progress callback failed for task %s", task.task_id, exc_info=True)
+    await _emit_task_event(task, "task_progress")
+    return True
+
+
 def build_mcp_router(
     manifest_tools: list[dict[str, Any]],
     tool_handlers: dict[str, ToolHandler],
     *,
     enable_async_tasks: bool = True,
+    on_task_progress: Optional[TaskProgressCallback] = None,
+    on_task_event: Optional[TaskEventCallback] = None,
 ) -> APIRouter:
     """
     构建通用 MCP JSON-RPC Router。
@@ -80,27 +155,36 @@ def build_mcp_router(
         return data
 
     async def _run_task(task: PluginTask, handler: ToolHandler) -> None:
+        task_token = _current_task.set(task)
+        callback_token = _current_progress_callback.set(on_task_progress)
+        event_callback_token = _current_event_callback.set(on_task_event)
         task.status = "running"
         task.started_at = datetime.now()
-        task.progress = 0.05
-        task.message = "task started"
+        await _emit_task_event(task, "task_started")
+        await report_task_progress(0.05, "task started")
         try:
             data = await _invoke_handler(handler, task.arguments)
             task.status = "completed"
-            task.progress = 1.0
-            task.message = "task completed"
             task.result = _wrap_tool_result(data)
+            await report_task_progress(1.0, "task completed")
             task.completed_at = datetime.now()
+            await _emit_task_event(task, "task_completed")
         except asyncio.CancelledError:
             task.status = "cancelled"
             task.message = "task cancelled"
             task.error = "Task cancelled"
             task.completed_at = datetime.now()
+            await _emit_task_event(task, "task_cancelled")
         except Exception as exc:
             task.status = "failed"
             task.message = "task failed"
             task.error = str(exc)
             task.completed_at = datetime.now()
+            await _emit_task_event(task, "task_failed")
+        finally:
+            _current_task.reset(task_token)
+            _current_progress_callback.reset(callback_token)
+            _current_event_callback.reset(event_callback_token)
 
     @router.post("")
     async def mcp_rpc(payload: JsonRpcRequest):
@@ -113,7 +197,7 @@ def build_mcp_router(
             return {"jsonrpc": "2.0", "id": request_id, "result": {"status": "ok"}}
 
         if method == "tools/list":
-            result = {"tools": tool_defs}
+            result: dict[str, Any] = {"tools": tool_defs}
             if enable_async_tasks:
                 result["capabilities"] = {
                     "async": True,

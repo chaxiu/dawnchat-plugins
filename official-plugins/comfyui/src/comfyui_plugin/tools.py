@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import random
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from comfyui_wrapper.workflow_templates.registry import WorkflowRegistry
+
+from dawnchat_sdk import report_task_progress
 
 from .client import get_comfy_client
 from .manager import ComfyUIManager
@@ -62,10 +65,12 @@ class ComfyUITools:
         return await self._execute_workflow(args["workflow_id"], args)
 
     async def _execute_workflow(self, workflow_id: str, params: dict[str, Any]) -> dict[str, Any]:
+        await report_task_progress(0.05, "checking ComfyUI service")
         started = await self._manager.ensure_running()
         if not started:
             return {"code": 503, "message": "comfyui_start_failed", "data": None}
 
+        await report_task_progress(0.12, "loading workflow template")
         template = self._workflow_registry.load_template_json(workflow_id)
         if not template:
             return {"code": 404, "message": f"workflow_not_found: {workflow_id}", "data": None}
@@ -79,6 +84,7 @@ class ComfyUITools:
 
         image_path = params.get("image_path")
         if image_path:
+            await report_task_progress(0.2, "uploading source image")
             uploaded = await self._upload_if_exists(image_path)
             if uploaded:
                 params["image_path"] = uploaded
@@ -86,16 +92,26 @@ class ComfyUITools:
 
         mask_path = params.get("mask_path")
         if mask_path:
+            await report_task_progress(0.25, "uploading mask image")
             uploaded = await self._upload_if_exists(mask_path)
             if uploaded:
                 params["mask_path"] = uploaded
                 workflow = self._fill_template(template, params)
 
         try:
+            await report_task_progress(0.35, "queueing workflow")
             prompt_id = await self._client.queue_prompt(workflow)
-            result = await self._client.wait_for_completion(prompt_id)
+
+            def on_progress(progress: float, message: str) -> None:
+                mapped_progress = 0.4 + (max(0.0, min(1.0, float(progress))) * 0.5)
+                asyncio.create_task(report_task_progress(mapped_progress, f"generating: {message}"))
+
+            result = await self._client.wait_for_completion(prompt_id, on_progress=on_progress)
+            await report_task_progress(0.92, "collecting output images")
             images = await self._client.get_output_images(result)
+            await report_task_progress(0.97, "saving output images")
             image_paths = self._save_images(images)
+            await report_task_progress(1.0, "workflow completed")
             return {
                 "code": 200,
                 "message": "success",
