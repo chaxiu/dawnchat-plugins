@@ -7,6 +7,7 @@ from typing import Any, Callable, Optional
 import httpx
 
 from .host_exceptions import HostAPIError, HostConnectionError, SDKError
+from .result_utils import normalize_tool_result
 
 websockets: Any
 try:
@@ -151,8 +152,8 @@ class HttpTransport(BaseTransport):
                 on_progress=on_progress,
             )
         if "result" in response and "content" in response["result"]:
-            return response["result"]["content"]
-        return response
+            return normalize_tool_result(response["result"]["content"])
+        return normalize_tool_result(response)
 
     async def list_tools(
         self,
@@ -216,8 +217,8 @@ class HttpTransport(BaseTransport):
                                 logger.info(f"[SDK] Task {task_id} completed")
                                 result = payload.get("result", {})
                                 if isinstance(result, dict) and "content" in result:
-                                    return result["content"]
-                                return result
+                                    return normalize_tool_result(result["content"])
+                                return normalize_tool_result(result)
                         elif msg_type == "task_failed":
                             if payload.get("task_id") == task_id:
                                 error = payload.get("error", "Unknown error")
@@ -269,8 +270,8 @@ class HttpTransport(BaseTransport):
                     logger.info(f"[SDK] Task {task_id} completed (polling)")
                     result = task.get("result", {})
                     if isinstance(result, dict) and "content" in result:
-                        return result["content"]
-                    return result
+                        return normalize_tool_result(result["content"])
+                    return normalize_tool_result(result)
                 if status in ("failed", "cancelled"):
                     error = task.get("error", "Unknown error")
                     raise HostAPIError(f"Task failed: {error}")
@@ -362,7 +363,7 @@ class InProcessTransport(BaseTransport):
             arguments=arguments or {},
             timeout=timeout,
         )
-        return result.content
+        return normalize_tool_result(result.content)
 
     async def _wait_for_task_completion(
         self,
@@ -395,8 +396,8 @@ class InProcessTransport(BaseTransport):
                 if status == "completed":
                     result = task.get("result", {})
                     if isinstance(result, dict) and "content" in result:
-                        return result["content"]
-                    return result
+                        return normalize_tool_result(result["content"])
+                    return normalize_tool_result(result)
                 if status in ("failed", "cancelled"):
                     error = task.get("error", "Unknown error")
                     raise HostAPIError(f"Task failed: {error}")

@@ -1,0 +1,99 @@
+{
+  "id": "com.dawnchat.diarization",
+  "name": "Speaker Diarization",
+  "version": "1.0.0",
+  "description": "Speaker diarization plugin powered by pyannote.audio",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": [
+      {
+        "name": "diarize",
+        "description": "Perform speaker diarization for an audio file",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "audio_path": {
+              "type": "string",
+              "description": "Audio file path"
+            },
+            "num_speakers": {
+              "type": "integer",
+              "description": "Known number of speakers"
+            },
+            "min_speakers": {
+              "type": "integer",
+              "description": "Minimum number of speakers"
+            },
+            "max_speakers": {
+              "type": "integer",
+              "description": "Maximum number of speakers"
+            }
+          },
+          "required": [
+            "audio_path"
+          ]
+        },
+        "category": "media",
+        "priority": 80,
+        "resultDescription": "Detected {{ data.num_speakers }} speakers",
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": true
+      },
+      {
+        "name": "status",
+        "description": "Get diarization model status",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "category": "media",
+        "priority": 60,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "merge_speakers",
+        "description": "Merge diarization segments with transcription segments",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "diarization_segments": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "transcription_segments": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "required": [
+            "diarization_segments",
+            "transcription_segments"
+          ]
+        },
+        "category": "media",
+        "priority": 70,
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      }
+    ]
+  },
+  "permissions": [],
+  "runtime": {
+    "system_site_packages": false
+  },
+  "icon": "🎭",
+  "tags": [
+    "asr",
+    "diarization",
+    "speaker"
+  ]
+}

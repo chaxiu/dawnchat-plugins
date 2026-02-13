@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, Protocol
 
 from .host_transport import DEFAULT_ASYNC_TIMEOUT, ProgressCallback
+from .result_utils import normalize_tool_result
 from .tool_errors import ToolCancelledError, ToolExecutionError, map_host_error
 
 
@@ -131,9 +132,7 @@ def _normalize_progress(raw: Any) -> float:
 
 
 def _extract_result_content(result: Any) -> Any:
-    if isinstance(result, dict) and "content" in result:
-        return result.get("content")
-    return result
+    return normalize_tool_result(result)
 
 
 __all__ = ["TaskSnapshot", "ToolTaskHandle", "map_host_error"]

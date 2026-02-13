@@ -1,0 +1,45 @@
+{
+  "id": "com.dawnchat.hello-asr-vue",
+  "name": "Hello ASR (Vue)",
+  "version": "1.0.0",
+  "description": "ASR testing plugin for Whisper and Speaker Diarization",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "capabilities": {
+    "tools": [
+      {
+        "name": "transcribe_with_speakers",
+        "description": "Transcribe audio with Whisper and label speakers via diarization plugin",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "audio_path": { "type": "string", "description": "Audio path" },
+            "language": { "type": ["string", "null"], "default": null },
+            "model_size": {
+              "type": ["string", "null"],
+              "enum": ["tiny", "base", "small", "medium", "large-v3", null],
+              "default": null
+            },
+            "num_speakers": { "type": ["integer", "null"], "default": null },
+            "enable_diarization": { "type": "boolean", "default": true }
+          },
+          "required": ["audio_path"]
+        },
+        "category": "media",
+        "priority": 60,
+        "resultDescription": "识别结果（含说话人）",
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": true
+      }
+    ]
+  },
+  "permissions": ["tools.call"],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "html"
+  },
+  "icon": "🎙️",
+  "tags": ["asr", "diarization", "whisper", "demo", "vue"]
+}

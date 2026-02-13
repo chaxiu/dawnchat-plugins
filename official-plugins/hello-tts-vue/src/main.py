@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from dawnchat_sdk import create_tool_proxy_router, host
+from dawnchat_sdk.result_utils import extract_result_data
 from dawnchat_sdk.tool_gateway import ToolGateway
 from mcp import build_mcp_router
 
@@ -44,11 +45,9 @@ def _extract_output_path(task: dict[str, Any]) -> Optional[str]:
                 result = None
 
     if isinstance(result, dict):
-        if "code" in result and isinstance(result.get("data"), dict):
-            path = str(result["data"].get("output_path") or "").strip()
-            return path or None
-        if isinstance(result.get("data"), dict):
-            path = str(result["data"].get("output_path") or "").strip()
+        payload = extract_result_data(result)
+        if payload:
+            path = str(payload.get("output_path") or "").strip()
             return path or None
         path = str(result.get("output_path") or "").strip()
         return path or None

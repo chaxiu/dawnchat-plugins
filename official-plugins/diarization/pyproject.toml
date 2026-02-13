@@ -1,0 +1,28 @@
+[project]
+name = "dawnchat-diarization-plugin"
+version = "1.0.0"
+description = "Speaker diarization plugin for DawnChat"
+requires-python = ">=3.11"
+dependencies = [
+    "dawnchat-sdk",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "numpy",
+    "torch",
+    "torchaudio",
+    "soundfile",
+    "pyannote-audio>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.28.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

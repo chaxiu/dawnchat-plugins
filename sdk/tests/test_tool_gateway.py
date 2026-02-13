@@ -26,6 +26,19 @@ class _FakeClient:
         if method == "POST" and path == "/sdk/tools/call":
             if (json or {}).get("tool_name") == "demo.async":
                 return {"status": "accepted", "mode": "async", "task_id": "task-1"}
+            if (json or {}).get("tool_name") == "demo.sync.envelope":
+                return {
+                    "status": "success",
+                    "mode": "sync",
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": '{"code":200,"message":"success","data":{"code":200,"message":"success","data":{"ok":true}}}',
+                            }
+                        ]
+                    },
+                }
             return {"status": "success", "mode": "sync", "result": {"content": {"ok": True}}}
 
         if method == "GET" and path == "/sdk/tasks/task-1":
@@ -34,7 +47,14 @@ class _FakeClient:
                 task["status"] = "completed"
                 task["progress"] = 1.0
                 task["progress_message"] = "done"
-                task["result"] = {"content": {"done": True}}
+                task["result"] = {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": '{"code":200,"message":"success","data":{"code":200,"message":"success","data":{"done":true}}}',
+                        }
+                    ]
+                }
             return {"status": "success", "task": task}
 
         if method == "DELETE" and path == "/sdk/tasks/task-1":
@@ -77,7 +97,7 @@ async def test_tool_gateway_submit_and_wait():
     assert handle.task_id == "task-1"
 
     result = await handle.wait(timeout=10)
-    assert result == {"done": True}
+    assert result["data"]["done"] is True
 
 
 @pytest.mark.asyncio
@@ -86,6 +106,15 @@ async def test_tool_gateway_cancel():
     handle = await gateway.submit("demo.async", arguments={"x": 1})
     ok = await handle.cancel()
     assert ok is True
+
+
+@pytest.mark.asyncio
+async def test_tool_gateway_call_async_normalizes_nested_data():
+    gateway = ToolGateway(_FakeClient())
+    handle = await gateway.call_async("demo.sync.envelope", arguments={})
+    result = await handle.wait(timeout=10)
+    assert result["code"] == 200
+    assert result["data"]["ok"] is True
 
 
 @pytest.mark.asyncio

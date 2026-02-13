@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from .host_transport import DEFAULT_ASYNC_TIMEOUT, DEFAULT_TIMEOUT, ProgressCallback
+from .result_utils import normalize_tool_result
 from .task_handle import ToolTaskHandle
 from .tool_errors import ToolExecutionError, map_host_error
 
@@ -75,6 +76,7 @@ class ToolGateway:
         sync_result = response.get("result")
         if isinstance(sync_result, dict) and "content" in sync_result:
             sync_result = sync_result["content"]
+        sync_result = normalize_tool_result(sync_result)
         return ToolTaskHandle(
             self,
             task_id=None,

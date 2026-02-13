@@ -1,13 +1,15 @@
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from .host_exceptions import HostAPIError
 from .host_transport import DEFAULT_TIMEOUT, ProgressCallback
+from .result_utils import extract_result_data
 
 logger = logging.getLogger("dawnchat_sdk")
 
 if TYPE_CHECKING:
     from .host_client import HostClient
+    from .task_handle import ToolTaskHandle
 
 
 class BrowserCapability:
@@ -222,7 +224,26 @@ class ASRCapability:
         num_speakers: Optional[int] = None,
         min_speakers: Optional[int] = None,
         max_speakers: Optional[int] = None,
+        timeout: float = DEFAULT_TIMEOUT,
+        on_progress: Optional[ProgressCallback] = None,
     ) -> dict[str, Any]:
+        handle = await self.diarize_task(
+            audio_path=audio_path,
+            num_speakers=num_speakers,
+            min_speakers=min_speakers,
+            max_speakers=max_speakers,
+            timeout=timeout,
+        )
+        return await handle.wait(timeout=timeout, on_progress=on_progress)
+
+    async def diarize_task(
+        self,
+        audio_path: str,
+        num_speakers: Optional[int] = None,
+        min_speakers: Optional[int] = None,
+        max_speakers: Optional[int] = None,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> "ToolTaskHandle":
         args: dict[str, Any] = {"audio_path": audio_path}
         if num_speakers is not None:
             args["num_speakers"] = num_speakers
@@ -230,7 +251,11 @@ class ASRCapability:
             args["min_speakers"] = min_speakers
         if max_speakers is not None:
             args["max_speakers"] = max_speakers
-        return await self._client.tools.call("dawnchat.asr.diarize", arguments=args)
+        return await self._client.gateway.submit(
+            "plugin.com.dawnchat.diarization.diarize",
+            arguments=args,
+            timeout=timeout,
+        )
 
     async def transcribe_with_speakers(
         self,
@@ -247,29 +272,32 @@ class ASRCapability:
         )
         if transcribe_result.get("code") != 200:
             return transcribe_result
+        transcribe_data = extract_result_data(transcribe_result)
         diarize_result = await self.diarize(
             audio_path=audio_path,
             num_speakers=num_speakers,
         )
         if diarize_result.get("code") != 200:
             return transcribe_result
+        diarize_data = extract_result_data(diarize_result)
         merge_result = await self._client.tools.call(
-            "dawnchat.asr.merge_speakers",
+            "plugin.com.dawnchat.diarization.merge_speakers",
             arguments={
-                "diarization_segments": diarize_result.get("data", {}).get("segments", []),
-                "transcription_segments": transcribe_result.get("data", {}).get("segments", []),
+                "diarization_segments": diarize_data.get("segments", []),
+                "transcription_segments": transcribe_data.get("segments", []),
             },
         )
+        merge_data = extract_result_data(merge_result)
         if merge_result.get("code") == 200:
             return {
                 "code": 200,
                 "message": "success",
                 "data": {
-                    "segments": merge_result.get("data", {}).get("segments", []),
-                    "speakers": diarize_result.get("data", {}).get("speakers", []),
-                    "text": transcribe_result.get("data", {}).get("text", ""),
-                    "language": transcribe_result.get("data", {}).get("language"),
-                    "duration": transcribe_result.get("data", {}).get("duration"),
+                    "segments": merge_data.get("segments", []),
+                    "speakers": diarize_data.get("speakers", []),
+                    "text": transcribe_data.get("text", ""),
+                    "language": transcribe_data.get("language"),
+                    "duration": transcribe_data.get("duration"),
                 },
             }
         return transcribe_result

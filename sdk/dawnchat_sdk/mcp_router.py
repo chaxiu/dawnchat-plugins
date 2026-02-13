@@ -139,11 +139,15 @@ def build_mcp_router(
         }
 
     def _wrap_tool_result(data: Any) -> dict:
+        if isinstance(data, dict) and "code" in data:
+            payload = data
+        else:
+            payload = {"code": 200, "message": "success", "data": data}
         return {
             "content": [
                 {
                     "type": "text",
-                    "text": json.dumps({"code": 200, "message": "success", "data": data}, ensure_ascii=False),
+                    "text": json.dumps(payload, ensure_ascii=False),
                 }
             ]
         }
