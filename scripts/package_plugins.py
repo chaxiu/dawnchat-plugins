@@ -85,6 +85,11 @@ def _should_exclude(path: Path) -> bool:
     return False
 
 
+def _is_dangling_symlink(path: Path) -> bool:
+    """Return True when path is a symlink whose target does not exist."""
+    return path.is_symlink() and not path.exists()
+
+
 def _build_web_assets(plugin_dir: Path) -> None:
     manifest = _read_json(plugin_dir / "manifest.json")
     ui = manifest.get("ui") or {}
@@ -120,6 +125,9 @@ def _package_plugin(plugin_dir: Path, output_dir: Path, ext: str) -> PackageResu
         for file_path in plugin_dir.rglob("*"):
             if file_path.is_dir():
                 continue
+            if _is_dangling_symlink(file_path):
+                print(f"skip dangling symlink: {file_path}")
+                continue
             rel = file_path.relative_to(plugin_dir)
             if _should_exclude(rel):
                 continue
@@ -127,7 +135,11 @@ def _package_plugin(plugin_dir: Path, output_dir: Path, ext: str) -> PackageResu
             if rel.parts and rel.parts[0] == "web-src":
                 continue
             arcname = (Path(plugin_dir.name) / rel).as_posix()
-            zf.write(file_path, arcname)
+            try:
+                zf.write(file_path, arcname)
+            except FileNotFoundError:
+                # Guard against files disappearing during walk (or dangling links).
+                print(f"skip missing path while packaging: {file_path}")
 
     size = package_path.stat().st_size
     sha256 = _sha256_file(package_path)
