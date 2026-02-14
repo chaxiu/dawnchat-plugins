@@ -1,0 +1,69 @@
+name: publish-plugins
+
+on:
+  push:
+    tags:
+      - "plugins-v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag, e.g. plugins-v2026.02.13"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    env:
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.release_tag }}" ]]; then
+            echo "value=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build plugin packages
+        run: |
+          python scripts/package_plugins.py \
+            --release-tag "${{ steps.release_tag.outputs.value }}" \
+            --base-url "https://github.com/${REPO}/releases/download" \
+            --output-dir ".dist/plugins"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.value }}
+          files: |
+            .dist/plugins/*.dawnchat
+            .dist/plugins/plugins.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true
