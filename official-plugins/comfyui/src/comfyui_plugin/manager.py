@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import platform
 import socket
 import subprocess
 import sys
@@ -9,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import aiohttp
+from dawnchat_sdk import PluginDataPaths
 
 logger = logging.getLogger("comfyui_manager")
 
@@ -20,6 +20,8 @@ class ComfyUIManager:
         self._host = "127.0.0.1"
         self._port: Optional[int] = None
         self._starting = False
+        plugin_id = os.getenv("DAWNCHAT_PLUGIN_ID", "com.dawnchat.comfyui").strip() or "com.dawnchat.comfyui"
+        self._paths = PluginDataPaths.from_plugin_id(plugin_id).ensure_dirs()
 
     @property
     def base_url(self) -> str:
@@ -34,24 +36,6 @@ class ComfyUIManager:
             sock.bind((self._host, 0))
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             return int(sock.getsockname()[1])
-
-    def _get_data_dir(self) -> Path:
-        env_dir = os.getenv("DAWNCHAT_DATA_DIR", "").strip()
-        if env_dir:
-            return Path(env_dir).expanduser()
-        system = platform.system()
-        if system == "Darwin":
-            base = Path.home() / "Library" / "Application Support"
-        elif system == "Windows":
-            appdata = os.getenv("APPDATA")
-            if appdata:
-                base = Path(appdata)
-            else:
-                localappdata = os.getenv("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
-                base = Path(localappdata)
-        else:
-            base = Path(os.getenv("XDG_DATA_HOME") or (Path.home() / ".local" / "share"))
-        return base / "DawnChat"
 
     def is_running(self) -> bool:
         return self._process is not None and self._process.poll() is None
@@ -101,9 +85,9 @@ class ComfyUIManager:
                 str(self._port),
                 "--disable-auto-launch",
             ]
-            models_dir = self._get_data_dir() / "comfyui" / "models"
+            models_dir = self._paths.models_dir
             if models_dir.exists():
-                extra_config_path = self._get_data_dir() / "comfyui" / "extra_model_paths.yaml"
+                extra_config_path = self._paths.meta_dir / "extra_model_paths.yaml"
                 extra_config_path.parent.mkdir(parents=True, exist_ok=True)
                 import importlib
                 yaml = importlib.import_module("yaml")
@@ -128,7 +112,7 @@ class ComfyUIManager:
 
             env = os.environ.copy()
             env["PYTHONPATH"] = str(comfyui_dir)
-            if platform.system() == "Darwin":
+            if sys.platform == "darwin":
                 env["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
             logger.info("Starting ComfyUI: %s", " ".join(cmd))

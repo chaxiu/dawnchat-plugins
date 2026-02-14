@@ -14,6 +14,7 @@ from dawnchat_sdk import report_task_progress
 
 from .client import get_comfy_client
 from .manager import ComfyUIManager
+from .model_management import model_manager
 
 logger = logging.getLogger("comfyui_tools")
 
@@ -27,7 +28,17 @@ class ComfyUITools:
     async def status(self) -> dict[str, Any]:
         ready = await self._manager.is_ready()
         running = self._manager.is_running()
-        return {"ready": ready, "running": running, "base_url": self._manager.base_url if running else None}
+        models = await model_manager.list_models()
+        installed_count = len([m for m in models if m.get("installed")])
+        return {
+            "ready": ready,
+            "running": running,
+            "base_url": self._manager.base_url if running else None,
+            "models_dir": str(model_manager.paths.models_dir),
+            "installed_count": installed_count,
+            "total_models": len(models),
+            "has_models": installed_count > 0,
+        }
 
     async def list_workflows(self, task_type: str | None = None) -> dict[str, Any]:
         workflows = self._workflow_registry.list_workflows(task_type=task_type)
@@ -43,6 +54,39 @@ class ComfyUITools:
             for wf in workflows
         ]
         return {"workflows": data, "total": len(data)}
+
+    async def list_models(self, _: dict[str, Any] | None = None) -> dict[str, Any]:
+        models = await model_manager.list_models()
+        return {"code": 200, "message": "success", "data": {"models": models}}
+
+    async def start_model_download(self, args: dict[str, Any]) -> dict[str, Any]:
+        model_id = str(args.get("model_id", "")).strip()
+        if not model_id:
+            return {"code": 400, "message": "model_id_required", "data": None}
+        use_mirror = args.get("use_mirror")
+        resume = bool(args.get("resume", True))
+        return await model_manager.start_download(model_id=model_id, use_mirror=use_mirror, resume=resume)
+
+    async def get_model_download_status(self, args: dict[str, Any]) -> dict[str, Any]:
+        model_id = str(args.get("model_id", "")).strip()
+        if not model_id:
+            return {"code": 400, "message": "model_id_required", "data": None}
+        return await model_manager.get_download_status(model_id=model_id)
+
+    async def pause_model_download(self, args: dict[str, Any]) -> dict[str, Any]:
+        model_id = str(args.get("model_id", "")).strip()
+        if not model_id:
+            return {"code": 400, "message": "model_id_required", "data": None}
+        return await model_manager.pause_download(model_id=model_id)
+
+    async def cancel_model_download(self, args: dict[str, Any]) -> dict[str, Any]:
+        model_id = str(args.get("model_id", "")).strip()
+        if not model_id:
+            return {"code": 400, "message": "model_id_required", "data": None}
+        return await model_manager.cancel_download(model_id=model_id)
+
+    async def list_pending_model_downloads(self, _: dict[str, Any] | None = None) -> dict[str, Any]:
+        return await model_manager.list_pending_downloads()
 
     async def text_to_image(self, args: dict[str, Any]) -> dict[str, Any]:
         args = dict(args)

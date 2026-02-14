@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hello ASR</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      label {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+        display: block;
+      }
+      input, select, button, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0b1220;
+        color: #e2e8f0;
+        padding: 10px;
+      }
+      textarea {
+        min-height: 120px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      button {
+        cursor: pointer;
+        background: #2563eb;
+        border: none;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .title {
+        font-size: 24px;
+        margin: 0 0 8px 0;
+      }
+      .sub {
+        color: #94a3b8;
+        margin: 0;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .status {
+        font-size: 13px;
+        color: #93c5fd;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1 class="title">Hello ASR</h1>
+        <p class="sub">测试 Whisper 转录 + diarization 说话人分离 + merge_speakers。</p>
+      </div>
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <label>音频路径</label>
+            <input id="audioPath" placeholder="/absolute/path/to/audio.wav" />
+          </div>
+          <div>
+            <label>语言（可选）</label>
+            <input id="language" placeholder="如 zh / en" />
+          </div>
+          <div>
+            <label>Whisper 模型（可选）</label>
+            <select id="modelSize">
+              <option value="">自动</option>
+              <option value="tiny">tiny</option>
+              <option value="base">base</option>
+              <option value="small">small</option>
+              <option value="medium">medium</option>
+              <option value="large-v3">large-v3</option>
+            </select>
+          </div>
+          <div>
+            <label>说话人数（可选）</label>
+            <input id="numSpeakers" type="number" min="1" step="1" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button id="runBtn">开始识别</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="status" class="status">等待执行</div>
+      </div>
+
+      <div class="card">
+        <label>结果</label>
+        <textarea id="result" readonly></textarea>
+      </div>
+    </div>
+
+    <script>
+      const runBtn = document.getElementById("runBtn");
+      const statusEl = document.getElementById("status");
+      const resultEl = document.getElementById("result");
+
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      function getPayload() {
+        const audioPath = document.getElementById("audioPath").value.trim();
+        const language = document.getElementById("language").value.trim();
+        const modelSize = document.getElementById("modelSize").value.trim();
+        const numSpeakersRaw = document.getElementById("numSpeakers").value.trim();
+        const payload = { audio_path: audioPath };
+        if (language) payload.language = language;
+        if (modelSize) payload.model_size = modelSize;
+        if (numSpeakersRaw) payload.num_speakers = Number(numSpeakersRaw);
+        return payload;
+      }
+
+      async function run() {
+        const payload = getPayload();
+        if (!payload.audio_path) {
+          setStatus("请输入音频路径");
+          return;
+        }
+        runBtn.disabled = true;
+        setStatus("执行中...");
+        resultEl.value = "";
+        try {
+          const resp = await fetch("/api/asr/transcribe_with_speakers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json();
+          setStatus(`完成：code=${data.code}`);
+          resultEl.value = JSON.stringify(data, null, 2);
+        } catch (err) {
+          setStatus("请求失败");
+          resultEl.value = String(err);
+        } finally {
+          runBtn.disabled = false;
+        }
+      }
+
+      runBtn.addEventListener("click", run);
+    </script>
+  </body>
+</html>

@@ -25,6 +25,10 @@ from .tool_errors import (
     ToolTransportError,
 )
 from .tool_gateway import ToolCallMode, ToolCallOptions, ToolGateway
+from .plugin_data import PluginDataPaths
+from .model_downloads import DownloadSource, DownloadTask, ModelDownloadFacade
+from .model_artifacts import is_repo_installed, is_single_file_installed
+from .download_task_store import DownloadTaskStore
 
 __version__ = "1.0.0"
 __all__ = [
@@ -56,6 +60,13 @@ __all__ = [
     "ToolCancelledError",
     "ToolExecutionError",
     "ToolTransportError",
+    "PluginDataPaths",
+    "DownloadSource",
+    "DownloadTask",
+    "ModelDownloadFacade",
+    "is_repo_installed",
+    "is_single_file_installed",
+    "DownloadTaskStore",
 ]
 
 # UI module is optional and imported separately

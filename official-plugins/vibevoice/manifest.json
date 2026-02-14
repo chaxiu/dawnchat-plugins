@@ -58,10 +58,101 @@
         "executionStrategy": "async",
         "durationHint": "fast",
         "supportsProgress": false
+      },
+      {
+        "name": "models_list",
+        "description": "List VibeVoice models and installation status.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "tts",
+        "priority": 81,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download",
+        "description": "Start downloading a VibeVoice model.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_size": { "type": "string" },
+            "use_mirror": { "type": "boolean" },
+            "resume": { "type": "boolean", "default": true }
+          },
+          "required": ["model_size"]
+        },
+        "category": "tts",
+        "priority": 82,
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_status",
+        "description": "Get VibeVoice model download status.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_size": { "type": "string" }
+          },
+          "required": ["model_size"]
+        },
+        "category": "tts",
+        "priority": 83,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_pause",
+        "description": "Pause VibeVoice model download.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_size": { "type": "string" }
+          },
+          "required": ["model_size"]
+        },
+        "category": "tts",
+        "priority": 84,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_cancel",
+        "description": "Cancel VibeVoice model download.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_size": { "type": "string" }
+          },
+          "required": ["model_size"]
+        },
+        "category": "tts",
+        "priority": 85,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_pending",
+        "description": "List resumable VibeVoice model download tasks.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "tts",
+        "priority": 86,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
       }
     ]
   },
   "permissions": [],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
   "runtime": {
     "system_site_packages": false
   },

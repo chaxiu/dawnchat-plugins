@@ -1,7 +1,10 @@
 import asyncio
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
+
+from dawnchat_sdk import PluginDataPaths
 
 
 @dataclass
@@ -20,6 +23,8 @@ class DiarizationService:
     def __init__(self) -> None:
         self._pipeline = None
         self._model_lock = asyncio.Lock()
+        plugin_id = os.getenv("DAWNCHAT_PLUGIN_ID", "com.dawnchat.diarization").strip() or "com.dawnchat.diarization"
+        self._paths = PluginDataPaths.from_plugin_id(plugin_id).ensure_dirs()
 
     @staticmethod
     def _get_required_model_paths(model_dir: Path) -> list[Path]:
@@ -37,7 +42,13 @@ class DiarizationService:
         plugin_root = Path(__file__).resolve().parent.parent
         return plugin_root / "assets" / self._BUNDLED_MODEL_DIR_NAME
 
+    def _get_runtime_models_dir(self) -> Path:
+        return self._paths.models_dir / self._BUNDLED_MODEL_DIR_NAME
+
     def _get_models_dir(self) -> Path:
+        runtime_dir = self._get_runtime_models_dir()
+        if self._is_model_dir_available(runtime_dir):
+            return runtime_dir
         return self._get_bundled_models_dir()
 
     def is_available(self) -> bool:
@@ -56,6 +67,7 @@ class DiarizationService:
             "available": available,
             "loaded": loaded,
             "model_path": str(self._get_models_dir()) if available else None,
+            "data_dir": str(self._paths.data_dir),
             "device": self._get_device() if loaded else None,
         }
 

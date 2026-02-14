@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from importlib import import_module
 
@@ -14,6 +17,11 @@ from dawnchat_sdk import setup_plugin_logging
 build_mcp_router = import_module("mcp").build_mcp_router
 
 logger = setup_plugin_logging("cosyvoice", level=20)
+
+
+class DownloadStartRequest(BaseModel):
+    resume: bool = True
+    use_mirror: bool | None = None
 
 def load_manifest(base_dir: Path) -> dict:
     manifest_path = base_dir / "manifest.json"
@@ -33,6 +41,7 @@ def create_app(base_dir: Path) -> FastAPI:
         yield
 
     app = FastAPI(lifespan=lifespan)
+    web_dir = base_dir.parent / "web"
     manifest = load_manifest(base_dir.parent)
     manifest_tools = manifest.get("capabilities", {}).get("tools", [])
     plugin_id = os.environ.get("DAWNCHAT_PLUGIN_ID", "")
@@ -41,6 +50,12 @@ def create_app(base_dir: Path) -> FastAPI:
     tool_handlers = {
         "tts_synthesize": handlers.synthesize,
         "tts_status": handlers.status,
+        "models_list": handlers.list_models,
+        "models_download": handlers.start_model_download,
+        "models_download_status": handlers.get_model_download_status,
+        "models_download_pause": handlers.pause_model_download,
+        "models_download_cancel": handlers.cancel_model_download,
+        "models_download_pending": handlers.list_pending_downloads,
     }
 
     api_router = APIRouter(prefix="/api")
@@ -53,9 +68,48 @@ def create_app(base_dir: Path) -> FastAPI:
     async def info():
         return {"status": "ok", "plugin_id": plugin_id, "host_port": host_port}
 
+    @api_router.get("/models")
+    async def list_models():
+        return await handlers.list_models({})
+
+    @api_router.post("/models/{model_id}/download")
+    async def start_download(model_id: str, request: DownloadStartRequest):
+        return await handlers.start_model_download(
+            {
+                "model_id": model_id,
+                "resume": request.resume,
+                "use_mirror": request.use_mirror,
+            }
+        )
+
+    @api_router.get("/models/{model_id}/download/status")
+    async def download_status(model_id: str):
+        return await handlers.get_model_download_status({"model_id": model_id})
+
+    @api_router.post("/models/{model_id}/download/pause")
+    async def pause_download(model_id: str):
+        return await handlers.pause_model_download({"model_id": model_id})
+
+    @api_router.post("/models/{model_id}/download/cancel")
+    async def cancel_download(model_id: str):
+        return await handlers.cancel_model_download({"model_id": model_id})
+
+    @api_router.get("/models/download/pending")
+    async def pending_downloads():
+        return await handlers.list_pending_downloads({})
+
     mcp_router = build_mcp_router(manifest_tools, tool_handlers)
     app.include_router(api_router)
     app.include_router(mcp_router)
+
+    if web_dir.exists():
+        @app.get("/")
+        async def root():
+            html_path = web_dir / "index.html"
+            return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+        app.mount("/", StaticFiles(directory=str(web_dir), html=True), name="web")
+
     return app
 
 

@@ -131,10 +131,101 @@
         "executionStrategy": "async",
         "durationHint": "fast",
         "supportsProgress": false
+      },
+      {
+        "name": "models_list",
+        "description": "List ComfyUI model catalog and installation status.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "media",
+        "priority": 86,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download",
+        "description": "Start downloading a ComfyUI model.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_id": { "type": "string" },
+            "use_mirror": { "type": "boolean" },
+            "resume": { "type": "boolean", "default": true }
+          },
+          "required": ["model_id"]
+        },
+        "category": "media",
+        "priority": 87,
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_status",
+        "description": "Get ComfyUI model download status.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_id": { "type": "string" }
+          },
+          "required": ["model_id"]
+        },
+        "category": "media",
+        "priority": 88,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_pause",
+        "description": "Pause ComfyUI model download.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_id": { "type": "string" }
+          },
+          "required": ["model_id"]
+        },
+        "category": "media",
+        "priority": 89,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_cancel",
+        "description": "Cancel ComfyUI model download.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "model_id": { "type": "string" }
+          },
+          "required": ["model_id"]
+        },
+        "category": "media",
+        "priority": 90,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "models_download_pending",
+        "description": "List resumable ComfyUI model download tasks.",
+        "inputSchema": { "type": "object", "properties": {} },
+        "category": "media",
+        "priority": 91,
+        "executionStrategy": "async",
+        "durationHint": "fast",
+        "supportsProgress": false
       }
     ]
   },
   "permissions": [],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
   "icon": "🧩",
   "tags": ["image", "comfyui", "media"]
 }
