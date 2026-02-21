@@ -50,9 +50,13 @@ python scripts/package_plugins.py \
 ### GitHub Actions 自动发布
 
 工作流文件：`.github/workflows/publish-plugins.yml`
+版本守卫工作流：`.github/workflows/plugin-version-guard.yml`
 
 触发方式：
 
+- `plugin-version-guard.yml`
+  - PR 到 `main`：只做 R2 不可变冲突检查（发现冲突直接阻断合并）
+  - `main` 分支 push / 手动触发：若检测到冲突，自动 patch 升版并创建/更新 Bot PR
 - 推送 tag：`plugins-v*`
 - 手动触发：`workflow_dispatch`（需提供 `release_tag`）
 
@@ -62,6 +66,13 @@ python scripts/package_plugins.py \
 2. 对 Web 插件自动构建 `web-src`（仅保留运行所需产物）
 3. 打包并上传 `*.dawnchat`
 4. 上传 `plugins.json` 到同一 Release
+
+版本冲突自动化行为：
+
+1. 当同 `plugin_id@version` 产物 hash 与 R2 已存在元数据不一致时，视为不可变冲突
+2. 守卫工作流会自动读取冲突列表，对受影响插件执行 patch 升版（同时更新 `manifest.json` 与 `pyproject.toml`）
+3. 自动创建/更新 Bot PR，PR 标题包含受影响插件短名列表，便于 reviewer 快速确认
+4. `publish-plugins.yml` 发布阶段不回写仓库，只做打包与发布（保持幂等和可审计）
 
 ### 最佳实践
 

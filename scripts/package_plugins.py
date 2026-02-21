@@ -58,6 +58,19 @@ class PackageResult:
 
 
 @dataclass
+class ConflictRecord:
+    plugin_id: str
+    version: str
+    package_name: str
+    package_key: str
+    reason: str
+    expected_sha256: str
+    actual_sha256: str
+    expected_size: int
+    actual_size: int
+
+
+@dataclass
 class R2SyncConfig:
     endpoint: str
     bucket: str
@@ -403,6 +416,16 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Build web assets before packaging (default: true)",
     )
+    parser.add_argument(
+        "--check-r2-only",
+        action="store_true",
+        help="Only check immutable conflicts against R2 metadata; do not upload packages/catalog",
+    )
+    parser.add_argument(
+        "--conflicts-json",
+        default="",
+        help="Optional file path to write detected immutable conflicts as JSON",
+    )
     return parser.parse_args()
 
 
@@ -422,8 +445,59 @@ def _build_package_meta(result: PackageResult, package_key: str) -> dict[str, An
     }
 
 
-def _sync_packages_to_r2(packages: list[PackageResult], config: R2SyncConfig) -> None:
+def _build_conflict_record(
+    *,
+    result: PackageResult,
+    package_key: str,
+    reason: str,
+    expected_sha256: str,
+    actual_sha256: str,
+    expected_size: int,
+    actual_size: int,
+) -> ConflictRecord:
+    return ConflictRecord(
+        plugin_id=result.plugin_id,
+        version=result.version,
+        package_name=result.package_name,
+        package_key=package_key,
+        reason=reason,
+        expected_sha256=expected_sha256.lower(),
+        actual_sha256=actual_sha256.lower(),
+        expected_size=expected_size,
+        actual_size=actual_size,
+    )
+
+
+def _write_conflicts_json(conflicts: list[ConflictRecord], path: Path) -> None:
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "conflicts": [
+            {
+                "plugin_id": item.plugin_id,
+                "version": item.version,
+                "package_name": item.package_name,
+                "package_key": item.package_key,
+                "reason": item.reason,
+                "expected_sha256": item.expected_sha256,
+                "actual_sha256": item.actual_sha256,
+                "expected_size": item.expected_size,
+                "actual_size": item.actual_size,
+            }
+            for item in conflicts
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + os.linesep, encoding="utf-8")
+
+
+def _sync_packages_to_r2(
+    packages: list[PackageResult],
+    config: R2SyncConfig,
+    *,
+    check_only: bool = False,
+) -> list[ConflictRecord]:
     client = R2Client(config)
+    conflicts: list[ConflictRecord] = []
     for result in packages:
         package_key = _build_package_key(result)
         meta_key = f"{package_key}.meta.json"
@@ -441,10 +515,18 @@ def _sync_packages_to_r2(packages: list[PackageResult], config: R2SyncConfig) ->
                 or existing_plugin_id != result.plugin_id
                 or existing_version != result.version
             ):
-                raise RuntimeError(
-                    f"R2 meta mismatch for immutable version {result.plugin_id}@{result.version}. "
-                    "Please bump plugin version before publishing."
+                conflicts.append(
+                    _build_conflict_record(
+                        result=result,
+                        package_key=package_key,
+                        reason="meta_mismatch",
+                        expected_sha256=existing_sha,
+                        actual_sha256=result.sha256,
+                        expected_size=existing_size,
+                        actual_size=result.size,
+                    )
                 )
+                continue
             print(f"skip upload (meta matched): {result.plugin_id}@{result.version}")
             result.package_key = package_key
             result.package_url = f"{config.public_base_url}/{package_key}"
@@ -454,10 +536,21 @@ def _sync_packages_to_r2(packages: list[PackageResult], config: R2SyncConfig) ->
             continue
 
         if client.object_exists(package_key):
-            raise RuntimeError(
-                f"Package exists without meta on R2 for {result.plugin_id}@{result.version}: {package_key}. "
-                "Refusing to publish ambiguous metadata."
+            conflicts.append(
+                _build_conflict_record(
+                    result=result,
+                    package_key=package_key,
+                    reason="package_exists_without_meta",
+                    expected_sha256="",
+                    actual_sha256=result.sha256,
+                    expected_size=0,
+                    actual_size=result.size,
+                )
             )
+            continue
+
+        if check_only:
+            continue
 
         package_bytes = result.package_path.read_bytes()
         client.put_object(package_key, package_bytes, "application/octet-stream")
@@ -473,6 +566,7 @@ def _sync_packages_to_r2(packages: list[PackageResult], config: R2SyncConfig) ->
         result.published_sha256 = result.sha256
         result.published_size = result.size
         result.published_file_name = result.package_name
+    return conflicts
 
 
 def _upload_catalog_to_r2(catalog_path: Path, config: R2SyncConfig) -> None:
@@ -508,9 +602,31 @@ def main() -> int:
         print(f"packaged {result.plugin_id}@{result.version} -> {result.package_name}")
 
     r2_config = R2SyncConfig.from_env()
+    conflicts_json_path = Path(args.conflicts_json).resolve() if args.conflicts_json else None
     if r2_config:
-        _sync_packages_to_r2(packages, r2_config)
+        conflicts = _sync_packages_to_r2(
+            packages,
+            r2_config,
+            check_only=bool(args.check_r2_only),
+        )
+        if conflicts_json_path is not None:
+            _write_conflicts_json(conflicts, conflicts_json_path)
+            print(f"wrote conflicts report: {conflicts_json_path}")
+        if conflicts:
+            print("")
+            print("immutable conflicts detected:")
+            for conflict in conflicts:
+                print(
+                    f"- {conflict.plugin_id}@{conflict.version}: {conflict.reason} "
+                    f"(expected_sha256={conflict.expected_sha256 or 'N/A'}, actual_sha256={conflict.actual_sha256})"
+                )
+            return 3
+        if args.check_r2_only:
+            print("no immutable conflicts detected")
+            return 0
     else:
+        if args.check_r2_only:
+            raise RuntimeError("--check-r2-only requires R2 credentials")
         if not args.base_url:
             raise RuntimeError("--base-url is required when R2 sync is disabled")
         base_url = args.base_url.rstrip("/")
@@ -530,7 +646,7 @@ def main() -> int:
         encoding="utf-8",
     )
     print(f"generated catalog: {catalog_path}")
-    if r2_config:
+    if r2_config and not args.check_r2_only:
         _upload_catalog_to_r2(catalog_path, r2_config)
     return 0
 

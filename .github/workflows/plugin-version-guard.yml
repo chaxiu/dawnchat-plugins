@@ -1,0 +1,177 @@
+name: plugin-version-guard
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-version-guard-main
+  cancel-in-progress: false
+
+jobs:
+  check-conflicts-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: dawnchat-plugins
+      R2_PUBLIC_BASE_URL: https://plugins.dawnchat.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check immutable conflicts against R2
+        shell: bash
+        run: |
+          python scripts/package_plugins.py \
+            --release-tag "ci-check-pr" \
+            --output-dir ".dist/plugins" \
+            --check-r2-only
+
+  auto-bump-conflicted-plugins:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: dawnchat-plugins
+      R2_PUBLIC_BASE_URL: https://plugins.dawnchat.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check immutable conflicts against R2
+        id: check_conflicts
+        shell: bash
+        run: |
+          set +e
+          python scripts/package_plugins.py \
+            --release-tag "ci-check" \
+            --output-dir ".dist/plugins" \
+            --check-r2-only \
+            --conflicts-json ".dist/plugins/conflicts.json"
+          status=$?
+          set -e
+
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          if [[ "${status}" -eq 0 ]]; then
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "${status}" -eq 3 ]]; then
+            echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Unexpected exit code from package_plugins.py: ${status}"
+          exit "${status}"
+
+      - name: Auto bump conflicted plugin versions
+        if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        run: |
+          python scripts/bump_plugin_versions.py \
+            --conflicts-json ".dist/plugins/conflicts.json"
+
+      - name: Build conflict summary for PR title
+        if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        id: conflict_summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = Path(".dist/plugins/conflicts.json")
+          payload = json.loads(report.read_text(encoding="utf-8"))
+          conflicts = payload.get("conflicts") or []
+
+          ids = []
+          for item in conflicts:
+              if not isinstance(item, dict):
+                  continue
+              plugin_id = str(item.get("plugin_id") or "").strip()
+              if not plugin_id:
+                  continue
+              if plugin_id not in ids:
+                  ids.append(plugin_id)
+
+          short_names = [plugin_id.rsplit(".", 1)[-1] for plugin_id in ids]
+          title_names = short_names[:5]
+          if len(short_names) > 5:
+              title_names.append(f"+{len(short_names) - 5}")
+          title_suffix = ", ".join(title_names) if title_names else "unknown"
+
+          output_file = Path(os.environ["GITHUB_OUTPUT"])
+          with output_file.open("a", encoding="utf-8") as f:
+              f.write(f"title_suffix={title_suffix}\n")
+              f.write(f"plugin_count={len(short_names)}\n")
+              f.write("plugin_ids<<EOF\n")
+              for plugin_id in ids:
+                  f.write(f"- {plugin_id}\n")
+              f.write("EOF\n")
+          PY
+
+      - name: Create or update bump PR
+        if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: bot/plugin-version-bump
+          delete-branch: false
+          commit-message: "chore(plugins): auto bump conflicted plugin patch versions"
+          title: "chore(plugins): auto bump patch versions (${{ steps.conflict_summary.outputs.title_suffix }})"
+          body: |
+            This PR is generated automatically by `plugin-version-guard`.
+
+            - Detected immutable package conflicts against existing R2 metadata.
+            - Bumped plugin versions using semver patch strategy.
+            - Updated `manifest.json` and `pyproject.toml` (when present).
+            - Impacted plugins count: `${{ steps.conflict_summary.outputs.plugin_count }}`
+
+            Impacted plugin IDs:
+            ${{ steps.conflict_summary.outputs.plugin_ids }}
+          labels: |
+            automated-pr
+            plugins
