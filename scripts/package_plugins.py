@@ -272,8 +272,16 @@ def _build_web_assets(plugin_dir: Path) -> None:
     subprocess.run([pnpm, "exec", "vite", "build"], cwd=web_src, check=True)
 
 
-def _package_plugin(plugin_dir: Path, output_dir: Path, ext: str) -> PackageResult:
-    _build_web_assets(plugin_dir)
+def _package_plugin(
+    plugin_dir: Path,
+    output_dir: Path,
+    ext: str,
+    *,
+    include_web_src: bool,
+    build_web_assets: bool,
+) -> PackageResult:
+    if build_web_assets:
+        _build_web_assets(plugin_dir)
     manifest_path = plugin_dir / "manifest.json"
     manifest = _read_json(manifest_path)
     plugin_id = str(manifest["id"])
@@ -291,8 +299,7 @@ def _package_plugin(plugin_dir: Path, output_dir: Path, ext: str) -> PackageResu
             rel = file_path.relative_to(plugin_dir)
             if _should_exclude(rel):
                 continue
-            # Never ship source frontend; keep built web assets only.
-            if rel.parts and rel.parts[0] == "web-src":
+            if not include_web_src and rel.parts and rel.parts[0] == "web-src":
                 continue
             arcname = (Path(plugin_dir.name) / rel).as_posix()
             try:
@@ -383,6 +390,18 @@ def parse_args() -> argparse.Namespace:
         "--base-url",
         default="",
         help="Base URL of release download endpoint (without trailing slash)",
+    )
+    parser.add_argument(
+        "--include-web-src",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include web-src source files in plugin package (default: true)",
+    )
+    parser.add_argument(
+        "--build-web-assets",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Build web assets before packaging (default: true)",
     )
     return parser.parse_args()
 
@@ -478,7 +497,13 @@ def main() -> int:
 
     packages: list[PackageResult] = []
     for plugin_dir in plugin_dirs:
-        result = _package_plugin(plugin_dir, output_dir, args.ext)
+        result = _package_plugin(
+            plugin_dir,
+            output_dir,
+            args.ext,
+            include_web_src=bool(args.include_web_src),
+            build_web_assets=bool(args.build_web_assets),
+        )
         packages.append(result)
         print(f"packaged {result.plugin_id}@{result.version} -> {result.package_name}")
 
