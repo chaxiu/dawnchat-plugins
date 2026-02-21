@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.comfyui",
   "name": "ComfyUI",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ComfyUI image generation plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
@@ -13,17 +13,45 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "prompt": { "type": "string" },
-            "negative_prompt": { "type": "string", "default": "" },
-            "width": { "type": "integer", "default": 1024 },
-            "height": { "type": "integer", "default": 1024 },
-            "steps": { "type": "integer", "default": 20 },
-            "cfg_scale": { "type": "number", "default": 7.0 },
-            "seed": { "type": "integer", "default": -1 },
-            "model_name": { "type": "string", "default": "sd_xl_base_1.0.safetensors" },
-            "workflow_id": { "type": "string", "default": "sdxl_t2i_basic" }
+            "prompt": {
+              "type": "string"
+            },
+            "negative_prompt": {
+              "type": "string",
+              "default": ""
+            },
+            "width": {
+              "type": "integer",
+              "default": 1024
+            },
+            "height": {
+              "type": "integer",
+              "default": 1024
+            },
+            "steps": {
+              "type": "integer",
+              "default": 20
+            },
+            "cfg_scale": {
+              "type": "number",
+              "default": 7.0
+            },
+            "seed": {
+              "type": "integer",
+              "default": -1
+            },
+            "model_name": {
+              "type": "string",
+              "default": "sd_xl_base_1.0.safetensors"
+            },
+            "workflow_id": {
+              "type": "string",
+              "default": "sdxl_t2i_basic"
+            }
           },
-          "required": ["prompt"]
+          "required": [
+            "prompt"
+          ]
         },
         "category": "media",
         "priority": 50,
@@ -38,19 +66,53 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "image_path": { "type": "string" },
-            "prompt": { "type": "string" },
-            "negative_prompt": { "type": "string", "default": "" },
-            "width": { "type": "integer", "default": 1024 },
-            "height": { "type": "integer", "default": 1024 },
-            "strength": { "type": "number", "default": 0.6 },
-            "steps": { "type": "integer", "default": 20 },
-            "cfg_scale": { "type": "number", "default": 7.0 },
-            "seed": { "type": "integer", "default": -1 },
-            "model_name": { "type": "string", "default": "sd_xl_base_1.0.safetensors" },
-            "workflow_id": { "type": "string", "default": "sdxl_i2i_basic" }
+            "image_path": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "negative_prompt": {
+              "type": "string",
+              "default": ""
+            },
+            "width": {
+              "type": "integer",
+              "default": 1024
+            },
+            "height": {
+              "type": "integer",
+              "default": 1024
+            },
+            "strength": {
+              "type": "number",
+              "default": 0.6
+            },
+            "steps": {
+              "type": "integer",
+              "default": 20
+            },
+            "cfg_scale": {
+              "type": "number",
+              "default": 7.0
+            },
+            "seed": {
+              "type": "integer",
+              "default": -1
+            },
+            "model_name": {
+              "type": "string",
+              "default": "sd_xl_base_1.0.safetensors"
+            },
+            "workflow_id": {
+              "type": "string",
+              "default": "sdxl_i2i_basic"
+            }
           },
-          "required": ["image_path", "prompt"]
+          "required": [
+            "image_path",
+            "prompt"
+          ]
         },
         "category": "media",
         "priority": 55,
@@ -65,20 +127,57 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "image_path": { "type": "string" },
-            "mask_path": { "type": "string" },
-            "prompt": { "type": "string" },
-            "negative_prompt": { "type": "string", "default": "" },
-            "width": { "type": "integer", "default": 1024 },
-            "height": { "type": "integer", "default": 1024 },
-            "strength": { "type": "number", "default": 0.8 },
-            "steps": { "type": "integer", "default": 25 },
-            "cfg_scale": { "type": "number", "default": 7.0 },
-            "seed": { "type": "integer", "default": -1 },
-            "model_name": { "type": "string", "default": "sd_xl_inpaint_1.0.safetensors" },
-            "workflow_id": { "type": "string", "default": "sdxl_inpaint_basic" }
+            "image_path": {
+              "type": "string"
+            },
+            "mask_path": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "negative_prompt": {
+              "type": "string",
+              "default": ""
+            },
+            "width": {
+              "type": "integer",
+              "default": 1024
+            },
+            "height": {
+              "type": "integer",
+              "default": 1024
+            },
+            "strength": {
+              "type": "number",
+              "default": 0.8
+            },
+            "steps": {
+              "type": "integer",
+              "default": 25
+            },
+            "cfg_scale": {
+              "type": "number",
+              "default": 7.0
+            },
+            "seed": {
+              "type": "integer",
+              "default": -1
+            },
+            "model_name": {
+              "type": "string",
+              "default": "sd_xl_inpaint_1.0.safetensors"
+            },
+            "workflow_id": {
+              "type": "string",
+              "default": "sdxl_inpaint_basic"
+            }
           },
-          "required": ["image_path", "mask_path", "prompt"]
+          "required": [
+            "image_path",
+            "mask_path",
+            "prompt"
+          ]
         },
         "category": "media",
         "priority": 60,
@@ -93,12 +192,25 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "image_path": { "type": "string" },
-            "scale": { "type": "integer", "default": 4 },
-            "model_name": { "type": "string", "default": "RealESRGAN_x4plus.pth" },
-            "workflow_id": { "type": "string", "default": "upscale_4x" }
+            "image_path": {
+              "type": "string"
+            },
+            "scale": {
+              "type": "integer",
+              "default": 4
+            },
+            "model_name": {
+              "type": "string",
+              "default": "RealESRGAN_x4plus.pth"
+            },
+            "workflow_id": {
+              "type": "string",
+              "default": "upscale_4x"
+            }
           },
-          "required": ["image_path"]
+          "required": [
+            "image_path"
+          ]
         },
         "category": "media",
         "priority": 65,
@@ -110,7 +222,10 @@
       {
         "name": "status",
         "description": "Get status of the ComfyUI service.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "media",
         "priority": 80,
         "executionStrategy": "async",
@@ -123,7 +238,9 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "task_type": { "type": "string" }
+            "task_type": {
+              "type": "string"
+            }
           }
         },
         "category": "media",
@@ -135,7 +252,10 @@
       {
         "name": "models_list",
         "description": "List ComfyUI model catalog and installation status.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "media",
         "priority": 86,
         "executionStrategy": "async",
@@ -148,11 +268,20 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" },
-            "use_mirror": { "type": "boolean" },
-            "resume": { "type": "boolean", "default": true }
+            "model_id": {
+              "type": "string"
+            },
+            "use_mirror": {
+              "type": "boolean"
+            },
+            "resume": {
+              "type": "boolean",
+              "default": true
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "media",
         "priority": 87,
@@ -166,9 +295,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "media",
         "priority": 88,
@@ -182,9 +315,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "media",
         "priority": 89,
@@ -198,9 +335,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "media",
         "priority": 90,
@@ -211,7 +352,10 @@
       {
         "name": "models_download_pending",
         "description": "List resumable ComfyUI model download tasks.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "media",
         "priority": 91,
         "executionStrategy": "async",
@@ -227,5 +371,9 @@
     "framework": "vue"
   },
   "icon": "🧩",
-  "tags": ["image", "comfyui", "media"]
+  "tags": [
+    "image",
+    "comfyui",
+    "media"
+  ]
 }

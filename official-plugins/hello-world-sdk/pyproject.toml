@@ -1,6 +1,6 @@
 [project]
 name = "hello-world-sdk"
-version = "1.0.0"
+version = "1.0.1"
 description = "A demo plugin showcasing DawnChat SDK capabilities"
 requires-python = ">=3.11"
 dependencies = [

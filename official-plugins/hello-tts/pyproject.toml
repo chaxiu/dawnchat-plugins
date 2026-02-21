@@ -1,6 +1,6 @@
 [project]
 name = "hello-tts"
-version = "1.0.0"
+version = "1.0.1"
 description = "A simple TTS demo plugin for DawnChat"
 requires-python = ">=3.11"
 dependencies = [

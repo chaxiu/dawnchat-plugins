@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.hello-asr",
   "name": "Hello ASR",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "ASR testing plugin for Whisper and Speaker Diarization",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
@@ -13,16 +13,43 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "audio_path": { "type": "string", "description": "Audio path" },
-            "language": { "type": ["string", "null"], "default": null },
-            "model_size": {
-              "type": ["string", "null"],
-              "enum": ["tiny", "base", "small", "medium", "large-v3", null],
+            "audio_path": {
+              "type": "string",
+              "description": "Audio path"
+            },
+            "language": {
+              "type": [
+                "string",
+                "null"
+              ],
               "default": null
             },
-            "num_speakers": { "type": ["integer", "null"], "default": null }
+            "model_size": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "tiny",
+                "base",
+                "small",
+                "medium",
+                "large-v3",
+                null
+              ],
+              "default": null
+            },
+            "num_speakers": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "default": null
+            }
           },
-          "required": ["audio_path"]
+          "required": [
+            "audio_path"
+          ]
         },
         "category": "media",
         "priority": 60,
@@ -33,12 +60,19 @@
       }
     ]
   },
-  "permissions": ["tools.call"],
+  "permissions": [
+    "tools.call"
+  ],
   "ui": {
     "type": "web",
     "entry": "/",
     "framework": "html"
   },
   "icon": "🎙️",
-  "tags": ["asr", "diarization", "whisper", "demo"]
+  "tags": [
+    "asr",
+    "diarization",
+    "whisper",
+    "demo"
+  ]
 }
