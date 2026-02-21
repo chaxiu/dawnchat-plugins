@@ -1,6 +1,6 @@
 [project]
 name = "hello-world-nice-ui"
-version = "1.0.0"
+version = "1.0.1"
 description = "A simple Hello World plugin for DawnChat using NiceGUI"
 requires-python = ">=3.11"
 dependencies = [

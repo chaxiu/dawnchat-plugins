@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.vibevoice",
   "name": "VibeVoice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "VibeVoice TTS plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
@@ -13,18 +13,43 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "text": { "type": "string" },
-            "speaker": { "type": "string", "default": "Emma" },
-            "quality": { "type": "string" },
-            "model_size": { "type": "string" },
-            "model_path": { "type": "string" },
-            "voices_dir": { "type": "string" },
-            "output_path": { "type": "string" },
-            "cfg_scale": { "type": "number" },
-            "ddpm_steps": { "type": "integer" },
-            "timeout_seconds": { "type": "number" }
+            "text": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string",
+              "default": "Emma"
+            },
+            "quality": {
+              "type": "string"
+            },
+            "model_size": {
+              "type": "string"
+            },
+            "model_path": {
+              "type": "string"
+            },
+            "voices_dir": {
+              "type": "string"
+            },
+            "output_path": {
+              "type": "string"
+            },
+            "cfg_scale": {
+              "type": "number"
+            },
+            "ddpm_steps": {
+              "type": "integer"
+            },
+            "timeout_seconds": {
+              "type": "number"
+            }
           },
-          "required": ["text", "model_path", "voices_dir"]
+          "required": [
+            "text",
+            "model_path",
+            "voices_dir"
+          ]
         },
         "category": "tts",
         "priority": 50,
@@ -39,9 +64,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "voices_dir": { "type": "string" }
+            "voices_dir": {
+              "type": "string"
+            }
           },
-          "required": ["voices_dir"]
+          "required": [
+            "voices_dir"
+          ]
         },
         "category": "tts",
         "priority": 70,
@@ -52,7 +81,10 @@
       {
         "name": "tts_status",
         "description": "Get VibeVoice engine status.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 80,
         "executionStrategy": "async",
@@ -62,7 +94,10 @@
       {
         "name": "models_list",
         "description": "List VibeVoice models and installation status.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 81,
         "executionStrategy": "async",
@@ -75,11 +110,20 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_size": { "type": "string" },
-            "use_mirror": { "type": "boolean" },
-            "resume": { "type": "boolean", "default": true }
+            "model_size": {
+              "type": "string"
+            },
+            "use_mirror": {
+              "type": "boolean"
+            },
+            "resume": {
+              "type": "boolean",
+              "default": true
+            }
           },
-          "required": ["model_size"]
+          "required": [
+            "model_size"
+          ]
         },
         "category": "tts",
         "priority": 82,
@@ -93,9 +137,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_size": { "type": "string" }
+            "model_size": {
+              "type": "string"
+            }
           },
-          "required": ["model_size"]
+          "required": [
+            "model_size"
+          ]
         },
         "category": "tts",
         "priority": 83,
@@ -109,9 +157,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_size": { "type": "string" }
+            "model_size": {
+              "type": "string"
+            }
           },
-          "required": ["model_size"]
+          "required": [
+            "model_size"
+          ]
         },
         "category": "tts",
         "priority": 84,
@@ -125,9 +177,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_size": { "type": "string" }
+            "model_size": {
+              "type": "string"
+            }
           },
-          "required": ["model_size"]
+          "required": [
+            "model_size"
+          ]
         },
         "category": "tts",
         "priority": 85,
@@ -138,7 +194,10 @@
       {
         "name": "models_download_pending",
         "description": "List resumable VibeVoice model download tasks.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 86,
         "executionStrategy": "async",
@@ -157,5 +216,9 @@
     "system_site_packages": false
   },
   "icon": "🗣️",
-  "tags": ["tts", "audio", "vibevoice"]
+  "tags": [
+    "tts",
+    "audio",
+    "vibevoice"
+  ]
 }

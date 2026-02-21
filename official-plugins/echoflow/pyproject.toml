@@ -1,6 +1,6 @@
 [project]
 name = "echoflow"
-version = "1.0.0"
+version = "1.0.1"
 description = "English pronunciation training plugin for DawnChat"
 requires-python = ">=3.10"
 dependencies = [

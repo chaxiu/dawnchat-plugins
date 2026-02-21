@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.cosyvoice",
   "name": "CosyVoice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CosyVoice TTS plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
@@ -13,20 +13,49 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" },
-            "model_path": { "type": "string" },
-            "mode": { "type": "string", "default": "sft" },
-            "text": { "type": "string" },
-            "speaker": { "type": "string" },
-            "prompt_wav_path": { "type": "string" },
-            "prompt_text": { "type": "string" },
-            "instruct_text": { "type": "string" },
-            "output_path": { "type": "string" },
-            "speed": { "type": "number" },
-            "text_frontend": { "type": "boolean" },
-            "timeout_seconds": { "type": "number" }
+            "model_id": {
+              "type": "string"
+            },
+            "model_path": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string",
+              "default": "sft"
+            },
+            "text": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "prompt_wav_path": {
+              "type": "string"
+            },
+            "prompt_text": {
+              "type": "string"
+            },
+            "instruct_text": {
+              "type": "string"
+            },
+            "output_path": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "number"
+            },
+            "text_frontend": {
+              "type": "boolean"
+            },
+            "timeout_seconds": {
+              "type": "number"
+            }
           },
-          "required": ["model_id", "model_path", "text"]
+          "required": [
+            "model_id",
+            "model_path",
+            "text"
+          ]
         },
         "category": "tts",
         "priority": 50,
@@ -38,7 +67,10 @@
       {
         "name": "tts_status",
         "description": "Get CosyVoice engine status.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 80,
         "executionStrategy": "async",
@@ -48,7 +80,10 @@
       {
         "name": "models_list",
         "description": "List CosyVoice models and installation status.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 81,
         "executionStrategy": "async",
@@ -61,11 +96,20 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" },
-            "use_mirror": { "type": "boolean" },
-            "resume": { "type": "boolean", "default": true }
+            "model_id": {
+              "type": "string"
+            },
+            "use_mirror": {
+              "type": "boolean"
+            },
+            "resume": {
+              "type": "boolean",
+              "default": true
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "tts",
         "priority": 82,
@@ -79,9 +123,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "tts",
         "priority": 83,
@@ -95,9 +143,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "tts",
         "priority": 84,
@@ -111,9 +163,13 @@
         "inputSchema": {
           "type": "object",
           "properties": {
-            "model_id": { "type": "string" }
+            "model_id": {
+              "type": "string"
+            }
           },
-          "required": ["model_id"]
+          "required": [
+            "model_id"
+          ]
         },
         "category": "tts",
         "priority": 85,
@@ -124,7 +180,10 @@
       {
         "name": "models_download_pending",
         "description": "List resumable CosyVoice model download tasks.",
-        "inputSchema": { "type": "object", "properties": {} },
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
         "category": "tts",
         "priority": 86,
         "executionStrategy": "async",
@@ -140,5 +199,9 @@
     "framework": "vue"
   },
   "icon": "🎙️",
-  "tags": ["tts", "audio", "cosyvoice"]
+  "tags": [
+    "tts",
+    "audio",
+    "cosyvoice"
+  ]
 }

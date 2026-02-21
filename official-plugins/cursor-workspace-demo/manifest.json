@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.cursor-workspace-demo",
   "name": "Cursor Workspace Demo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Workspace demo plugin for validating multi-root indexing",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",

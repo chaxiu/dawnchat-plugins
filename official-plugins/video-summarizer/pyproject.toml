@@ -1,6 +1,6 @@
 [project]
 name = "video-summarizer"
-version = "1.0.0"
+version = "1.0.1"
 description = "Audio/Video summarizer plugin for DawnChat"
 requires-python = ">=3.11"
 dependencies = [

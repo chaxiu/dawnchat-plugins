@@ -1,6 +1,6 @@
 [project]
 name = "hello-world-vue"
-version = "1.0.0"
+version = "1.0.1"
 description = "Independent frontend/backend demo plugin using Vue and FastAPI"
 requires-python = ">=3.11"
 dependencies = [
