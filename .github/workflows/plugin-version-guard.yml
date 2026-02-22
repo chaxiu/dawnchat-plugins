@@ -129,14 +129,7 @@ jobs:
           if [[ "${status}" -eq 3 ]]; then
             echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
             if [[ -f ".dist/plugins/conflicts.json" ]]; then
-              conflict_count=$(python - <<'PY'
-              import json
-              from pathlib import Path
-              payload = json.loads(Path(".dist/plugins/conflicts.json").read_text(encoding="utf-8"))
-              conflicts = payload.get("conflicts") or []
-              print(len([x for x in conflicts if isinstance(x, dict)]))
-              PY
-              )
+              conflict_count=$(python -c 'import json; from pathlib import Path; payload = json.loads(Path(".dist/plugins/conflicts.json").read_text(encoding="utf-8")); conflicts = payload.get("conflicts") or []; print(len([x for x in conflicts if isinstance(x, dict)]))')
             else
               conflict_count=0
             fi
