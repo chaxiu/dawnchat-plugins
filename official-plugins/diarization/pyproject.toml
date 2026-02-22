@@ -1,6 +1,6 @@
 [project]
 name = "dawnchat-diarization-plugin"
-version = "1.0.1"
+version = "1.0.2"
 description = "Speaker diarization plugin for DawnChat"
 requires-python = ">=3.11"
 dependencies = [

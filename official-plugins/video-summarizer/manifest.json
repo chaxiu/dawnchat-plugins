@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.video-summarizer",
   "name": "音视频摘要",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "将音视频内容转为结构化笔记，支持本地文件和在线视频",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",

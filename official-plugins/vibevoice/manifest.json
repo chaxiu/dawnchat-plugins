@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.vibevoice",
   "name": "VibeVoice",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "VibeVoice TTS plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
