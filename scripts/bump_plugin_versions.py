@@ -118,6 +118,8 @@ def _load_conflicts(conflicts_json: Path) -> dict[str, str]:
                 f"Conflicting versions in report for plugin {plugin_id}: {prev} vs {version}"
             )
         by_plugin[plugin_id] = version
+    if not by_plugin and entries:
+        raise RuntimeError(f"No valid conflict entries found in {conflicts_json}")
     return by_plugin
 
 
@@ -136,6 +138,7 @@ def main() -> int:
     if not conflict_versions:
         print("no conflicts found, nothing to bump")
         return 0
+    print(f"conflict plugins to process: {len(conflict_versions)}")
 
     plugin_dirs = _collect_plugin_dirs(plugins_root)
     results: list[BumpResult] = []
@@ -167,6 +170,18 @@ def main() -> int:
 
     for item in results:
         print(f"bumped {item.plugin_id}: {item.old_version} -> {item.new_version}")
+    touched_files: set[Path] = set()
+    pyproject_updates = 0
+    for item in results:
+        touched_files.add(item.manifest_path)
+        if item.pyproject_path is not None:
+            touched_files.add(item.pyproject_path)
+            pyproject_updates += 1
+    print(
+        "bump summary: "
+        f"plugins={len(results)}, manifest_updates={len(results)}, "
+        f"pyproject_updates={pyproject_updates}, touched_files={len(touched_files)}"
+    )
     return 0
 
 

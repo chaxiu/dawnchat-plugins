@@ -20,6 +20,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZipInfo
 
 
 EXCLUDE_DIRS = {
@@ -39,6 +40,8 @@ EXCLUDE_DIRS = {
 }
 EXCLUDE_SUFFIXES = {".pyc", ".pyo", ".log", ".tmp", ".swp"}
 EXCLUDE_FILES = {".DS_Store", "Thumbs.db"}
+REPRODUCIBLE_ZIP_DATETIME = (1980, 1, 1, 0, 0, 0)
+DEFAULT_FILE_MODE = 0o644
 
 
 @dataclass
@@ -353,6 +356,37 @@ def _build_web_assets(plugin_dir: Path) -> None:
     subprocess.run(build_cmd, cwd=web_src, check=True)
 
 
+def _iter_packable_files(plugin_dir: Path, *, include_web_src: bool) -> list[tuple[Path, str]]:
+    entries: list[tuple[Path, str]] = []
+    for file_path in plugin_dir.rglob("*"):
+        if file_path.is_dir():
+            continue
+        if _is_dangling_symlink(file_path):
+            print(f"skip dangling symlink: {file_path}")
+            continue
+        rel = file_path.relative_to(plugin_dir)
+        if _should_exclude(rel):
+            continue
+        if not include_web_src and rel.parts and rel.parts[0] == "web-src":
+            continue
+        arcname = (Path(plugin_dir.name) / rel).as_posix()
+        entries.append((file_path, arcname))
+    # Stable ordering makes archive layout deterministic across OS/filesystems.
+    entries.sort(key=lambda item: item[1])
+    return entries
+
+
+def _build_zip_info(file_path: Path, arcname: str) -> ZipInfo:
+    info = ZipInfo(filename=arcname, date_time=REPRODUCIBLE_ZIP_DATETIME)
+    info.compress_type = ZIP_DEFLATED
+    mode = file_path.stat().st_mode & 0o777
+    if mode == 0:
+        mode = DEFAULT_FILE_MODE
+    info.create_system = 3  # UNIX
+    info.external_attr = (mode & 0xFFFF) << 16
+    return info
+
+
 def _package_plugin(
     plugin_dir: Path,
     output_dir: Path,
@@ -370,21 +404,11 @@ def _package_plugin(
     package_name = f"{plugin_id}-{version}{ext}"
     package_path = output_dir / package_name
 
-    with ZipFile(package_path, "w", ZIP_DEFLATED, compresslevel=9) as zf:
-        for file_path in plugin_dir.rglob("*"):
-            if file_path.is_dir():
-                continue
-            if _is_dangling_symlink(file_path):
-                print(f"skip dangling symlink: {file_path}")
-                continue
-            rel = file_path.relative_to(plugin_dir)
-            if _should_exclude(rel):
-                continue
-            if not include_web_src and rel.parts and rel.parts[0] == "web-src":
-                continue
-            arcname = (Path(plugin_dir.name) / rel).as_posix()
+    with ZipFile(package_path, "w", compression=ZIP_DEFLATED, compresslevel=9) as zf:
+        for file_path, arcname in _iter_packable_files(plugin_dir, include_web_src=include_web_src):
             try:
-                zf.write(file_path, arcname)
+                info = _build_zip_info(file_path, arcname)
+                zf.writestr(info, file_path.read_bytes(), compress_type=ZIP_DEFLATED)
             except FileNotFoundError:
                 # Guard against files disappearing during walk (or dangling links).
                 print(f"skip missing path while packaging: {file_path}")
@@ -494,6 +518,12 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Optional file path to write detected immutable conflicts as JSON",
     )
+    parser.add_argument(
+        "--verify-reproducible",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Package each plugin twice (without rebuilding web assets) and fail if checksums differ",
+    )
     return parser.parse_args()
 
 
@@ -556,6 +586,40 @@ def _write_conflicts_json(conflicts: list[ConflictRecord], path: Path) -> None:
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + os.linesep, encoding="utf-8")
+
+
+def _verify_reproducible_packages(
+    plugin_dirs: list[Path],
+    output_dir: Path,
+    ext: str,
+    *,
+    include_web_src: bool,
+) -> None:
+    verification_dir = output_dir / "_repro_check"
+    if verification_dir.exists():
+        shutil.rmtree(verification_dir)
+    verification_dir.mkdir(parents=True, exist_ok=True)
+    for plugin_dir in plugin_dirs:
+        first = _package_plugin(
+            plugin_dir,
+            output_dir,
+            ext,
+            include_web_src=include_web_src,
+            build_web_assets=False,
+        )
+        second = _package_plugin(
+            plugin_dir,
+            verification_dir,
+            ext,
+            include_web_src=include_web_src,
+            build_web_assets=False,
+        )
+        if first.sha256.lower() != second.sha256.lower() or first.size != second.size:
+            raise RuntimeError(
+                "Non-reproducible package detected for "
+                f"{first.plugin_id}@{first.version}: first_sha={first.sha256}, second_sha={second.sha256}"
+            )
+    print(f"reproducibility check passed for {len(plugin_dirs)} plugin(s)")
 
 
 def _sync_packages_to_r2(
@@ -669,6 +733,14 @@ def main() -> int:
         packages.append(result)
         print(f"packaged {result.plugin_id}@{result.version} -> {result.package_name}")
 
+    if bool(args.verify_reproducible):
+        _verify_reproducible_packages(
+            plugin_dirs,
+            output_dir,
+            args.ext,
+            include_web_src=bool(args.include_web_src),
+        )
+
     r2_config = R2SyncConfig.from_env()
     conflicts_json_path = Path(args.conflicts_json).resolve() if args.conflicts_json else None
     if r2_config:
@@ -681,8 +753,11 @@ def main() -> int:
             _write_conflicts_json(conflicts, conflicts_json_path)
             print(f"wrote conflicts report: {conflicts_json_path}")
         if conflicts:
+            conflict_ids = sorted({item.plugin_id for item in conflicts})
             print("")
             print("immutable conflicts detected:")
+            print(f"total_conflicts={len(conflicts)}, plugins={len(conflict_ids)}")
+            print(f"conflicted_plugin_ids={','.join(conflict_ids)}")
             for conflict in conflicts:
                 print(
                     f"- {conflict.plugin_id}@{conflict.version}: {conflict.reason} "

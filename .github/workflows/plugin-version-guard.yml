@@ -61,7 +61,8 @@ jobs:
           python scripts/package_plugins.py \
             --release-tag "ci-check-pr" \
             --output-dir ".dist/plugins" \
-            --check-r2-only
+            --check-r2-only \
+            --verify-reproducible
 
   auto-bump-conflicted-plugins:
     if: github.event_name != 'pull_request'
@@ -114,17 +115,33 @@ jobs:
             --release-tag "ci-check" \
             --output-dir ".dist/plugins" \
             --check-r2-only \
-            --conflicts-json ".dist/plugins/conflicts.json"
+            --conflicts-json ".dist/plugins/conflicts.json" \
+            --verify-reproducible
           status=$?
           set -e
 
           echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
           if [[ "${status}" -eq 0 ]]; then
             echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            echo "conflict_count=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "${status}" -eq 3 ]]; then
             echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            if [[ -f ".dist/plugins/conflicts.json" ]]; then
+              conflict_count=$(python - <<'PY'
+              import json
+              from pathlib import Path
+              payload = json.loads(Path(".dist/plugins/conflicts.json").read_text(encoding="utf-8"))
+              conflicts = payload.get("conflicts") or []
+              print(len([x for x in conflicts if isinstance(x, dict)]))
+              PY
+              )
+            else
+              conflict_count=0
+            fi
+            echo "conflict_count=${conflict_count}" >> "$GITHUB_OUTPUT"
+            echo "detected immutable conflicts: ${conflict_count}"
             exit 0
           fi
           echo "Unexpected exit code from package_plugins.py: ${status}"
@@ -178,6 +195,7 @@ jobs:
 
       - name: Create or update bump PR
         if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        id: create_pr
         uses: peter-evans/create-pull-request@v6
         with:
           branch: bot/plugin-version-bump
@@ -197,3 +215,21 @@ jobs:
           labels: |
             automated-pr
             plugins
+
+      - name: Validate PR creation result
+        if: steps.check_conflicts.outputs.has_conflicts == 'true'
+        shell: bash
+        run: |
+          operation="${{ steps.create_pr.outputs.pull-request-operation }}"
+          pr_number="${{ steps.create_pr.outputs.pull-request-number }}"
+          pr_url="${{ steps.create_pr.outputs.pull-request-url }}"
+          echo "conflict_count=${{ steps.check_conflicts.outputs.conflict_count }}"
+          echo "pull-request-operation=${operation}"
+          echo "pull-request-number=${pr_number}"
+          echo "pull-request-url=${pr_url}"
+
+          if [[ "${operation}" == "none" ]]; then
+            echo "Conflict(s) detected but create-pull-request returned operation=none."
+            echo "Please inspect branch bot/plugin-version-bump and workflow logs for skipped commits or permission issues."
+            exit 1
+          fi
