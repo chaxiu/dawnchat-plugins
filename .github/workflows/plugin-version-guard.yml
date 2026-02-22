@@ -44,6 +44,17 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Print toolchain versions
+        shell: bash
+        run: |
+          python --version
+          node --version
+          pnpm --version
+          bun --version
+
       - name: Check immutable conflicts against R2
         shell: bash
         run: |
@@ -82,6 +93,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Print toolchain versions
+        shell: bash
+        run: |
+          python --version
+          node --version
+          pnpm --version
+          bun --version
 
       - name: Check immutable conflicts against R2
         id: check_conflicts

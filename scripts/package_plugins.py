@@ -263,6 +263,73 @@ def _is_dangling_symlink(path: Path) -> bool:
     return path.is_symlink() and not path.exists()
 
 
+def _resolve_web_package_manager(web_src: Path) -> tuple[list[str], list[str], str]:
+    pnpm_lock = web_src / "pnpm-lock.yaml"
+    bun_lock = web_src / "bun.lock"
+    bun_lockb = web_src / "bun.lockb"
+    npm_lock = web_src / "package-lock.json"
+    yarn_lock = web_src / "yarn.lock"
+
+    pnpm = shutil.which("pnpm")
+    bun = shutil.which("bun")
+    npm = shutil.which("npm")
+    yarn = shutil.which("yarn")
+
+    if pnpm_lock.exists():
+        if not pnpm:
+            raise RuntimeError(f"pnpm-lock.yaml exists but pnpm not found for {web_src}")
+        return (
+            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+            [pnpm, "run", "build"],
+            "pnpm(lockfile)",
+        )
+    if bun_lock.exists() or bun_lockb.exists():
+        if not bun:
+            raise RuntimeError(f"bun.lock exists but bun not found for {web_src}")
+        return (
+            [bun, "install"],
+            [bun, "run", "build"],
+            "bun(lockfile)",
+        )
+    if npm_lock.exists():
+        if not npm:
+            raise RuntimeError(f"package-lock.json exists but npm not found for {web_src}")
+        return (
+            [npm, "install"],
+            [npm, "run", "build"],
+            "npm(lockfile)",
+        )
+    if yarn_lock.exists():
+        if not yarn:
+            raise RuntimeError(f"yarn.lock exists but yarn not found for {web_src}")
+        return (
+            [yarn, "install"],
+            [yarn, "build"],
+            "yarn(lockfile)",
+        )
+
+    if pnpm:
+        return (
+            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+            [pnpm, "run", "build"],
+            "pnpm(fallback)",
+        )
+    if bun:
+        return (
+            [bun, "install"],
+            [bun, "run", "build"],
+            "bun(fallback)",
+        )
+    if npm:
+        return (
+            [npm, "install"],
+            [npm, "run", "build"],
+            "npm(fallback)",
+        )
+
+    raise RuntimeError(f"No package manager found for {web_src}")
+
+
 def _build_web_assets(plugin_dir: Path) -> None:
     manifest = _read_json(plugin_dir / "manifest.json")
     ui = manifest.get("ui") or {}
@@ -273,16 +340,17 @@ def _build_web_assets(plugin_dir: Path) -> None:
     if not web_src.exists():
         return
 
-    pnpm = shutil.which("pnpm")
-    if not pnpm:
-        raise RuntimeError(f"pnpm not found, cannot build web-src for {plugin_dir.name}")
+    install_cmd, build_cmd, manager_label = _resolve_web_package_manager(web_src)
+    print(f"[web-build] {plugin_dir.name}: manager={manager_label}")
+    print(f"[web-build] {plugin_dir.name}: install={' '.join(install_cmd)}")
+    print(f"[web-build] {plugin_dir.name}: build={' '.join(build_cmd)}")
 
     subprocess.run(
-        [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+        install_cmd,
         cwd=web_src,
         check=True,
     )
-    subprocess.run([pnpm, "exec", "vite", "build"], cwd=web_src, check=True)
+    subprocess.run(build_cmd, cwd=web_src, check=True)
 
 
 def _package_plugin(

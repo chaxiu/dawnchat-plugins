@@ -213,7 +213,7 @@
     "framework": "vue"
   },
   "runtime": {
-    "system_site_packages": false
+    "isolated": true
   },
   "icon": "🗣️",
   "tags": [

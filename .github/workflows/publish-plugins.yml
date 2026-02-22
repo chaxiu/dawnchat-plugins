@@ -50,6 +50,17 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Print toolchain versions
+        shell: bash
+        run: |
+          python --version
+          node --version
+          pnpm --version
+          bun --version
+
       - name: Resolve release tag
         id: release_tag
         shell: bash
