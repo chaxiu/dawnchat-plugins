@@ -84,6 +84,7 @@ jobs:
           tag_name: ${{ steps.release_tag.outputs.value }}
           files: |
             .dist/plugins/*.dawnchat
+            .dist/plugins/opencode-rules-*.zip
             .dist/plugins/plugins.json
           fail_on_unmatched_files: true
           generate_release_notes: true

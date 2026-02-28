@@ -2,31 +2,66 @@
   "id": "com.dawnchat.hello-world",
   "name": "Hello World",
   "version": "1.0.1",
-  "description": "A simple Hello World plugin demonstrating DawnChat Plugin Platform",
+  "description": "Independent frontend/backend demo with Vue and FastAPI",
   "author": "DawnChat Team",
-  "license": "MIT",
-  "sdk_version": "^1.0.0",
   "min_host_version": "1.0.0",
-  "permissions": [],
   "capabilities": {
-    "gradio": {
-      "enabled": true,
-      "entry": "src/app.py"
-    },
-    "cards": {
-      "enabled": false
-    },
-    "chat": {
-      "enabled": false
-    },
-    "tools": []
+    "tools": [
+      {
+        "name": "hello_world",
+        "description": "返回问候语",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "姓名"
+            }
+          }
+        },
+        "category": "utility",
+        "priority": 50,
+        "resultDescription": "问候结果：{{ data.greeting }}",
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      },
+      {
+        "name": "hello_world_async",
+        "description": "异步返回问候语（用于长任务链路测试）",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "姓名"
+            },
+            "delay_seconds": {
+              "type": "number",
+              "description": "延迟秒数，默认 2 秒",
+              "default": 2
+            }
+          }
+        },
+        "category": "utility",
+        "priority": 55,
+        "resultDescription": "异步问候结果：{{ data.greeting }}",
+        "executionStrategy": "async",
+        "durationHint": "long",
+        "supportsProgress": false
+      }
+    ]
   },
-  "mobile": {
-    "enabled": false
+  "permissions": [],
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
   },
-  "icon": "👋",
+  "icon": "🧩",
   "tags": [
     "demo",
-    "hello-world"
+    "vue",
+    "web"
   ]
 }

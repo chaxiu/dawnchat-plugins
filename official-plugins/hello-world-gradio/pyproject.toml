@@ -1,12 +1,10 @@
 [project]
-name = "hello-world-vue"
+name = "hello-world(gradio)"
 version = "1.0.1"
-description = "Independent frontend/backend demo plugin using Vue and FastAPI"
+description = "A simple Hello World plugin for DawnChat"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn>=0.30.0",
-    "dawnchat-sdk",
+    "gradio>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -20,3 +18,4 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+

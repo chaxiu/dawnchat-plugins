@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "package_name": "opencode-rules-1.0.0.zip",
+  "min_host_version": "1.0.0",
+  "description": "Shared OpenCode rules for DawnChat plugin development"
+}

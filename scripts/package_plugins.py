@@ -74,6 +74,22 @@ class ConflictRecord:
 
 
 @dataclass
+class SharedRulesResult:
+    version: str
+    package_name: str
+    package_path: Path
+    sha256: str
+    size: int
+    manifest: dict[str, Any]
+    min_host_version: str
+    package_key: str = ""
+    package_url: str = ""
+    published_sha256: str = ""
+    published_size: int = 0
+    published_file_name: str = ""
+
+
+@dataclass
 class R2SyncConfig:
     endpoint: str
     bucket: str
@@ -430,6 +446,7 @@ def _build_catalog(
     packages: list[PackageResult],
     *,
     release_tag: str,
+    shared_rules: SharedRulesResult | None = None,
 ) -> dict[str, Any]:
     generated_at = datetime.now(timezone.utc).isoformat()
     plugins: list[dict[str, Any]] = []
@@ -461,12 +478,26 @@ def _build_catalog(
             }
         )
 
-    return {
+    payload: dict[str, Any] = {
         "schema_version": "1.0.0",
         "release_tag": release_tag,
         "generated_at": generated_at,
         "plugins": sorted(plugins, key=lambda item: str(item.get("id", ""))),
     }
+    if shared_rules is not None:
+        payload["shared_opencode_rules"] = {
+            "version": shared_rules.version,
+            "published_at": generated_at,
+            "min_host_version": shared_rules.min_host_version,
+            "package": {
+                "url": shared_rules.package_url,
+                "sha256": shared_rules.published_sha256 or shared_rules.sha256,
+                "size": shared_rules.published_size or shared_rules.size,
+                "file_name": shared_rules.published_file_name or shared_rules.package_name,
+            },
+            "manifest": shared_rules.manifest,
+        }
+    return payload
 
 
 def parse_args() -> argparse.Namespace:
@@ -524,11 +555,20 @@ def parse_args() -> argparse.Namespace:
         default=False,
         help="Package each plugin twice (without rebuilding web assets) and fail if checksums differ",
     )
+    parser.add_argument(
+        "--shared-rules-root",
+        default=".opencode",
+        help="Directory containing shared OpenCode rules and manifest.json",
+    )
     return parser.parse_args()
 
 
 def _build_package_key(result: PackageResult) -> str:
     return f"packages/{result.plugin_id}/{result.version}/{result.package_name}"
+
+
+def _build_shared_rules_key(result: SharedRulesResult) -> str:
+    return f"opencode-rules/{result.version}/{result.package_name}"
 
 
 def _build_package_meta(result: PackageResult, package_key: str) -> dict[str, Any]:
@@ -539,6 +579,19 @@ def _build_package_meta(result: PackageResult, package_key: str) -> dict[str, An
         "sha256": result.sha256,
         "size": result.size,
         "package_key": package_key,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def _build_shared_rules_meta(result: SharedRulesResult, package_key: str) -> dict[str, Any]:
+    return {
+        "plugin_id": "__shared_opencode_rules__",
+        "version": result.version,
+        "file_name": result.package_name,
+        "sha256": result.sha256,
+        "size": result.size,
+        "package_key": package_key,
+        "min_host_version": result.min_host_version,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -622,6 +675,54 @@ def _verify_reproducible_packages(
     print(f"reproducibility check passed for {len(plugin_dirs)} plugin(s)")
 
 
+def _iter_shared_rules_files(shared_rules_root: Path) -> list[tuple[Path, str]]:
+    entries: list[tuple[Path, str]] = []
+    for file_path in shared_rules_root.rglob("*"):
+        if file_path.is_dir():
+            continue
+        if _is_dangling_symlink(file_path):
+            print(f"skip dangling symlink in shared rules: {file_path}")
+            continue
+        rel = file_path.relative_to(shared_rules_root)
+        if _should_exclude(rel):
+            continue
+        entries.append((file_path, rel.as_posix()))
+    entries.sort(key=lambda item: item[1])
+    return entries
+
+
+def _package_shared_rules(shared_rules_root: Path, output_dir: Path) -> SharedRulesResult | None:
+    if not shared_rules_root.exists() or not shared_rules_root.is_dir():
+        print(f"shared rules root not found, skip: {shared_rules_root}")
+        return None
+    manifest_path = shared_rules_root / "manifest.json"
+    if not manifest_path.exists():
+        print(f"shared rules manifest missing, skip: {manifest_path}")
+        return None
+    manifest = _read_json(manifest_path)
+    version = str(manifest.get("version") or "").strip()
+    if not version:
+        raise RuntimeError("shared rules manifest version is required")
+    package_name = str(manifest.get("package_name") or "").strip() or f"opencode-rules-{version}.zip"
+    package_path = output_dir / package_name
+    with ZipFile(package_path, "w", compression=ZIP_DEFLATED, compresslevel=9) as zf:
+        for file_path, arcname in _iter_shared_rules_files(shared_rules_root):
+            info = _build_zip_info(file_path, arcname)
+            zf.writestr(info, file_path.read_bytes(), compress_type=ZIP_DEFLATED)
+    size = package_path.stat().st_size
+    sha256 = _sha256_file(package_path)
+    min_host_version = str(manifest.get("min_host_version") or "1.0.0")
+    return SharedRulesResult(
+        version=version,
+        package_name=package_name,
+        package_path=package_path,
+        sha256=sha256,
+        size=size,
+        manifest=manifest,
+        min_host_version=min_host_version,
+    )
+
+
 def _sync_packages_to_r2(
     packages: list[PackageResult],
     config: R2SyncConfig,
@@ -701,6 +802,86 @@ def _sync_packages_to_r2(
     return conflicts
 
 
+def _sync_shared_rules_to_r2(
+    shared_rules: SharedRulesResult,
+    config: R2SyncConfig,
+    *,
+    check_only: bool = False,
+) -> list[ConflictRecord]:
+    client = R2Client(config)
+    conflicts: list[ConflictRecord] = []
+    package_key = _build_shared_rules_key(shared_rules)
+    meta_key = f"{package_key}.meta.json"
+    existing_meta = client.get_json(meta_key)
+    if existing_meta is not None:
+        existing_sha = str(existing_meta.get("sha256") or "").lower()
+        existing_size = int(existing_meta.get("size") or 0)
+        existing_file_name = str(existing_meta.get("file_name") or "")
+        existing_version = str(existing_meta.get("version") or "")
+        if (
+            existing_sha != shared_rules.sha256.lower()
+            or existing_size != shared_rules.size
+            or existing_file_name != shared_rules.package_name
+            or existing_version != shared_rules.version
+        ):
+            conflicts.append(
+                ConflictRecord(
+                    plugin_id="__shared_opencode_rules__",
+                    version=shared_rules.version,
+                    package_name=shared_rules.package_name,
+                    package_key=package_key,
+                    reason="shared_rules_meta_mismatch",
+                    expected_sha256=existing_sha,
+                    actual_sha256=shared_rules.sha256,
+                    expected_size=existing_size,
+                    actual_size=shared_rules.size,
+                )
+            )
+            return conflicts
+        print(f"skip upload shared rules (meta matched): {shared_rules.version}")
+        shared_rules.package_key = package_key
+        shared_rules.package_url = f"{config.public_base_url}/{package_key}"
+        shared_rules.published_sha256 = existing_sha
+        shared_rules.published_size = existing_size
+        shared_rules.published_file_name = existing_file_name
+        return conflicts
+
+    if client.object_exists(package_key):
+        conflicts.append(
+            ConflictRecord(
+                plugin_id="__shared_opencode_rules__",
+                version=shared_rules.version,
+                package_name=shared_rules.package_name,
+                package_key=package_key,
+                reason="shared_rules_exists_without_meta",
+                expected_sha256="",
+                actual_sha256=shared_rules.sha256,
+                expected_size=0,
+                actual_size=shared_rules.size,
+            )
+        )
+        return conflicts
+
+    if check_only:
+        return conflicts
+
+    package_bytes = shared_rules.package_path.read_bytes()
+    client.put_object(package_key, package_bytes, "application/octet-stream")
+    meta_payload = _build_shared_rules_meta(shared_rules, package_key)
+    client.put_object(
+        meta_key,
+        (json.dumps(meta_payload, ensure_ascii=False, indent=2) + os.linesep).encode("utf-8"),
+        "application/json",
+    )
+    print(f"uploaded shared rules package+meta: {shared_rules.version}")
+    shared_rules.package_key = package_key
+    shared_rules.package_url = f"{config.public_base_url}/{package_key}"
+    shared_rules.published_sha256 = shared_rules.sha256
+    shared_rules.published_size = shared_rules.size
+    shared_rules.published_file_name = shared_rules.package_name
+    return conflicts
+
+
 def _upload_catalog_to_r2(catalog_path: Path, config: R2SyncConfig) -> None:
     client = R2Client(config)
     client.put_object("plugins.json", catalog_path.read_bytes(), "application/json")
@@ -733,6 +914,11 @@ def main() -> int:
         packages.append(result)
         print(f"packaged {result.plugin_id}@{result.version} -> {result.package_name}")
 
+    shared_rules_root = (repo_root / args.shared_rules_root).resolve()
+    shared_rules = _package_shared_rules(shared_rules_root, output_dir)
+    if shared_rules is not None:
+        print(f"packaged shared rules {shared_rules.version} -> {shared_rules.package_name}")
+
     if bool(args.verify_reproducible):
         _verify_reproducible_packages(
             plugin_dirs,
@@ -749,6 +935,14 @@ def main() -> int:
             r2_config,
             check_only=bool(args.check_r2_only),
         )
+        if shared_rules is not None:
+            conflicts.extend(
+                _sync_shared_rules_to_r2(
+                    shared_rules,
+                    r2_config,
+                    check_only=bool(args.check_r2_only),
+                )
+            )
         if conflicts_json_path is not None:
             _write_conflicts_json(conflicts, conflicts_json_path)
             print(f"wrote conflicts report: {conflicts_json_path}")
@@ -778,10 +972,16 @@ def main() -> int:
             result.published_sha256 = result.sha256
             result.published_size = result.size
             result.published_file_name = result.package_name
+        if shared_rules is not None:
+            shared_rules.package_url = f"{base_url}/{args.release_tag}/{shared_rules.package_name}"
+            shared_rules.published_sha256 = shared_rules.sha256
+            shared_rules.published_size = shared_rules.size
+            shared_rules.published_file_name = shared_rules.package_name
 
     catalog = _build_catalog(
         packages,
         release_tag=args.release_tag,
+        shared_rules=shared_rules,
     )
     catalog_path = output_dir / "plugins.json"
     catalog_path.write_text(

@@ -130,6 +130,35 @@ macOS/Linux 可使用 Bash 脚本：
 1. 更新 `dawnchat-plugins/sdk/package.json` 的 `version`
 2. 执行 `pnpm publish --access public`（如果使用 scope 包）
 
+## Plugin Dev API Quick Reference
+
+面向 Coding Agent 的高频接口速查，优先帮助“写对插件代码”。
+
+### Python Host API（`dawnchat_sdk.host`）
+
+- `host.ai.chat(...)`：调用 DawnChat 当前可用模型能力
+- `host.tools.list()`：获取可调用工具列表
+- `host.tools.call(name, arguments, timeout?)`：调用工具
+- `host.storage.kv.get(key)` / `host.storage.kv.set(key, value)`：插件 KV 存储
+
+### 后端实现建议
+
+- 在插件后端中优先保持“输入显式校验 + 输出结构稳定”
+- 工具 schema（`manifest.json`）与处理函数参数保持一致
+- 异常路径返回可读错误，避免吞掉上下文
+
+### 前端联调建议
+
+- 前端请求路径保持 `api/*`，由插件后端提供
+- 改动 `web-src` 后执行构建，避免预览与源码不一致
+- 保持主题与语言查询参数兼容（`theme`、`lang`）
+
+### 最小验证清单
+
+- 后端相关改动：`pytest tests/ -v`
+- 前端相关改动：`cd web-src && pnpm build`
+- 进入 DawnChat 预览模式手工验证关键流程
+
 ## 文档
 
 查看 [ZenMind_Plugin_Platform_Architecture_v7](../../docs/v4/ZenMind_Plugin_Platform_Architecture_v7.md) 获取完整架构说明。
