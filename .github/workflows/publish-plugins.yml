@@ -45,10 +45,12 @@ jobs:
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           if [[ -n "${auth_header}" ]]; then
             git -c "http.https://github.com/.extraheader=${auth_header}" submodule sync --recursive
-            git -c "http.https://github.com/.extraheader=${auth_header}" submodule update --init --recursive --depth 1
+            # Do not use shallow submodule checkout here. The superproject pins
+            # exact commits and they may not be the latest tip.
+            git -c "http.https://github.com/.extraheader=${auth_header}" submodule update --init --recursive
           else
             git submodule sync --recursive
-            git submodule update --init --recursive --depth 1
+            git submodule update --init --recursive
           fi
 
       - name: Setup Python
