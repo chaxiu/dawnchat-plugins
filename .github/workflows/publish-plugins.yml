@@ -30,10 +30,26 @@ jobs:
       R2_PUBLIC_BASE_URL: https://plugins.dawnchat.com
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          submodules: recursive
-          persist-credentials: false
+          # Avoid checkout's built-in recursive submodule auth/cleanup path.
+          # We initialize submodules explicitly in the next step.
+          submodules: false
+          persist-credentials: true
+
+      - name: Init submodules
+        shell: bash
+        run: |
+          set -euo pipefail
+          auth_header="$(git config --local --get http.https://github.com/.extraheader || true)"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          if [[ -n "${auth_header}" ]]; then
+            git -c "http.https://github.com/.extraheader=${auth_header}" submodule sync --recursive
+            git -c "http.https://github.com/.extraheader=${auth_header}" submodule update --init --recursive --depth 1
+          else
+            git submodule sync --recursive
+            git submodule update --init --recursive --depth 1
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
