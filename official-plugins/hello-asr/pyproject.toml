@@ -1,6 +1,6 @@
 [project]
 name = "hello-asr"
-version = "1.0.2"
+version = "1.0.3"
 description = "ASR testing plugin using Whisper and diarization"
 requires-python = ">=3.11"
 dependencies = [

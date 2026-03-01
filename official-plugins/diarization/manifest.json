@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.diarization",
   "name": "Speaker Diarization",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Speaker diarization plugin powered by pyannote.audio",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
