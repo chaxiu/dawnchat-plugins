@@ -1,4 +1,5 @@
 from .host_capabilities import (
+    AgentCapability,
     AICapability,
     ASRCapability,
     BrowserCapability,
@@ -24,6 +25,7 @@ from .tool_gateway import ToolCallMode, ToolCallOptions, ToolGateway
 
 __all__ = [
     "AICapability",
+    "AgentCapability",
     "ASRCapability",
     "BrowserCapability",
     "ImageGenCapability",

@@ -1,6 +1,6 @@
 {
-  "name": "@dawnchat/shared-protocol",
-  "version": "0.6.0",
+  "name": "@dawnchat/auth-bridge",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "main": "./dist/index.js",

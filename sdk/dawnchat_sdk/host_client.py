@@ -3,6 +3,7 @@ import logging
 from typing import Any, Optional
 
 from .host_capabilities import (
+    AgentCapability,
     AICapability,
     ASRCapability,
     BrowserCapability,
@@ -53,6 +54,7 @@ class HostClient:
         self.asr = ASRCapability(self)
         self.media = MediaCapability(self)
         self.models = ModelsCapability(self)
+        self.agent = AgentCapability(self)
         self.image_gen = ImageGenCapability(self)
         self.scoring = ScoringCapability(self)
         self.gateway = ToolGateway(self)

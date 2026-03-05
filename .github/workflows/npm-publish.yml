@@ -1,0 +1,111 @@
+name: Publish DawnChat Packages to npm
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "auth-bridge/**"
+      - "shared-protocol/**"
+      - "shared-ui/**"
+      - ".github/workflows/npm-publish.yml"
+  release:
+    types:
+      - created
+  workflow_dispatch:
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Build and publish packages when local version is newer
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          compare_versions() {
+            local local_version="$1"
+            local remote_version="$2"
+            node - "$local_version" "$remote_version" <<'NODE'
+          const localVersion = process.argv[2];
+          const remoteVersion = process.argv[3];
+
+          function parse(version) {
+            const [core, pre = ""] = version.split("-", 2);
+            const numbers = core.split(".").map((part) => Number.parseInt(part, 10) || 0);
+            return { numbers, pre };
+          }
+
+          function compare(a, b) {
+            const max = Math.max(a.numbers.length, b.numbers.length);
+            for (let i = 0; i < max; i += 1) {
+              const av = a.numbers[i] ?? 0;
+              const bv = b.numbers[i] ?? 0;
+              if (av !== bv) return av > bv ? 1 : -1;
+            }
+
+            if (a.pre === b.pre) return 0;
+            if (!a.pre && b.pre) return 1;
+            if (a.pre && !b.pre) return -1;
+            return a.pre > b.pre ? 1 : -1;
+          }
+
+          const result = compare(parse(localVersion), parse(remoteVersion));
+          process.exit(result > 0 ? 0 : 1);
+          NODE
+          }
+
+          publish_if_needed() {
+            local package_dir="$1"
+            local package_json="${package_dir}/package.json"
+            local package_name
+            local local_version
+            local remote_version
+
+            package_name="$(node -p "require('./${package_json}').name")"
+            local_version="$(node -p "require('./${package_json}').version")"
+            remote_version="$(npm view "${package_name}" version 2>/dev/null || true)"
+
+            echo "----------------------------------------"
+            echo "Package: ${package_name}"
+            echo "Local version: ${local_version}"
+            echo "Remote version: ${remote_version:-<not published>}"
+
+            if [[ -z "${remote_version}" ]]; then
+              echo "Remote version missing. Publish as first release."
+            elif compare_versions "${local_version}" "${remote_version}"; then
+              echo "Local version is newer than npm. Continue publishing."
+            else
+              echo "Skip publish: local version is not newer than npm."
+              return 0
+            fi
+
+            pushd "${package_dir}" >/dev/null
+            npm install
+            npm run build
+            npm publish --provenance --access public
+            popd >/dev/null
+
+            echo "Published ${package_name}@${local_version}"
+          }
+
+          publish_if_needed "shared-protocol"
+          publish_if_needed "shared-ui"
+          publish_if_needed "auth-bridge"

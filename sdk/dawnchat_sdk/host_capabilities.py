@@ -773,6 +773,27 @@ class ModelsCapability:
         return response.get("providers", {})
 
 
+class AgentCapability:
+    def __init__(self, host_client: "HostClient"):
+        self._client = host_client
+
+    async def push_context(
+        self,
+        items: list[dict[str, Any]],
+        mode: str = "append",
+        plugin_id: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "mode": mode,
+            "items": items,
+            "metadata": metadata or {},
+        }
+        if plugin_id:
+            payload["plugin_id"] = plugin_id
+        return await self._client._request("POST", "/sdk/agent/context/push", json=payload)
+
+
 class ToolsCapability:
     def __init__(self, host_client: "HostClient"):
         self._client = host_client
