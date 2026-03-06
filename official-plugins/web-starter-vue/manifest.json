@@ -1,0 +1,28 @@
+{
+  "id": "com.dawnchat.web-starter-vue",
+  "name": "Web Starter Vue",
+  "version": "0.1.0",
+  "app_type": "web",
+  "description": "Pure web starter template powered by Vue 3 and Vite",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "permissions": [],
+  "capabilities": {
+    "tools": []
+  },
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "preview": {
+    "frontend_dir": "web-src"
+  },
+  "icon": "🌐",
+  "tags": [
+    "template",
+    "vue",
+    "vite",
+    "web"
+  ]
+}

@@ -1,58 +1,100 @@
 # DawnChat 插件系统架构说明（2026 概览）
 
-目标：用一页内容快速说明 DawnChat 插件系统的核心能力与当前演进方向，便于开发者与 LLM 建立统一认知。
+目标：用一页内容说明 DawnChat 当前“插件生态 + 实时预览 + 自然语言开发迭代”整体链路，帮助开发者与 LLM 快速建立统一认知。
 
 ## 1) 系统定位
 
 - 宿主（Python/FastAPI）负责插件生命周期、环境隔离、统一 API 与安全边界。
-- 插件通过 SDK 调用宿主能力（AI、工具、存储、任务），避免直接耦合宿主内部实现。
-- 前端负责市场、安装/更新/卸载、运行态与开发态入口。
+- 前端负责市场、安装/更新/卸载、创建插件、开发工作台（预览 + coding agent）。
+- coding agent 作为开发能力层，支持 OpenCode 与 AgentV3 双引擎，面向插件源码创建与修改。
 
 ## 2) 当前能力版图（高层）
 
-### 在线发布与更新
+### 在线发布、安装与更新
 
-- 官方插件以 `GitHub Release + plugins.json` 作为分发基础。
-- 客户端通过市场接口拉取清单，执行安装、更新、卸载。
-- 安装流程具备状态机（下载、解压、建环境、装依赖、就绪/失败），并支持进度轮询。
+- 官方插件以 `GitHub Release + plugins.json` 为分发基础。
+- 客户端通过市场接口拉取清单，执行安装/更新/卸载。
+- 安装流程具备状态机（下载、解压、建环境、装依赖、就绪/失败），并支持轮询进度。
 
 ### 本地优先的目录治理
 
-- 插件相关内容已按职责拆分，避免“代码与数据混放”：
+- 插件目录按职责拆分，避免代码与数据混放：
   - **源码目录**：插件可执行代码（安装/更新会覆盖）。
-  - **数据目录**：插件运行数据（卸载源码时默认保留）。
-  - **模型目录**：插件下载模型资产（独立管理，避免误删）。
-  - **下载缓存目录**：安装包与更新缓存。
-- 所有目录遵循系统级用户数据路径策略（macOS/Windows/Linux 各自系统目录）。
+  - **数据目录**：插件运行数据（卸载源码默认保留）。
+  - **模型目录**：插件模型资产（独立管理）。
+  - **下载缓存目录**：安装包与模板缓存。
+- 所有目录遵循系统级用户数据路径策略（macOS/Windows/Linux）。
 
 ### 运行态与预览态
 
-- **运行态（normal）**：面向最终使用，插件按常规生命周期启动。
+- **运行态（normal）**：面向最终使用，按常规生命周期启动插件。
 - **预览态（preview）**：面向开发，支持前端热更新与后端热重载。
-- 预览态通过 `PluginPreviewManager` 统一管理端口、进程与文件变更监听。
+- 预览运行由 `PluginPreviewManager` 统一管理端口、Python/Bun 进程与文件监听。
 
-### 开发模式（Dev Workbench）
+### 插件创建（Template -> User Plugin）
 
-- 新增“开发模式”入口：左侧插件预览，右侧开发聊天面板。
-- 支持元素圈选（inspector 风格），将 `文件 + 行列位置 + 片段` 回填到输入框。
-- 目标是为后续 coding agent 接入提供稳定的人机协作入口。
+- 前端在 Apps 视图提供“创建应用”向导，收集应用名、插件 ID、描述等信息。
+- 后端先确保模板缓存，再从模板拷贝源码，重写 `manifest.json / pyproject.toml`，并替换旧模板 ID 引用。
+- 创建完成后自动建隔离环境并安装依赖，写入 `source_type=user_created` 元数据并刷新注册表。
 
-## 3) 关键模块索引（按职责）
+### 开发模式（自然语言迭代）
 
-### 插件生命周期与市场
+- 开发工作台采用双栏布局：左侧插件实时预览，右侧开发聊天面板。
+- 聊天面板支持 OpenCode / AgentV3 引擎切换，在同一 UI 契约下发送自然语言修改请求。
+- 圈选能力可将 `文件 + 行列 + 片段` 注入输入框，形成可定位上下文，驱动更准确的代码修改。
+- UI Bridge 支持 agent 对预览页面执行 describe/query/act，并回推 context token，形成“看得见 + 改得动”的闭环。
+
+## 3) 关键链路（从创建到迭代）
+
+1. 用户在 `AppsView` 打开创建向导并确认参数。
+2. 前端调用 `/api/plugins/template/ensure` 与 `/api/plugins/create-from-template` 完成创建。
+3. 前端调用 `/api/plugins/{id}/preview/start` 并轮询 `/preview/status` 等待预览 ready。
+4. 跳转开发工作台，加载预览 iframe 与 coding agent 会话。
+5. 用户自然语言描述需求，agent 产出改动并流式回传。
+6. 用户可通过圈选与上下文回推继续迭代，预览态实时验证修改结果。
+
+## 4) 关键模块索引（按职责）
+
+### 插件生命周期、市场与创建
 
 - `packages/backend-kernel/app/api/plugins_routes.py`
 - `packages/backend-kernel/app/plugins/manager.py`
 - `packages/backend-kernel/app/plugins/installer_service.py`
-- `packages/backend-kernel/app/plugins/preview_manager.py`
 - `packages/backend-kernel/app/plugins/env_manager.py`
 
-### 预览与开发态
+### 预览运行时与热更新
 
+- `packages/backend-kernel/app/plugins/preview_manager.py`
 - `packages/backend-kernel/app/plugins/vite_preview_server_template.mjs`
+- `apps/frontend/src/stores/pluginStore.ts`
+
+### 创建入口与开发工作台（前端）
+
+- `apps/frontend/src/views/AppsView.vue`
+- `apps/frontend/src/components/apps/CreateAppWizardModal.vue`
+- `apps/frontend/src/components/apps/InstalledAppsSection.vue`
 - `apps/frontend/src/views/PluginDevWorkbenchView.vue`
 - `apps/frontend/src/components/apps/PluginPreviewPane.vue`
-- `apps/frontend/src/stores/pluginStore.ts`
+- `apps/frontend/src/components/apps/PluginDevChatPanel.vue`
+
+### Coding Agent 双引擎（OpenCode + AgentV3）
+
+- `apps/frontend/src/stores/codingAgentStore.ts`
+- `apps/frontend/src/stores/coding-agent/runtimeOrchestrator.ts`
+- `apps/frontend/src/services/coding-agent/openCodeAdapter.ts`
+- `apps/frontend/src/services/coding-agent/agentV3Adapter.ts`
+- `apps/frontend/src/services/coding-agent/adapterRegistry.ts`
+- `packages/backend-kernel/app/api/opencode_routes.py`
+- `packages/backend-kernel/app/api/agentv3_routes.py`
+
+### UI Bridge 与上下文回推
+
+- `apps/frontend/src/composables/usePluginUiBridge.ts`
+- `apps/frontend/src/services/plugin-ui-bridge/bridgeClient.ts`
+- `apps/frontend/src/services/plugin-ui-bridge/contextToken.ts`
+- `packages/backend-kernel/app/api/plugin_ui_bridge_routes.py`
+- `packages/backend-kernel/app/plugin_ui_bridge/service.py`
+- `packages/backend-kernel/app/tools/helpers/plugin_bridge.py`
 
 ### SDK 与宿主能力入口
 
@@ -60,14 +102,9 @@
 - `packages/backend-kernel/app/api/sdk_routes.py`
 - `packages/backend-kernel/app/tools/manager.py`
 
-## 4) 插件包与兼容性（简述）
-
-- 插件仍以 `manifest.json + pyproject.toml + src/` 为核心结构。
-- 宿主会在启动/安装阶段校验插件兼容性（如 `min_host_version`）。
-- 插件依赖安装在隔离环境中执行，避免污染宿主运行时。
-
 ## 5) 对 LLM 的阅读建议
 
-- 要理解“安装与更新”：先看 `plugins_routes.py` + `installer_service.py`。
-- 要理解“预览与开发模式”：看 `preview_manager.py` + `PluginDevWorkbenchView.vue`。
-- 要理解“宿主能力调用”：看 `sdk_routes.py` + `dawnchat_sdk/host.py`。
+- 要理解“创建插件”先看：`AppsView.vue` -> `pluginStore.ts` -> `plugins_routes.py` -> `manager.py#create_plugin_from_template`。
+- 要理解“预览与圈选”先看：`PluginDevWorkbenchView.vue` -> `PluginPreviewPane.vue` -> `preview_manager.py` -> `vite_preview_server_template.mjs`。
+- 要理解“自然语言改代码”先看：`PluginDevChatPanel.vue` -> `codingAgentStore.ts` -> `openCodeAdapter.ts / agentV3Adapter.ts`。
+- 要理解“UI 上下文回推与页面操作”先看：`usePluginUiBridge.ts` -> `plugin_ui_bridge_routes.py` -> `plugin_ui_bridge/service.py`。
