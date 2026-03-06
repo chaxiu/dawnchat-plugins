@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "package_name": "opencode-rules-1.0.0.zip",
+  "version": "1.0.1",
+  "package_name": "opencode-rules-1.0.1.zip",
   "min_host_version": "1.0.0",
   "description": "Shared OpenCode context, skills and agent config for DawnChat plugin development"
 }
