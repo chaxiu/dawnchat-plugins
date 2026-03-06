@@ -14,6 +14,7 @@ from pathlib import Path
 
 SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 PYPROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"\s*$')
+SHARED_RULES_PLUGIN_ID = "__shared_opencode_rules__"
 
 
 @dataclass
@@ -21,8 +22,7 @@ class BumpResult:
     plugin_id: str
     old_version: str
     new_version: str
-    manifest_path: Path
-    pyproject_path: Path | None
+    touched_paths: tuple[Path, ...]
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,6 +36,11 @@ def parse_args() -> argparse.Namespace:
         "--plugins-root",
         default="official-plugins",
         help="Directory containing plugin folders",
+    )
+    parser.add_argument(
+        "--shared-rules-root",
+        default=".opencode",
+        help="Directory containing shared OpenCode rules manifest.json",
     )
     return parser.parse_args()
 
@@ -99,6 +104,24 @@ def _update_pyproject_version(pyproject_path: Path, old_version: str, new_versio
     pyproject_path.write_text(updated, encoding="utf-8")
 
 
+def _update_shared_rules_manifest(manifest_path: Path, old_version: str, new_version: str) -> None:
+    manifest = _read_json(manifest_path)
+    current = str(manifest.get("version") or "").strip()
+    if current != old_version:
+        raise RuntimeError(f"Shared rules version mismatch in {manifest_path}: expected {old_version}, got {current}")
+
+    manifest["version"] = new_version
+    current_package_name = str(manifest.get("package_name") or "").strip()
+    default_old_name = f"opencode-rules-{old_version}.zip"
+    default_new_name = f"opencode-rules-{new_version}.zip"
+    if not current_package_name or current_package_name == default_old_name:
+        manifest["package_name"] = default_new_name
+    elif old_version in current_package_name:
+        manifest["package_name"] = current_package_name.replace(old_version, new_version, 1)
+
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def _load_conflicts(conflicts_json: Path) -> dict[str, str]:
     payload = _read_json(conflicts_json)
     entries = payload.get("conflicts")
@@ -127,6 +150,7 @@ def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     plugins_root = (repo_root / args.plugins_root).resolve()
+    shared_rules_root = (repo_root / args.shared_rules_root).resolve()
     conflicts_json = Path(args.conflicts_json).resolve()
 
     if not plugins_root.exists():
@@ -144,27 +168,44 @@ def main() -> int:
     results: list[BumpResult] = []
 
     for plugin_id in sorted(conflict_versions):
+        old_version = conflict_versions[plugin_id]
+        new_version = _bump_patch(old_version)
+
+        if plugin_id == SHARED_RULES_PLUGIN_ID:
+            manifest_path = shared_rules_root / "manifest.json"
+            if not manifest_path.exists():
+                raise RuntimeError(f"Shared rules manifest not found: {manifest_path}")
+            _update_shared_rules_manifest(manifest_path, old_version, new_version)
+            results.append(
+                BumpResult(
+                    plugin_id=plugin_id,
+                    old_version=old_version,
+                    new_version=new_version,
+                    touched_paths=(manifest_path,),
+                )
+            )
+            continue
+
         plugin_dir = plugin_dirs.get(plugin_id)
         if plugin_dir is None:
             raise RuntimeError(f"Plugin id from conflicts not found under plugins root: {plugin_id}")
-        old_version = conflict_versions[plugin_id]
-        new_version = _bump_patch(old_version)
 
         manifest_path = plugin_dir / "manifest.json"
         pyproject_path = plugin_dir / "pyproject.toml"
         resolved_pyproject: Path | None = pyproject_path if pyproject_path.exists() else None
 
         _update_manifest_version(manifest_path, old_version, new_version)
+        touched_paths = [manifest_path]
         if resolved_pyproject is not None:
             _update_pyproject_version(resolved_pyproject, old_version, new_version)
+            touched_paths.append(resolved_pyproject)
 
         results.append(
             BumpResult(
                 plugin_id=plugin_id,
                 old_version=old_version,
                 new_version=new_version,
-                manifest_path=manifest_path,
-                pyproject_path=resolved_pyproject,
+                touched_paths=tuple(touched_paths),
             )
         )
 
@@ -172,15 +213,19 @@ def main() -> int:
         print(f"bumped {item.plugin_id}: {item.old_version} -> {item.new_version}")
     touched_files: set[Path] = set()
     pyproject_updates = 0
+    shared_rules_updates = 0
     for item in results:
-        touched_files.add(item.manifest_path)
-        if item.pyproject_path is not None:
-            touched_files.add(item.pyproject_path)
-            pyproject_updates += 1
+        if item.plugin_id == SHARED_RULES_PLUGIN_ID:
+            shared_rules_updates += 1
+        for path in item.touched_paths:
+            touched_files.add(path)
+            if path.name == "pyproject.toml":
+                pyproject_updates += 1
     print(
         "bump summary: "
         f"plugins={len(results)}, manifest_updates={len(results)}, "
-        f"pyproject_updates={pyproject_updates}, touched_files={len(touched_files)}"
+        f"pyproject_updates={pyproject_updates}, shared_rules_updates={shared_rules_updates}, "
+        f"touched_files={len(touched_files)}"
     )
     return 0
 
