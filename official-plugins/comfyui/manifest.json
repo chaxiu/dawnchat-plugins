@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.comfyui",
   "name": "ComfyUI",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "ComfyUI image generation plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
