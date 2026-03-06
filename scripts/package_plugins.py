@@ -294,14 +294,6 @@ def _resolve_web_package_manager(web_src: Path) -> tuple[list[str], list[str], s
     npm = shutil.which("npm")
     yarn = shutil.which("yarn")
 
-    if pnpm_lock.exists():
-        if not pnpm:
-            raise RuntimeError(f"pnpm-lock.yaml exists but pnpm not found for {web_src}")
-        return (
-            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
-            [pnpm, "run", "build"],
-            "pnpm(lockfile)",
-        )
     if bun_lock.exists() or bun_lockb.exists():
         if not bun:
             raise RuntimeError(f"bun.lock exists but bun not found for {web_src}")
@@ -309,6 +301,14 @@ def _resolve_web_package_manager(web_src: Path) -> tuple[list[str], list[str], s
             [bun, "install"],
             [bun, "run", "build"],
             "bun(lockfile)",
+        )
+    if pnpm_lock.exists():
+        if not pnpm:
+            raise RuntimeError(f"pnpm-lock.yaml exists but pnpm not found for {web_src}")
+        return (
+            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+            [pnpm, "run", "build"],
+            "pnpm(lockfile)",
         )
     if npm_lock.exists():
         if not npm:
