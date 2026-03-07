@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.cosyvoice",
   "name": "CosyVoice",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CosyVoice TTS plugin",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
