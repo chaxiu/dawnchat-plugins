@@ -1,6 +1,6 @@
 [project]
 name = "dawnchat-cosyvoice-plugin"
-version = "1.0.6"
+version = "1.0.7"
 description = "CosyVoice TTS plugin"
 requires-python = ">=3.11"
 dependencies = [
