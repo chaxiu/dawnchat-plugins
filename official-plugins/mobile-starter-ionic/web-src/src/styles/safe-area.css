@@ -1,0 +1,17 @@
+:root {
+  --dawn-safe-top: env(safe-area-inset-top, 0px);
+  --dawn-safe-right: env(safe-area-inset-right, 0px);
+  --dawn-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --dawn-safe-left: env(safe-area-inset-left, 0px);
+}
+
+.safe-page-content {
+  --padding-start: calc(var(--dawn-safe-left) + 14px);
+  --padding-end: calc(var(--dawn-safe-right) + 14px);
+  --padding-bottom: calc(var(--dawn-safe-bottom) + 14px);
+}
+
+.safe-inline-card {
+  margin-left: calc(var(--dawn-safe-left) + 2px);
+  margin-right: calc(var(--dawn-safe-right) + 2px);
+}

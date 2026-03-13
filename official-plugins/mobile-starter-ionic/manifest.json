@@ -1,0 +1,29 @@
+{
+  "id": "com.dawnchat.mobile-starter-ionic",
+  "name": "Mobile Starter Ionic",
+  "version": "0.1.0",
+  "app_type": "mobile",
+  "description": "Mobile starter template powered by Ionic Vue, Capacitor, and Vite",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "permissions": [],
+  "capabilities": {
+    "tools": []
+  },
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "preview": {
+    "frontend_dir": "web-src"
+  },
+  "icon": "📱",
+  "tags": [
+    "template",
+    "mobile",
+    "ionic",
+    "capacitor",
+    "vite"
+  ]
+}
