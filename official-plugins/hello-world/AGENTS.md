@@ -15,6 +15,8 @@ These rules apply to the current plugin directory only.
 - `README.md`
 - `.opencode/context/plugin-architecture.md`
 - `.opencode/context/dawnchat-plugin-rules.md`
+- `.opencode/context/plugin-debug-logging.md`
+- `.opencode/skills/README.md`
 
 ## Guardrails
 
@@ -22,6 +24,8 @@ These rules apply to the current plugin directory only.
 - Do not remove existing sample APIs under `/api/sdk/*` unless explicitly requested.
 - Keep tool schemas and runtime handlers aligned.
 - Add or update tests when changing MCP/tool behavior.
+- Do not log secrets, tokens, or credentials; redact sensitive fields.
+- Remove temporary noisy debug logs once root cause is confirmed.
 
 ## Verification
 
