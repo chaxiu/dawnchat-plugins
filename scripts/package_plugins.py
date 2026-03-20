@@ -58,6 +58,7 @@ class PackageResult:
     published_sha256: str = ""
     published_size: int = 0
     published_file_name: str = ""
+    package_variant: str = "default"
 
 
 @dataclass
@@ -266,12 +267,14 @@ def _iter_plugin_dirs(plugins_root: Path) -> list[Path]:
     return result
 
 
-def _should_exclude(path: Path) -> bool:
+def _should_exclude(path: Path, *, include_node_modules: bool = False) -> bool:
     if path.name in EXCLUDE_FILES:
         return True
     if path.suffix in EXCLUDE_SUFFIXES:
         return True
     for part in path.parts:
+        if include_node_modules and part == "node_modules":
+            continue
         if part in EXCLUDE_DIRS:
             return True
     return False
@@ -372,7 +375,12 @@ def _build_web_assets(plugin_dir: Path) -> None:
     subprocess.run(build_cmd, cwd=web_src, check=True)
 
 
-def _iter_packable_files(plugin_dir: Path, *, include_web_src: bool) -> list[tuple[Path, str]]:
+def _iter_packable_files(
+    plugin_dir: Path,
+    *,
+    include_web_src: bool,
+    include_node_modules: bool = False,
+) -> list[tuple[Path, str]]:
     entries: list[tuple[Path, str]] = []
     for file_path in plugin_dir.rglob("*"):
         if file_path.is_dir():
@@ -381,7 +389,7 @@ def _iter_packable_files(plugin_dir: Path, *, include_web_src: bool) -> list[tup
             print(f"skip dangling symlink: {file_path}")
             continue
         rel = file_path.relative_to(plugin_dir)
-        if _should_exclude(rel):
+        if _should_exclude(rel, include_node_modules=include_node_modules):
             continue
         if not include_web_src and rel.parts and rel.parts[0] == "web-src":
             continue
@@ -410,6 +418,7 @@ def _package_plugin(
     *,
     include_web_src: bool,
     build_web_assets: bool,
+    package_variant: str = "default",
 ) -> PackageResult:
     if build_web_assets:
         _build_web_assets(plugin_dir)
@@ -417,11 +426,16 @@ def _package_plugin(
     manifest = _read_json(manifest_path)
     plugin_id = str(manifest["id"])
     version = str(manifest["version"])
-    package_name = f"{plugin_id}-{version}{ext}"
+    suffix = f"-{package_variant}" if package_variant != "default" else ""
+    package_name = f"{plugin_id}-{version}{suffix}{ext}"
     package_path = output_dir / package_name
 
     with ZipFile(package_path, "w", compression=ZIP_DEFLATED, compresslevel=9) as zf:
-        for file_path, arcname in _iter_packable_files(plugin_dir, include_web_src=include_web_src):
+        for file_path, arcname in _iter_packable_files(
+            plugin_dir,
+            include_web_src=include_web_src,
+            include_node_modules=(package_variant == "node_modules"),
+        ):
             try:
                 info = _build_zip_info(file_path, arcname)
                 zf.writestr(info, file_path.read_bytes(), compress_type=ZIP_DEFLATED)
@@ -439,6 +453,7 @@ def _package_plugin(
         sha256=sha256,
         size=size,
         manifest=manifest,
+        package_variant=package_variant,
     )
 
 
@@ -450,33 +465,63 @@ def _build_catalog(
 ) -> dict[str, Any]:
     generated_at = datetime.now(timezone.utc).isoformat()
     plugins: list[dict[str, Any]] = []
+    grouped: dict[tuple[str, str], list[PackageResult]] = {}
     for result in packages:
-        manifest = result.manifest
-        package_url = result.package_url
-        package_sha256 = result.published_sha256 or result.sha256
-        package_size = result.published_size or result.size
-        package_file_name = result.published_file_name or result.package_name
-        plugins.append(
-            {
-                "id": result.plugin_id,
-                "name": manifest.get("name", result.plugin_id),
-                "version": result.version,
-                "description": manifest.get("description", ""),
-                "author": manifest.get("author", ""),
-                "icon": manifest.get("icon", "📦"),
-                "tags": manifest.get("tags", []),
-                "min_host_version": manifest.get("min_host_version", "1.0.0"),
-                "published_at": generated_at,
-                "channel": "release",
-                "package": {
-                    "url": package_url,
-                    "sha256": package_sha256,
-                    "size": package_size,
-                    "file_name": package_file_name,
-                },
-                "manifest": manifest,
+        grouped.setdefault((result.plugin_id, result.version), []).append(result)
+
+    variant_priority = {"dist": 0, "default": 1, "node_modules": 2}
+    for (_plugin_id, _version), group in grouped.items():
+        group.sort(key=lambda item: variant_priority.get(item.package_variant, 9))
+        primary = group[0]
+        manifest = primary.manifest
+        package_url = primary.package_url
+        package_sha256 = primary.published_sha256 or primary.sha256
+        package_size = primary.published_size or primary.size
+        package_file_name = primary.published_file_name or primary.package_name
+
+        distribution_catalog: dict[str, Any] = {}
+        for item in group:
+            item_url = item.package_url
+            item_sha256 = item.published_sha256 or item.sha256
+            item_size = item.published_size or item.size
+            item_file_name = item.published_file_name or item.package_name
+            variant = item.package_variant
+            if variant == "dist":
+                distribution_catalog["dist_url"] = item_url
+                distribution_catalog["dist_sha256"] = item_sha256
+                distribution_catalog["dist_size"] = item_size
+                distribution_catalog["dist_file_name"] = item_file_name
+            elif variant == "node_modules":
+                distribution_catalog["node_modules_url"] = item_url
+                distribution_catalog["node_modules_sha256"] = item_sha256
+                distribution_catalog["node_modules_size"] = item_size
+                distribution_catalog["node_modules_file_name"] = item_file_name
+
+        plugin_entry = {
+            "id": primary.plugin_id,
+            "name": manifest.get("name", primary.plugin_id),
+            "version": primary.version,
+            "description": manifest.get("description", ""),
+            "author": manifest.get("author", ""),
+            "icon": manifest.get("icon", "📦"),
+            "tags": manifest.get("tags", []),
+            "min_host_version": manifest.get("min_host_version", "1.0.0"),
+            "published_at": generated_at,
+            "channel": "release",
+            "package": {
+                "url": package_url,
+                "sha256": package_sha256,
+                "size": package_size,
+                "file_name": package_file_name,
+            },
+            "manifest": manifest,
+        }
+        if distribution_catalog:
+            plugin_entry["distribution"] = {
+                "default_variant": primary.package_variant,
+                "catalog": distribution_catalog,
             }
-        )
+        plugins.append(plugin_entry)
 
     payload: dict[str, Any] = {
         "schema_version": "1.0.0",
@@ -561,6 +606,23 @@ def parse_args() -> argparse.Namespace:
         help="Directory containing shared OpenCode rules and manifest.json",
     )
     return parser.parse_args()
+
+
+def _resolve_manifest_package_variants(manifest: dict[str, Any]) -> list[str]:
+    distribution = manifest.get("distribution") if isinstance(manifest, dict) else None
+    if not isinstance(distribution, dict):
+        return ["default"]
+    raw = distribution.get("packages")
+    if not isinstance(raw, list):
+        return ["default"]
+    variants: list[str] = []
+    for item in raw:
+        normalized = str(item or "").strip().lower()
+        if normalized in {"dist", "node_modules"} and normalized not in variants:
+            variants.append(normalized)
+    if not variants:
+        return ["default"]
+    return variants
 
 
 def _build_package_key(result: PackageResult) -> str:
@@ -653,25 +715,31 @@ def _verify_reproducible_packages(
         shutil.rmtree(verification_dir)
     verification_dir.mkdir(parents=True, exist_ok=True)
     for plugin_dir in plugin_dirs:
-        first = _package_plugin(
-            plugin_dir,
-            output_dir,
-            ext,
-            include_web_src=include_web_src,
-            build_web_assets=False,
-        )
-        second = _package_plugin(
-            plugin_dir,
-            verification_dir,
-            ext,
-            include_web_src=include_web_src,
-            build_web_assets=False,
-        )
-        if first.sha256.lower() != second.sha256.lower() or first.size != second.size:
-            raise RuntimeError(
-                "Non-reproducible package detected for "
-                f"{first.plugin_id}@{first.version}: first_sha={first.sha256}, second_sha={second.sha256}"
+        manifest = _read_json(plugin_dir / "manifest.json")
+        variants = _resolve_manifest_package_variants(manifest)
+        for variant in variants:
+            first = _package_plugin(
+                plugin_dir,
+                output_dir,
+                ext,
+                include_web_src=include_web_src,
+                build_web_assets=False,
+                package_variant=variant,
             )
+            second = _package_plugin(
+                plugin_dir,
+                verification_dir,
+                ext,
+                include_web_src=include_web_src,
+                build_web_assets=False,
+                package_variant=variant,
+            )
+            if first.sha256.lower() != second.sha256.lower() or first.size != second.size:
+                raise RuntimeError(
+                    "Non-reproducible package detected for "
+                    f"{first.plugin_id}@{first.version}({variant}): "
+                    f"first_sha={first.sha256}, second_sha={second.sha256}"
+                )
     print(f"reproducibility check passed for {len(plugin_dirs)} plugin(s)")
 
 
@@ -904,15 +972,24 @@ def main() -> int:
 
     packages: list[PackageResult] = []
     for plugin_dir in plugin_dirs:
-        result = _package_plugin(
-            plugin_dir,
-            output_dir,
-            args.ext,
-            include_web_src=bool(args.include_web_src),
-            build_web_assets=bool(args.build_web_assets),
-        )
-        packages.append(result)
-        print(f"packaged {result.plugin_id}@{result.version} -> {result.package_name}")
+        manifest = _read_json(plugin_dir / "manifest.json")
+        variants = _resolve_manifest_package_variants(manifest)
+        built_assets = False
+        for variant in variants:
+            result = _package_plugin(
+                plugin_dir,
+                output_dir,
+                args.ext,
+                include_web_src=bool(args.include_web_src),
+                build_web_assets=bool(args.build_web_assets) and not built_assets,
+                package_variant=variant,
+            )
+            packages.append(result)
+            built_assets = True
+            print(
+                f"packaged {result.plugin_id}@{result.version} "
+                f"(variant={result.package_variant}) -> {result.package_name}"
+            )
 
     shared_rules_root = (repo_root / args.shared_rules_root).resolve()
     shared_rules = _package_shared_rules(shared_rules_root, output_dir)

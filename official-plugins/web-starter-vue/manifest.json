@@ -18,6 +18,12 @@
   "preview": {
     "frontend_dir": "web-src"
   },
+  "distribution": {
+    "packages": [
+      "dist",
+      "node_modules"
+    ]
+  },
   "icon": "🌐",
   "tags": [
     "template",

@@ -1,0 +1,60 @@
+{
+  "id": "com.dawnchat.desktop-starter",
+  "name": "Desktop Starter",
+  "version": "0.1.0",
+  "app_type": "desktop",
+  "description": "Desktop starter template powered by Vue and Bun backend",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "permissions": [],
+  "capabilities": {
+    "tools": [
+      {
+        "name": "hello_world",
+        "description": "Return Hello World from Bun backend",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name to greet"
+            }
+          }
+        },
+        "category": "utility",
+        "priority": 50,
+        "resultDescription": "Greeting result: {{ data.greeting }}",
+        "executionStrategy": "sync",
+        "durationHint": "fast",
+        "supportsProgress": false
+      }
+    ]
+  },
+  "runtime": {
+    "backend": "bun",
+    "root": "_ir",
+    "entry": "logic/backend/src/main.ts",
+    "isolated": false
+  },
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "preview": {
+    "frontend_dir": "views/web-src"
+  },
+  "distribution": {
+    "packages": [
+      "dist",
+      "node_modules"
+    ]
+  },
+  "icon": "🧠",
+  "tags": [
+    "template",
+    "desktop",
+    "vue",
+    "bun"
+  ]
+}

@@ -84,16 +84,23 @@ def build_package(plugin_dir: Path, output_dir: Path, ext: str) -> Tuple[Path, i
     ui_type = (manifest.get("ui") or {}).get("type")
     force_build = str(os.getenv("DAWNCHAT_PLUGIN_BUILD_FORCE", "")).strip() != ""
     if (ui_type == "web" or web_src_dir.exists()) and should_build_web_assets(web_src_dir, web_dir, force_build):
-        pnpm_path = shutil.which("pnpm")
-        if not pnpm_path:
-            raise RuntimeError(f"pnpm not found for building web assets: {plugin_dir.name}")
-        if not (web_src_dir / "node_modules").exists() or force_build:
-            subprocess.run(
-                [pnpm_path, "install", "--silent", "--ignore-workspace", "--no-frozen-lockfile"],
-                cwd=str(web_src_dir),
-                check=True,
-            )
-        subprocess.run([pnpm_path, "exec", "vite", "build"], cwd=str(web_src_dir), check=True)
+        bun_path = shutil.which("bun")
+        use_bun = bun_path is not None and (web_src_dir / "bun.lock").exists()
+        if use_bun:
+            if not (web_src_dir / "node_modules").exists() or force_build:
+                subprocess.run([bun_path, "install"], cwd=str(web_src_dir), check=True)
+            subprocess.run([bun_path, "run", "build"], cwd=str(web_src_dir), check=True)
+        else:
+            pnpm_path = shutil.which("pnpm")
+            if not pnpm_path:
+                raise RuntimeError(f"pnpm not found for building web assets: {plugin_dir.name}")
+            if not (web_src_dir / "node_modules").exists() or force_build:
+                subprocess.run(
+                    [pnpm_path, "install", "--silent", "--ignore-workspace", "--no-frozen-lockfile"],
+                    cwd=str(web_src_dir),
+                    check=True,
+                )
+            subprocess.run([pnpm_path, "exec", "vite", "build"], cwd=str(web_src_dir), check=True)
         if not web_dir.exists() or not any(web_dir.iterdir()):
             raise RuntimeError(f"web build output missing: {plugin_dir.name}")
     plugin_id = manifest.get("id")

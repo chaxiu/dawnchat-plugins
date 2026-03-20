@@ -1,0 +1,14 @@
+version: 1.0.0
+name: DesktopStarter
+description: DawnChat desktop plugin starter with Bun backend and Vue frontend
+
+targets:
+  - desktop
+
+permissions:
+  - network:none
+  - fs:read
+
+requires:
+  - plugin:dawnchat_host_api
+

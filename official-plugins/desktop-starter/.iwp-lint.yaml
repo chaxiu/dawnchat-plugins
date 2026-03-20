@@ -1,0 +1,63 @@
+iwp_root: InstructWare.iw
+code_roots:
+  - _ir/
+include_ext:
+  - .ts
+  - .vue
+  - .css
+  - .js
+test_globs:
+  - "**/*.spec.*"
+  - "**/*.test.*"
+node_registry_file: .iwp/node_registry.v1.json
+node_catalog_file: .iwp/node_catalog.v1.json
+cache:
+  dir: .iwp/cache
+  node_index_db_file: .iwp/cache/node_index.v1.sqlite
+  snapshot_db_file: .iwp/cache/snapshots.sqlite
+compiled:
+  dir: .iwp/compiled
+thresholds:
+  node_linked_min: 35
+  critical_linked_min: 60
+  node_tested_min: 0
+enable_profile_coverage: true
+coverage_profiles:
+  - name: logic_interaction
+    file_type_ids:
+      - logic
+      - state
+    node_linked_min: 60
+    critical_linked_min: 80
+    missing_severity: error
+  - name: views_structure
+    file_type_ids:
+      - views.pages
+      - views.components
+    anchor_levels:
+      - interaction
+      - structure
+    node_linked_min: 50
+    critical_linked_min: 70
+    missing_severity: warning
+  - name: views_text
+    file_type_ids:
+      - views.pages
+      - views.components
+    anchor_levels:
+      - text
+    node_linked_min: 0
+    critical_linked_min: 0
+    missing_severity: warning
+tiny_diff:
+  min_impacted_nodes: 3
+  node_tested_min_count: 0
+  degrade_to_warning: true
+schema:
+  file: builtin:iwp-schema.v1
+  mode: compat
+  exclude_markdown_globs:
+    - "README.md"
+    - "architecture.md"
+    - "dependency.md"
+
