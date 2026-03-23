@@ -39,6 +39,8 @@
 在仓库根目录执行：
 
 ```bash
+python scripts/sync_iwp_runtime.py
+
 python scripts/package_plugins.py \
   --release-tag plugins-vlocal-test \
   --base-url https://github.com/chaxiu/dawnchat-plugins/releases/download \
@@ -66,6 +68,33 @@ python scripts/package_plugins.py \
 2. 对 Web 插件自动构建 `web-src`（仅保留运行所需产物）
 3. 打包并上传 `*.dawnchat`
 4. 上传 `plugins.json` 到同一 Release
+
+### IWP Runtime Pack 同步
+
+- 共享 IWP 资源位于 `.opencode/iwp-runtime/`，由 `.opencode/iwp-runtime.lock.json` 固定校验。
+- 本地源码同步（local 模式）：
+
+```bash
+python scripts/sync_iwp_runtime.py
+```
+
+- Release 资产同步（release 模式）：
+
+```bash
+python scripts/sync_iwp_runtime.py \
+  --source release \
+  --runtime-release-tag v1.0-draft-03 \
+  --tools-release-tag v0.1.5 \
+  --runtime-version v1.0-draft-03
+```
+
+- 仅校验 lock 与 runtime 一致性：
+
+```bash
+python scripts/sync_iwp_runtime.py --check
+```
+
+- `publish-plugins` 手动触发时可选传入 `iwp_runtime_release_tag` 与 `iwp_tools_release_tag`，工作流会先刷新 runtime 再打包。
 
 版本冲突自动化行为：
 

@@ -1,6 +1,11 @@
 {
-  "version": "1.0.1",
-  "package_name": "opencode-rules-1.0.1.zip",
+  "version": "1.0.3",
+  "package_name": "opencode-rules-1.0.3.zip",
   "min_host_version": "1.0.0",
-  "description": "Shared OpenCode context, skills and agent config for DawnChat plugin development"
+  "description": "Shared OpenCode context, skills and agent config for DawnChat plugin development",
+  "iwp_runtime": {
+    "lock_file": "iwp-runtime.lock.json",
+    "runtime_dir": "iwp-runtime",
+    "runtime_pack_version": "from-lock"
+  }
 }

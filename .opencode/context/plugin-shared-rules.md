@@ -18,3 +18,10 @@ These rules are shared across all DawnChat plugins in development mode.
 
 - Run focused tests for modified plugin paths.
 - Provide a short manual verification checklist for preview mode.
+
+## IWP Runtime Pack
+
+- Shared IWP protocol assets are versioned under `.opencode/iwp-runtime/`.
+- Integrity is pinned by `.opencode/iwp-runtime.lock.json`.
+- Prefer the synced runtime pack when explaining IWP protocol and stage rules.
+- If lock and runtime files drift, fail fast and resync before release.

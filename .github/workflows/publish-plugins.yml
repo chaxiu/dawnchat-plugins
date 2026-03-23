@@ -10,6 +10,14 @@ on:
         description: "Release tag, e.g. plugins-v2026.02.13"
         required: true
         type: string
+      iwp_runtime_release_tag:
+        description: "Optional instructware.org runtime release tag, e.g. v1.0-draft-03"
+        required: false
+        type: string
+      iwp_tools_release_tag:
+        description: "Optional iwp-tools release tag, e.g. v0.1.5"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -89,6 +97,40 @@ jobs:
           else
             echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Validate IWP release tag inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          runtime_tag="${{ github.event.inputs.iwp_runtime_release_tag }}"
+          tools_tag="${{ github.event.inputs.iwp_tools_release_tag }}"
+          if [[ -n "${runtime_tag}" && -z "${tools_tag}" ]]; then
+            echo "iwp_tools_release_tag is required when iwp_runtime_release_tag is set." >&2
+            exit 1
+          fi
+          if [[ -z "${runtime_tag}" && -n "${tools_tag}" ]]; then
+            echo "iwp_runtime_release_tag is required when iwp_tools_release_tag is set." >&2
+            exit 1
+          fi
+
+      - name: Verify IWP runtime lock
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '') }}
+        run: |
+          python scripts/sync_iwp_runtime.py --check
+
+      - name: Refresh IWP runtime from release
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '' }}
+        run: |
+          python scripts/sync_iwp_runtime.py \
+            --source release \
+            --runtime-release-tag "${{ github.event.inputs.iwp_runtime_release_tag }}" \
+            --tools-release-tag "${{ github.event.inputs.iwp_tools_release_tag }}" \
+            --runtime-version "${{ github.event.inputs.iwp_runtime_release_tag }}"
+
+      - name: Verify IWP runtime lock after refresh
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '' }}
+        run: |
+          python scripts/sync_iwp_runtime.py --check
 
       - name: Build plugin packages
         run: |

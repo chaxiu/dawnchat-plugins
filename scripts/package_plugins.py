@@ -257,6 +257,34 @@ def _read_json(path: Path) -> dict[str, Any]:
         return json.load(f)
 
 
+def _validate_iwp_runtime_lock(shared_rules_root: Path) -> None:
+    lock_path = shared_rules_root / "iwp-runtime.lock.json"
+    runtime_dir = shared_rules_root / "iwp-runtime"
+    if not lock_path.exists():
+        return
+    payload = _read_json(lock_path)
+    files = payload.get("files")
+    if not isinstance(files, list) or not files:
+        raise RuntimeError("iwp-runtime.lock.json has empty files list")
+    if not runtime_dir.exists() or not runtime_dir.is_dir():
+        raise RuntimeError("iwp-runtime directory is missing while lock file exists")
+    for item in files:
+        if not isinstance(item, dict):
+            raise RuntimeError("iwp-runtime.lock.json contains invalid file entries")
+        rel = str(item.get("target") or "").strip()
+        expected = str(item.get("sha256") or "").strip().lower()
+        if not rel or not expected:
+            raise RuntimeError(f"invalid lock entry in iwp-runtime.lock.json: {item}")
+        file_path = runtime_dir / rel
+        if not file_path.exists() or not file_path.is_file():
+            raise RuntimeError(f"missing iwp runtime file declared in lock: {file_path}")
+        actual = _sha256_file(file_path).lower()
+        if actual != expected:
+            raise RuntimeError(
+                f"iwp runtime checksum mismatch: {rel}, expected={expected}, actual={actual}"
+            )
+
+
 def _iter_plugin_dirs(plugins_root: Path) -> list[Path]:
     result: list[Path] = []
     for item in sorted(plugins_root.iterdir()):
@@ -768,6 +796,7 @@ def _package_shared_rules(shared_rules_root: Path, output_dir: Path) -> SharedRu
         print(f"shared rules manifest missing, skip: {manifest_path}")
         return None
     manifest = _read_json(manifest_path)
+    _validate_iwp_runtime_lock(shared_rules_root)
     version = str(manifest.get("version") or "").strip()
     if not version:
         raise RuntimeError("shared rules manifest version is required")
