@@ -3,6 +3,8 @@ official-plugins/cosyvoice/src/local_overrides/
 official-plugins/vibevoice/src/local_overrides/
 official-plugins/cosyvoice/src/outputs
 official-plugins/vibevoice/src/outputs
+**/.iwp/
+official-plugins/**/out/
 node_modules/
 **/node_modules/
 **/.pnpm-debug.log*

@@ -73,7 +73,7 @@
 - `apps/frontend/src/views/AppsView.vue`
 - `apps/frontend/src/components/apps/CreateAppWizardModal.vue`
 - `apps/frontend/src/components/apps/InstalledAppsSection.vue`
-- `apps/frontend/src/views/PluginDevWorkbenchView.vue`
+- `apps/frontend/src/features/plugin-dev-workbench/views/PluginDevWorkbenchPage.vue`
 - `apps/frontend/src/components/apps/PluginPreviewPane.vue`
 - `apps/frontend/src/components/apps/PluginDevChatPanel.vue`
 
@@ -105,6 +105,6 @@
 ## 5) 对 LLM 的阅读建议
 
 - 要理解“创建插件”先看：`AppsView.vue` -> `pluginStore.ts` -> `plugins_routes.py` -> `manager.py#create_plugin_from_template`。
-- 要理解“预览与圈选”先看：`PluginDevWorkbenchView.vue` -> `PluginPreviewPane.vue` -> `preview_manager.py` -> `vite_preview_server_template.mjs`。
+- 要理解“预览与圈选”先看：`PluginDevWorkbenchPage.vue` -> `PluginPreviewPane.vue` -> `preview_manager.py` -> `vite_preview_server_template.mjs`。
 - 要理解“自然语言改代码”先看：`PluginDevChatPanel.vue` -> `codingAgentStore.ts` -> `openCodeAdapter.ts / agentV3Adapter.ts`。
 - 要理解“UI 上下文回推与页面操作”先看：`usePluginUiBridge.ts` -> `plugin_ui_bridge_routes.py` -> `plugin_ui_bridge/service.py`。

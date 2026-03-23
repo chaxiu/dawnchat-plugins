@@ -1,11 +1,15 @@
 # page_home
 
-## layout_tree
+## Layout Tree
 
 - full-screen scene stage with one active scene renderer
 
-## interaction_hooks
+## Interaction Hooks
 
 - scene startup loads holographic scene by default
-- [text] stage renders immersive visual effect
+- pointer move updates orb motion response
+- click emits local burst pulse feedback
 
+## Display Rules
+
+- [text] stage renders immersive visual effect

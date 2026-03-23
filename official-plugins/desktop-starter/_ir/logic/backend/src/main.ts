@@ -6,6 +6,7 @@ const pluginId = process.env.DAWNCHAT_PLUGIN_ID || "com.dawnchat.desktop-starter
 const hostPort = process.env.DAWNCHAT_HOST_PORT || "";
 const sourceRoot = process.env.DAWNCHAT_PLUGIN_SOURCE_DIR || dirname(dirname(dirname(dirname(import.meta.path))));
 const webRoot = join(sourceRoot, "views", "web");
+// @iwp.link system.md::n.f6a0
 
 const defaultHeaders = {
   "content-type": "application/json; charset=utf-8",

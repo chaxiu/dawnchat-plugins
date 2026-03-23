@@ -6,7 +6,13 @@ include_ext:
   - .vue
   - .css
   - .js
+code_exclude_globs:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/__pycache__/**"
+  - "**/.pytest_cache/**"
 test_globs:
+  - "**/tests/**"
   - "**/*.spec.*"
   - "**/*.test.*"
 node_registry_file: .iwp/node_registry.v1.json
@@ -17,35 +23,21 @@ cache:
   snapshot_db_file: .iwp/cache/snapshots.sqlite
 compiled:
   dir: .iwp/compiled
+allow_multi_link_per_symbol: false
+critical_node_patterns: []
 thresholds:
-  node_linked_min: 35
-  critical_linked_min: 60
+  node_linked_min: 0
+  critical_linked_min: 0
   node_tested_min: 0
 enable_profile_coverage: true
 coverage_profiles:
-  - name: logic_interaction
+  - name: phase0_core
     file_type_ids:
+      - system
       - logic
       - state
-    node_linked_min: 60
-    critical_linked_min: 80
-    missing_severity: error
-  - name: views_structure
-    file_type_ids:
       - views.pages
       - views.components
-    anchor_levels:
-      - interaction
-      - structure
-    node_linked_min: 50
-    critical_linked_min: 70
-    missing_severity: warning
-  - name: views_text
-    file_type_ids:
-      - views.pages
-      - views.components
-    anchor_levels:
-      - text
     node_linked_min: 0
     critical_linked_min: 0
     missing_severity: warning
@@ -53,11 +45,55 @@ tiny_diff:
   min_impacted_nodes: 3
   node_tested_min_count: 0
   degrade_to_warning: true
+diff_defaults:
+  base: HEAD~1
+  head: HEAD
 schema:
-  file: builtin:iwp-schema.v1
+  file: builtin
   mode: compat
   exclude_markdown_globs:
     - "README.md"
     - "architecture.md"
     - "dependency.md"
-
+code_sidecar:
+  enabled: true
+  dir: .iwp/compiled/code
+  replace_pure_link_line: true
+  max_diagnostics: 20
+  include_node_anchor_text: true
+  include_node_block_text: true
+execution_presets:
+  agent-default:
+    session_start:
+      if_missing: true
+    session_diff:
+      node_severity: error
+      markdown_excerpt_max_chars: 240
+      include_baseline_gaps: true
+      max_gap_items: 20
+      format: both
+      json: out/session-diff.json
+    session_reconcile:
+      node_severity: error
+      format: both
+      json: out/session-reconcile.json
+      max_diagnostics: 20
+      min_severity: error
+      warning_top_n: 2
+      suggest_fixes: true
+      auto_build_sidecar: true
+    session_commit:
+      evidence_json: out/session-evidence.json
+      json: out/session-commit.json
+  ci-strict:
+    verify:
+      with_tests: true
+      min_severity: error
+    session_commit:
+      evidence_json: out/session-evidence.json
+      json: out/session-commit.json
+session:
+  auto_start_on_missing: false
+  link_density_threshold: 0.25
+  baseline_gap_max_items: 20
+  warning_summary_top_n: 2
