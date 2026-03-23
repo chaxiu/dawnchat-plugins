@@ -1,9 +1,9 @@
 {
-  "id": "com.dawnchat.desktop-starter",
-  "name": "Desktop Starter",
+  "id": "com.dawnchat.desktop-hello-world",
+  "name": "Desktop Hello World",
   "version": "0.1.0",
   "app_type": "desktop",
-  "description": "Desktop starter template powered by Vue and Bun backend",
+  "description": "Minimal desktop hello world template powered by Vue and Bun backend",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
   "permissions": [],
@@ -30,9 +30,9 @@
       "node_modules"
     ]
   },
-  "icon": "🧠",
+  "icon": "👋",
   "tags": [
-    "template",
+    "hello-world",
     "desktop",
     "vue",
     "bun"

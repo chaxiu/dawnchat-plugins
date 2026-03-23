@@ -1,0 +1,11 @@
+version: 1.0.0
+name: DesktopHelloWorld
+description: DawnChat minimal desktop hello world template with Bun backend and Vue frontend
+
+targets:
+  - desktop
+
+permissions: []
+
+requires:
+  - plugin:dawnchat_host_api

@@ -2,7 +2,7 @@
 
 This bundle defines baseline intent for the DawnChat desktop starter template.
 
-- Frontend scene is rendered with Vue under `_ir/views/web-src`.
-- Backend tool endpoint is implemented with Bun under `_ir/logic/backend`.
-- Agent edits should keep `@iwp.link` annotations colocated with implementation logic.
-
+- Frontend source is under `_ir/frontend/web-src`.
+- Backend entry is implemented with Bun under `_ir/backend/entry/main.ts`.
+- Default values are maintained via `InstructWare.iw` + code literal alignment.
+- Agent edits should keep `@iwp.link` annotations colocated with implementation literals.
