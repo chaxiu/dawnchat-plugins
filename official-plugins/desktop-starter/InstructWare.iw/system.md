@@ -1,5 +1,7 @@
 # System
 
+This document defines runtime boundaries and baseline constraints for desktop-starter.
+
 ## Product Identity
 
 - plugin id: `com.dawnchat.desktop-starter`
@@ -7,36 +9,25 @@
 - runtime backend: `bun`
 - source root: `_ir`
 
-## Global Rules
+## Runtime Boundaries
 
-- frontend and backend edits MUST stay under `_ir`.
-- `_ir` uses domain-oriented architecture:
-  - shared layer: `_ir/shared/**`
-  - backend layer: `_ir/backend/**`
-  - frontend layer: `_ir/frontend/**`
-- backend API response shape for tool call MUST remain stable.
-- preview startup MUST keep working with `preview.frontend_dir`.
+- Frontend and backend edits MUST stay under `_ir`.
+- Layered structure is fixed as shared (`_ir/shared/**`), backend (`_ir/backend/**`), and frontend (`_ir/frontend/**`).
+- Preview startup MUST keep working with `preview.frontend_dir`.
 
-## Information Architecture
+## Architecture Contract
 
-- intent SSOT stays in `InstructWare.iw/**`.
-- implementation code keeps layered responsibilities:
-  - semantic models shared by frontend/backend stay in `_ir/shared/models/**`
-  - backend adaptation code stays in `_ir/backend/**`
-  - frontend implementation and build artifacts stay in `_ir/frontend/**`
-  - frontend source layering under `_ir/frontend/web-src/src/**`:
-    - view nodes in `views/**`
-    - rendering and behavior logic in `logic/**`
-    - view models in `models/**`
-- colocated links map changed intent nodes to nearby code boundaries only.
+- Intent SSOT stays in `InstructWare.iw/**`.
+- Frontend source layering under `_ir/frontend/web-src/src/**` keeps `views/**`, `logic/**`, and `models/**` responsibilities separated.
+- Colocated links map changed intent nodes to nearby code boundaries only.
 
 ## Runtime Guarantees
 
-- backend runtime exposes `/health`, `/api/info`, `/api/hello`, `/api/tools/call`.
-- tool call result shape keeps deterministic `status` and `result` fields.
-- frontend preview loads from `_ir/frontend/web` static artifacts.
+- Backend runtime exposes `/health`, `/api/info`, `/api/hello`, `/api/tools/call`.
+- Tool call result shape keeps deterministic `status` and `result` fields. @iwp(file=logic,section=output)
+- Frontend preview loads static artifacts from `_ir/frontend/web`.
 
-## Security Model
+## Security Policy
 
-- plugin declares `network:none` and `fs:read` permissions only.
-- tool call input is validated and unknown tool names return controlled errors.
+- Plugin declares `network:none` and `fs:read` permissions only.
+- Tool call input is validated and unknown tool names return controlled errors.

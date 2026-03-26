@@ -15,11 +15,11 @@ export interface HomeSceneDefaults {
 export const defaultHomeScene: HomeSceneModel = {
   sceneId: "holographic-command-orb",
   defaults: {
-    particleSize: 1.1, // @iwp.link views/pages/home.md::n.60d1
-    particleColor: "#bfdbfe", // @iwp.link views/pages/home.md::n.f0b1
-    backgroundColor: "#02040f", // @iwp.link views/pages/home.md::n.30a3
-    coreColor: "#93c5fd", // @iwp.link views/pages/home.md::n.2de5
-    waveSpeed: 0.74, // @iwp.link views/pages/home.md::n.67fc
-    welcomeText: "Hello", // @iwp.link views/pages/home.md::n.87b9
+    particleSize: 1.1, // @iwp.link views/pages/home.md::n.a6bf
+    particleColor: "#bfdbfe", // @iwp.link views/pages/home.md::n.b15c
+    backgroundColor: "#02040f", // @iwp.link views/pages/home.md::n.7491
+    coreColor: "#93c5fd", // @iwp.link views/pages/home.md::n.dcf9
+    waveSpeed: 0.74, // @iwp.link views/pages/home.md::n.2791
+    welcomeText: "Hello", // @iwp.link views/pages/home.md::n.33a8
   },
 };

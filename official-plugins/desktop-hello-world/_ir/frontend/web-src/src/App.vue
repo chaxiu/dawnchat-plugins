@@ -3,7 +3,7 @@ import HomeHelloWorldPage from "./views/pages/home/HomeHelloWorldPage.vue";
 </script>
 
 <template>
-  <!-- @iwp.link views/pages/home.md::n.ff23 -->
+  <!-- @iwp.link views/pages/home.md::n.28ed -->
   <main class="hello-shell">
     <HomeHelloWorldPage />
   </main>

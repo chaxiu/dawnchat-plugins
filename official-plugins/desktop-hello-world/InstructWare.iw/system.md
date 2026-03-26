@@ -1,5 +1,7 @@
 # System
 
+This document defines runtime boundaries and baseline constraints for desktop-hello-world.
+
 ## Product Identity
 
 - plugin id: `com.dawnchat.desktop-hello-world`
@@ -7,31 +9,25 @@
 - runtime backend: `bun`
 - source root: `_ir`
 
-## Global Rules
+## Runtime Boundaries
 
-- frontend and backend edits MUST stay under `_ir`.
-- `_ir` uses domain-oriented architecture:
-  - shared layer: `_ir/shared/**`
-  - backend layer: `_ir/backend/**`
-  - frontend layer: `_ir/frontend/**`
-- keep backend API shape stable for `/health`, `/api/info`, `/api/hello`.
-- preview startup MUST keep working with `preview.frontend_dir`.
+- Frontend and backend edits MUST stay under `_ir`.
+- Layered structure is fixed as shared (`_ir/shared/**`), backend (`_ir/backend/**`), and frontend (`_ir/frontend/**`).
+- Preview startup MUST keep working with `preview.frontend_dir`.
 
-## Information Architecture
+## Architecture Contract
 
-- intent SSOT stays in `InstructWare.iw/**`.
-- implementation code keeps layered responsibilities:
-  - backend runtime code stays in `_ir/backend/**`
-  - frontend source and artifacts stay in `_ir/frontend/**`
-  - shared contracts can be added under `_ir/shared/**` when needed.
+- Intent SSOT stays in `InstructWare.iw/**`.
+- Backend runtime code stays in `_ir/backend/**` and frontend source/artifacts stay in `_ir/frontend/**`.
+- Shared contracts MAY be added under `_ir/shared/**` when needed.
 
 ## Runtime Guarantees
 
-- backend runtime exposes `/health`, `/api/info`, `/api/hello`.
-- `/api/hello` returns deterministic JSON with `status` and `greeting`.
-- frontend preview loads from `_ir/frontend/web` static artifacts.
+- Backend runtime exposes `/health`, `/api/info`, `/api/hello`. @iwp(file=logic,section=output)
+- `/api/hello` returns deterministic JSON with `status` and `greeting`. @iwp(file=logic,section=output)
+- Frontend preview loads static artifacts from `_ir/frontend/web`.
 
-## Security Model
+## Security Policy
 
-- plugin keeps an empty permissions list by default.
-- avoid adding unnecessary runtime capabilities in hello-world baseline.
+- Plugin keeps an empty permissions list by default.
+- Avoid adding unnecessary runtime capabilities in hello-world baseline.

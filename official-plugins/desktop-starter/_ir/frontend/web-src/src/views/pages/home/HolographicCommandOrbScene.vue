@@ -11,6 +11,11 @@ import {
 } from "../../../logic/rendering/holographic/shaders";
 import { defaultHomeScene } from "../../../models/home_scene";
 
+const props = defineProps<{
+  backendApiStatus: "checking" | "ok" | "error";
+  backendApiLabel: string;
+}>();
+
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const bootProgress = ref(0);
 
@@ -288,6 +293,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <!-- @iwp.link views/pages/home.md::n.d44a -->
   <main class="scene holo-scene" :style="sceneBackgroundStyle">
     <canvas ref="canvasRef" class="canvas"></canvas>
     <div class="scanlines"></div>
@@ -306,6 +312,10 @@ onMounted(() => {
       <p><span>Core Color</span><strong>{{ params.coreColor }}</strong></p>
       <p><span>Wave Speed</span><strong>{{ params.waveSpeed }}</strong></p>
       <p><span>Boot</span><strong>{{ bootProgress }}%</strong></p>
+      <p>
+        <span>Backend API</span>
+        <strong :class="['api-status', `api-status--${props.backendApiStatus}`]">{{ props.backendApiLabel }}</strong>
+      </p>
     </header>
 
     <div class="title-wrap">
@@ -381,6 +391,18 @@ onMounted(() => {
 
 .hud-panel span {
   opacity: 0.74;
+}
+
+.api-status--checking {
+  color: #fcd34d;
+}
+
+.api-status--ok {
+  color: #6ee7b7;
+}
+
+.api-status--error {
+  color: #fca5a5;
 }
 
 .title-wrap {

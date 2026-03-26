@@ -6,7 +6,7 @@ const pluginId = process.env.DAWNCHAT_PLUGIN_ID || "com.dawnchat.desktop-hello-w
 const hostPort = process.env.DAWNCHAT_HOST_PORT || "";
 const sourceRoot = process.env.DAWNCHAT_PLUGIN_SOURCE_DIR || dirname(dirname(dirname(dirname(import.meta.path))));
 const webRoot = join(sourceRoot, "frontend", "web");
-// @iwp.link system.md::n.275f
+// @iwp.link system.md::n.5676
 const defaultHeaders = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
@@ -33,7 +33,7 @@ const server = Bun.serve({
     const pathname = url.pathname;
 
     if (pathname === "/health") {
-      // @iwp.link system.md::n.4033
+      // @iwp.link system.md::n.69f1
       return jsonResponse({ status: "ok", plugin_id: pluginId });
     }
 
@@ -47,10 +47,10 @@ const server = Bun.serve({
     }
 
     if (pathname === "/api/hello" && request.method === "GET") {
-      // @iwp.link logic/tools/hello_world.md::n.229f
+      // @iwp.link logic/tools/hello_world.md::n.084a
       const name = (url.searchParams.get("name") || "World").trim() || "World";
       return jsonResponse({
-        // @iwp.link logic/tools/hello_world.md::n.dc43
+        // @iwp.link logic/tools/hello_world.md::n.4652
         status: "ok",
         plugin_id: pluginId,
         greeting: `Hello, ${name}!`,

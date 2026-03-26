@@ -1,16 +1,23 @@
 # hello_world_tool
 
-## Trigger
+This tool defines the backend hello endpoint contract for template verification and quick host integration checks.
 
-- GET `/api/hello` with optional query `name`
+## API Trigger
 
-## Execution Flow
+HTTP GET `/api/hello` accepts optional query `name`. @iwp(file=logic,section=trigger)
 
-- receive request with optional `name` argument
-- backend implementation resides in `_ir/backend/**`
-- produce greeting payload in a deterministic JSON shape
-- return `status=ok` and `greeting`
+## Behavior Contract
 
-## Failure Handling
+- The handler reads `name`, trims whitespace, and applies fallback `World` when empty.
+- The handler returns a deterministic JSON object with stable keys `status` and `greeting`. @iwp(file=logic,section=output)
+- The `greeting` field format is exactly `Hello, {resolved_name}!`.
 
-- fallback name to `World` when input is empty
+## Runtime Boundary
+
+Backend implementation lives under `_ir/backend/**`.
+
+## Acceptance Criteria
+
+- Request without `name` returns greeting for `World`.
+- Request with `name=Alice` returns greeting for `Alice`.
+- Response keys and value shape remain stable for host-side consumption.

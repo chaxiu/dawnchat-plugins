@@ -1,25 +1,43 @@
 # page_home
 
-## Layout Tree
+This page defines the fullscreen holographic command-orb scene used as the default visual entry for desktop-starter.
 
-- full-screen scene stage with one active scene renderer
+## Page Purpose
 
-## Interaction Hooks
+- Present an immersive visual stage that is immediately interactive after load.
+- Demonstrate a maintainable Three.js + Vue scene baseline for further feature extension.
 
-- scene startup loads holographic scene by default
-- pointer move updates orb motion response
-- click emits local burst pulse feedback
-- view implementation resides in `_ir/frontend/web-src/src/views/pages/home/**`
+## Page Structure
 
-## Display Rules
+- One fullscreen stage container with one active scene renderer. @iwp(kind=views.pages.layout_tree)
+- One HUD panel showing live scene parameters and boot progress.
+- One centered title region bound to configurable welcome text.
 
-- [text] stage renders immersive visual effect
+## Interaction Intent
 
-## Data Bindings
+- Scene startup loads holographic scene by default.
+- Pointer move updates orb motion response.
+- Click emits local burst pulse feedback.
+- View implementation lives under `_ir/frontend/web-src/src/views/pages/home/**`.
 
-- particle size default is `1.1`
-- particle color default is `#bfdbfe`
-- background color default is `#02040f`
-- center holograph color default is `#93c5fd`
-- wave speed default is `0.74`
-- welcome text default is `Hello`
+## Display Contract
+
+- Stage renders immersive visual effect with animated core, shell, and particle layers.
+- HUD displays particle size, particle color, background color, core color, wave speed, and boot progress.
+
+## State Expectations
+
+Default parameter values:
+
+- `particle_size = 1.1` @iwp(file=state,section=defaults)
+- `particle_color = #bfdbfe` @iwp(file=state,section=defaults)
+- `background_color = #02040f` @iwp(file=state,section=defaults)
+- `core_color = #93c5fd` @iwp(file=state,section=defaults)
+- `wave_speed = 0.74` @iwp(file=state,section=defaults)
+- `welcome_text = Hello` @iwp(file=state,section=defaults)
+
+## Acceptance Criteria
+
+- Scene is visible and interactive immediately after page load.
+- Pointer movement changes orb motion and click triggers burst feedback.
+- HUD and title values stay consistent with runtime parameters.

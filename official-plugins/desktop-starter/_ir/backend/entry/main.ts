@@ -6,7 +6,7 @@ const pluginId = process.env.DAWNCHAT_PLUGIN_ID || "com.dawnchat.desktop-starter
 const hostPort = process.env.DAWNCHAT_HOST_PORT || "";
 const sourceRoot = process.env.DAWNCHAT_PLUGIN_SOURCE_DIR || dirname(dirname(dirname(dirname(import.meta.path))));
 const webRoot = join(sourceRoot, "frontend", "web");
-// @iwp.link system.md::n.f6a0
+// @iwp.link system.md::n.2ecb
 
 const defaultHeaders = {
   "content-type": "application/json; charset=utf-8",
@@ -47,8 +47,10 @@ const server = Bun.serve({
     }
 
     if (pathname === "/api/hello" && request.method === "GET") {
+      // @iwp.link logic/tools/hello_world.md::n.ab7e
       const name = (url.searchParams.get("name") || "World").trim() || "World";
       return jsonResponse({
+        // @iwp.link logic/tools/hello_world.md::n.ed75
         status: "ok",
         greeting: `Hello, ${name}!`,
       });

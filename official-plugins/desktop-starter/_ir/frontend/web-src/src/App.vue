@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import type { Component } from "vue";
 import { defaultHomeScene } from "./models/home_scene";
 import HolographicCommandOrbScene from "./views/pages/home/HolographicCommandOrbScene.vue";
@@ -21,17 +21,50 @@ const scenes: SceneItem[] = [
 ];
 
 const activeScene = ref<SceneKey>(defaultHomeScene.sceneId);
+const backendApiStatus = ref<"checking" | "ok" | "error">("checking");
+const backendApiLabel = ref("Checking");
 
 const activeSceneComponent = computed(() => {
   const hit = scenes.find((item) => item.key === activeScene.value);
   return hit?.component ?? HolographicCommandOrbScene;
+});
+
+async function probeBackendApi(): Promise<void> {
+  backendApiStatus.value = "checking";
+  backendApiLabel.value = "Checking";
+  try {
+    const response = await fetch("/api/hello?name=Starter", {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = (await response.json()) as { status?: string };
+    if (payload.status !== "ok") {
+      throw new Error("Invalid payload");
+    }
+    backendApiStatus.value = "ok";
+    backendApiLabel.value = "OK";
+  } catch {
+    backendApiStatus.value = "error";
+    backendApiLabel.value = "ERROR";
+  }
+}
+
+onMounted(() => {
+  void probeBackendApi();
 });
 </script>
 
 <template>
   <main class="starter-shell">
     <div class="scene-stage">
-      <component :is="activeSceneComponent" :key="activeScene" />
+      <component
+        :is="activeSceneComponent"
+        :key="activeScene"
+        :backend-api-status="backendApiStatus"
+        :backend-api-label="backendApiLabel"
+      />
     </div>
   </main>
 </template>
