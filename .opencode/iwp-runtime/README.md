@@ -2,8 +2,8 @@
 
 This directory is synchronized by `scripts/sync_iwp_runtime.py`.
 
-- Runtime pack version: `v1.0-draft-03`
-- Source mode: `release`
+- Runtime pack version: `0.1.0-local`
+- Source mode: `local`
 - Source of truth: local instructware.org or release runtime pack
 - Lock file: `../iwp-runtime.lock.json`
 

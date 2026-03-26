@@ -1,0 +1,28 @@
+{
+  "schema_version": "v1",
+  "session_id": "s.example",
+  "review_scope": {
+    "iwp_root": "InstructWare.iw",
+    "code_root": "_ir",
+    "sidecar_root": ".iwp/compiled/code/_ir"
+  },
+  "result": {
+    "qualified": false,
+    "summary": "Mismatch found in 1 linked node."
+  },
+  "checks": [
+    {
+      "status": "fail",
+      "source_path": "views/pages/home.md",
+      "node_id": "n.3385",
+      "code_path": "_ir/src/views/pages/HomePage.vue",
+      "reason": "Node says open full repository URL, but code opens org root.",
+      "evidence_snippet": "openExternal(\"https://github.com/InstructWare\");"
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "pass": 0,
+    "fail": 1
+  }
+}

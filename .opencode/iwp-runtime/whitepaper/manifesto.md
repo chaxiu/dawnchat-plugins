@@ -21,6 +21,7 @@ This model has worked, but it also shifts adaptation cost to people: users learn
 Large language models and agentic systems now make this approach practical: intent can be authored in natural language and compiled into executable behavior under policy controls, validation, and traceability.
 
 At the same time, AI-assisted coding has introduced a new failure mode: fragmented prompts produce fragmented systems. Without a structured intent layer, teams accumulate behavior that is difficult to test, explain, and maintain.
+InstructWare uses a protocolized intent layer built around human-readable intent documents (page-first in IWP), with optional semantic annotations to help teams keep this contract explicit and maintainable at scale.
 
 > **Instruction:** is the human-provided input; **intent:** is the normalized semantic target derived from instruction and used for planning and execution.
 
@@ -86,6 +87,7 @@ For developers and product teams, InstructWare is not "chat as process." It is a
 Prompting is useful for ideation, but prompts alone are not a durable system contract.
 
 Industry solutions such as Spec Kit already move teams toward spec-driven planning and implementation workflows. InstructWare builds on that direction by treating intent artifacts as protocol-governed runtime contracts, with explicit traceability and drift-control rules that can be validated in tooling and CI.
+In the IWP Core profile, this discipline is operationalized as human-readable, page-first intent authoring, optional `@iwp` semantic annotations, and profile-based verification and drift-control gates.
 
 In short: InstructWare is not anti-code; it is pro-discipline for teams building with AI at production scale.
 

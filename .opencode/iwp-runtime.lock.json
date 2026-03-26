@@ -1,91 +1,87 @@
 {
   "schema_version": "1.0.0",
-  "runtime_pack_version": "v1.0-draft-03",
-  "source_mode": "release",
-  "generated_at": "2026-03-23T15:40:24.755391+00:00",
+  "runtime_pack_version": "0.1.0-local",
+  "source_mode": "local",
+  "generated_at": "2026-03-26T08:24:59.879888+00:00",
   "sources": {
     "runtime_pack": {
       "repo": "https://github.com/InstructWare/instructware.org",
-      "release_tag": "v1.0-draft-03",
-      "manifest_url": "https://github.com/InstructWare/instructware.org/releases/download/v1.0-draft-03/iwp-runtime-pack-v1.0-draft-03.manifest.json",
-      "pack_url": "https://github.com/InstructWare/instructware.org/releases/download/v1.0-draft-03/iwp-runtime-pack-v1.0-draft-03.zip",
-      "pack_sha256": "1493bf59b5822b5e39f7c0a0ecf5dd03fec5c02aff3692721d960666cd71518a",
-      "manifest_sha256": "4dd4aa3bb95967e1eee221260ede371cfe190b6706d6ba6231207a49b58236c2"
-    },
-    "iwp_tools_release": {
-      "repo": "https://github.com/InstructWare/iwp-tools",
-      "release_tag": "v0.1.5",
-      "manifest_url": "https://github.com/InstructWare/iwp-tools/releases/download/v0.1.5/release-manifest.json",
-      "asset_count": 3
+      "path": "../instructware.org"
     }
   },
   "runtime_dir": "iwp-runtime",
   "files": [
     {
-      "id": "runtime::protocol__IWP-v1.md",
-      "target": "protocol/IWP-v1.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:protocol/IWP-v1.md",
-      "sha256": "dbe5572e3162cb36d87aab76645f37b2395c40ec808ce391be794df48a2d9728"
-    },
-    {
-      "id": "runtime::whitepaper__manifesto.md",
+      "id": "manifesto",
       "target": "whitepaper/manifesto.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:whitepaper/manifesto.md",
-      "sha256": "85da8846751ae4bda9d33689cf868baa52a10f4dee64d17f360495311f6a7a44"
+      "source": "instructware.org/whitepaper/manifesto.md",
+      "sha256": "f8daa6298bb6984bed92eea57ee149460676a4a738139eea27b56cf155431525"
     },
     {
-      "id": "runtime::schema__IWP-Schema-v1.md",
-      "target": "schema/IWP-Schema-v1.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:schema/IWP-Schema-v1.md",
-      "sha256": "6735cdc9c2222ffe8749941ecd59a1eade1b4fac6d189cf00b50115ecf38ef78"
+      "id": "protocol",
+      "target": "protocol/IWP-v1.md",
+      "source": "instructware.org/protocol/IWP-v1.md",
+      "sha256": "abac46aff4a7b999302a6a48514cb9836e02676a77a71ff6f5605fbb57fbba3b"
     },
     {
-      "id": "runtime::schema__README.md",
+      "id": "schema",
+      "target": "schema/iwp-schema.v1.json",
+      "source": "instructware.org/tools/schema/iwp-schema.v1.json",
+      "sha256": "c47cffec33c536b1934e803426ea1e6c38862a40e5a37d30d5650a2286563ab4"
+    },
+    {
+      "id": "schema-readme",
       "target": "schema/README.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:schema/README.md",
+      "source": "instructware.org/schema/README.md",
       "sha256": "d51dee380592a26fa51f3e5afd4272717429761baee8ee5ad261181ed118b5b3"
     },
     {
-      "id": "runtime::agent__v2__agent.md",
+      "id": "agent-runtime",
       "target": "agent/v2/agent.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/agent.md",
-      "sha256": "f3fd3889edd3e842a9dbf3185f29789b59f84d5c73e7d3b43c8f05229d621f57"
+      "source": "instructware.org/agent/v2/agent.md",
+      "sha256": "86888ab8d5bfd0788530733670b41d830c17df86fc977727fee579a1c509dd32"
     },
     {
-      "id": "runtime::agent__v2__skills__README.md",
-      "target": "agent/v2/skills/README.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/skills/README.md",
-      "sha256": "f3dad841c33e7f852c781e9b00128c35e4ff934603afc1f0825d5e40f335f254"
+      "id": "agent-skill-01",
+      "target": "agent/v2/skills/01-page-intent-authoring.md",
+      "source": "instructware.org/agent/v2/skills/01-page-intent-authoring.md",
+      "sha256": "788cca104dd97e9ae857623c9dc5204232e0225a428b9d7a2a4a1114c5fd7ed2"
     },
     {
-      "id": "runtime::agent__v2__skills__01-intent-authoring.md",
-      "target": "agent/v2/skills/01-intent-authoring.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/skills/01-intent-authoring.md",
-      "sha256": "8a08dd3ad47c651bd16f9bd156be86776c05de02772b3f99dd0adcf6cd85c2e9"
+      "id": "agent-skill-02",
+      "target": "agent/v2/skills/02-intent-annotation.md",
+      "source": "instructware.org/agent/v2/skills/02-intent-annotation.md",
+      "sha256": "f5470af4f6932b309fe58bcdf9cabff9de65d851b5274e452b44b62e0e605f0f"
     },
     {
-      "id": "runtime::agent__v2__skills__02-ir-implementation.md",
-      "target": "agent/v2/skills/02-ir-implementation.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/skills/02-ir-implementation.md",
-      "sha256": "bb6645cacd4ebaa79b1d2246dff6e7ebfa13726d557da6699716d34e526a4c48"
+      "id": "agent-skill-03",
+      "target": "agent/v2/skills/03-ir-implementation.md",
+      "source": "instructware.org/agent/v2/skills/03-ir-implementation.md",
+      "sha256": "3dc71888bfb017d112b6bbb2980e9d9d5249203da18ee57581aa3e2a861e2dff"
     },
     {
-      "id": "runtime::agent__v2__skills__03-link-alignment.md",
-      "target": "agent/v2/skills/03-link-alignment.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/skills/03-link-alignment.md",
-      "sha256": "ad9f340bc576584bd2cf324d9c5820ab25ed8729c65b1f785659f2aecff26629"
+      "id": "agent-skill-04",
+      "target": "agent/v2/skills/04-link-alignment.md",
+      "source": "instructware.org/agent/v2/skills/04-link-alignment.md",
+      "sha256": "11ebcb466dfd40b1e26031e636e04be83e20ddf822f1439bf26de8b98c0c0652"
     },
     {
-      "id": "runtime::agent__v2__skills__04-reverse-review.md",
-      "target": "agent/v2/skills/04-reverse-review.md",
-      "source": "InstructWare/instructware.org@v1.0-draft-03:agent/v2/skills/04-reverse-review.md",
-      "sha256": "3aa8ab98251cbb082538b25fbc0fee2dd146847f89f6bd031e61ae042522c89b"
+      "id": "agent-skill-05",
+      "target": "agent/v2/skills/05-reverse-review.md",
+      "source": "instructware.org/agent/v2/skills/05-reverse-review.md",
+      "sha256": "979b410dbe42a77d57da9c48184853d38102637729104fbc0543012bfdf1b6b5"
+    },
+    {
+      "id": "agent-review-template",
+      "target": "agent/v2/templates/review-report.v1.json",
+      "source": "instructware.org/agent/v2/templates/review-report.v1.json",
+      "sha256": "aea50820865b8008f23e916ec170cd06a8fd8faf1685191dcee66e76bd735dfb"
     },
     {
       "id": "runtime-readme",
       "target": "README.md",
       "source": "generated",
-      "sha256": "60ef6bbfa3bac403a2a3180b90b547fead48d83847af6440764b7f2e818bff29"
+      "sha256": "d211d9d6a0f32e85ca5104da67bdbeaf965480db57244ae4f223720d46f139d2"
     }
   ]
 }

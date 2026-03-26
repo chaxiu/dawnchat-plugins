@@ -22,7 +22,7 @@ IWP treats Markdown documents as the canonical intent layer while requiring mach
 
 IWP specifies:
 - source package structure (`.iw` bundle),
-- core intent document classes (`views/`, `logic/`, `models/`, `state/`),
+- page-first intent authoring and optional semantic typing via `@iwp` annotations,
 - runtime declaration boundary (`manifest.yaml`),
 - compiled context sidecar (`.iwc v1`) for toolchain and agent workflows,
 - implementation traceability contracts between intent nodes and executable artifacts.
@@ -40,13 +40,13 @@ IWP does not specify:
 
 An implementation is **IWP v1 compliant** only if it satisfies all requirements below:
 
-1. It **MUST** parse and validate `.iw` bundle structure defined in Section 5.
-2. It **MUST** enforce boundary rules for `views/`, `logic/`, `models/`, and `state/` in Section 6.
+1. It **MUST** parse and validate the `.iw` bundle structure defined in Section 5.
+2. It **MUST** support Section 6 page authoring and `@iwp` annotation semantics, including profile-defined validation rules.
 3. It **MUST** support `manifest.yaml` semantics in Section 7.
 4. It **MUST** generate `.iwc v1` artifacts exactly as defined in Section 9.
-5. It **MUST** report diagnostics against source `.iw` paths and source line ranges.
+5. It **MUST** report diagnostics for source `.iw` file paths and source line ranges.
 6. It **MUST** reject executable embedded code in intent markdown (Section 8.3).
-7. It **MUST** satisfy implementation traceability requirements in Section 9.1 and profile-appropriate drift-control requirements in Section 10.1.
+7. It **MUST** satisfy implementation traceability requirements in Section 9.1 and profile-specific drift-control requirements in Section 10.1.
 
 Implementations **MAY** provide extended profiles (for example, enterprise topology) as long as baseline conformance remains intact.
 
@@ -66,8 +66,10 @@ IWP uses layered conformance to keep baseline adoption lightweight:
 - **Instruction:** Human-authored natural language input before normalization.
 - **Intent Layer:** Human-authored Markdown in `.iw` that declares desired behavior and constraints.
 - **Intent:** Normalized semantic target derived from one or more instructions and used by the engine for planning and execution.
-- **Execution Layer:** The runtime/toolchain that compiles intent into executable artifacts under policy control.
-- **Agentic Engine:** The implementation component that performs parse, planning, synthesis, and orchestration.
+- **Page (Core profile):** A human-authored intent document, typically represented as one file under `pages/`.
+- **Feature Unit:** The smallest independently traceable product capability unit under an active profile; in the Core profile, a page is the default feature unit.
+- **Execution Layer:** The runtime toolchain that compiles intent into executable artifacts under policy control.
+- **Agentic Engine:** The implementation component that performs parsing, planning, synthesis, and orchestration.
 - **Bundle:** A directory with `.iw` suffix that contains all source intent assets.
 - **Compiled Context (`.iwc`):** Machine-oriented sidecar generated from source Markdown for indexing, linting, and agent retrieval.
 - **Capability Plugin:** A named runtime capability declared in `manifest.yaml` under `requires`.
@@ -108,7 +110,10 @@ Note: Policy and security boundaries are cross-cutting governance concerns and t
 
 An IWP source package **MUST** use `.iw` as the root directory suffix.
 
-Baseline topology:
+Baseline topology is page-first, human-readable, and maintainable.  
+Implementations **MUST NOT** require end users to adopt a fixed `views/logic/models/state` folder split in the Core profile.
+
+Recommended baseline topology:
 
 ```text
 AppName.iw/
@@ -118,74 +123,120 @@ AppName.iw/
 ├── architecture.md          # optional, advanced
 ├── dependency.md            # optional, advanced
 ├── styles/                  # optional
-├── models/                  # optional, advanced
-│   ├── user.md            
-│   └── expense.md           
-├── state/                   # optional, advanced
-│   ├── ui_prefs.md
-│   └── docs_runtime.md
-├── views/
-│   ├── pages/
-│   │   ├── home.md
-│   │   └── settings.md
-│   └── components/
-├── logic/
-│   ├── on_add_expense.md
-│   └── calculate_tax.md
+├── pages/
+│   ├── home.md
+│   ├── settings.md
+│   └── billing.md
+├── assets/                  # optional
 └── prompts/                 # optional
     └── extract_invoice.md
 ```
 
 `dependency.md` is optional and intended for teams that need explicit dependency governance constraints.
 
+Authoring guidance (Core profile):
+
+- A page **SHOULD** be written from a product or user-flow perspective.
+- A page **SHOULD** prioritize human readability over implementation taxonomy.
+- A page **SHOULD** be treated as the default feature unit in the Core profile.
+- Authors **MAY** annotate important nodes with `@iwp`.
+- Advanced authors **MAY** add optional parameters (for example `type`, `kind`, `file`, `section`) when stricter traceability or routing is needed.
+- Unannotated nodes **MAY** be semantically classified by implementation runtimes when that optional capability is enabled by the active profile or policy.
+
 Multi-target note:
 
 - A package **MAY** declare multiple runtime targets (for example `web`, `desktop`, `android`, `ios`, `backend`).
-- For multi-target projects, implementations **SHOULD** use a shared-first topology with target overlays to minimize duplicated intent documents.
+- For multi-target projects, implementations **SHOULD** use a shared-first topology with target overlays to reduce duplicate intent content.
 
 Recommended overlay topology (optional):
 
 ```text
 AppName.iw/
-├── views/
+├── pages/
 │   ├── shared/
 │   ├── web/
 │   ├── android/
 │   └── ios/
-├── logic/
+├── prompts/
 │   ├── shared/
-│   └── backend/
-└── state/
+│   └── mobile/
+└── assets/
     ├── shared/
-    └── mobile/
+    └── web/
 ```
 
 ---
 
 ## 6. Intent Layer Specifications
 
-### 6.1 `models/*.md`
+### 6.1 Page-First Intent Documents
 
-`models/` defines persistent entities and constraints. Implementations **MUST** map declarations to target persistence schemas (for example SQL DDL, document schema) with validation.
+In the Core profile, `pages/**/*.md` is the primary intent authoring surface.
+In this profile, each page is treated as the default feature unit for traceability and verification.
 
-### 6.2 `views/**/*.md`
+Each page **SHOULD** describe a coherent user-visible feature, workflow, or business goal in natural language.  
+This model is intentionally human-centric: writers can start from product intent and refine structure incrementally.
 
-`views/` defines UI semantics, hierarchy, and interaction hooks. Files in this layer **MUST NOT** perform state mutation or persistence side effects directly.
+### 6.2 `@iwp` Annotation Syntax
 
-### 6.3 `logic/*.md`
+Implementations **MUST** support node-level `@iwp` annotations in source Markdown.
 
-`logic/` defines event handling, validation flow, state transitions, and side effects. Logic handlers **MUST** be the mutation gateway for runtime state updates triggered by UI interaction.
+Minimum forms:
 
-### 6.4 `state/*.md`
+- `@iwp`
+- `@no-iwp`
 
-`state/` defines runtime state ownership and invariants. Persistent entities **MUST NOT** be declared in `state/`; they belong to `models/`.
+Optional parameterized forms (with profile-defined validation levels):
 
-### 6.5 Boundary Rules
+- `@iwp(type=<semantic_type>)`
+- `@iwp(kind=<file_type_id.section_key>)`
+- `@iwp(file=<file_type_id>,section=<section_key>)`
 
-- `views -> logic` calls are allowed.
-- `logic -> state/models/plugins` calls are allowed.
-- `views -> plugins` direct invocation **MUST NOT** be allowed.
-- Cross-file references **SHOULD** use explicit path-style identifiers.
+When multiple forms apply to the same node, implementations **MUST** apply deterministic precedence rules and report conflicts through diagnostics.
+
+### 6.3 Optional Runtime Semantic Inference
+
+For nodes without explicit `type` or `kind` annotations, implementations **MAY** infer semantic categories at runtime as an optional capability.
+
+If enabled, inferred categories:
+
+- **MUST** be machine-traceable to source node ranges,
+- **MUST NOT** mutate source Markdown silently,
+- **SHOULD** be distinguishable from explicitly annotated categories in diagnostics or metadata.
+
+### 6.4 Typical Page Example (Normative Illustration)
+
+The following example is normative for syntax and illustrative for business content:
+
+```markdown
+# Billing Overview
+
+This page explains how users review invoices, pay outstanding balances, and update payment preferences.
+Failed payments can be retried up to three times. @iwp(type=policy.rule)
+
+## Primary Actions @iwp
+- Review latest invoice details.
+- Download invoice PDF.
+- Open payment method settings.
+
+## Payment Risk Checks @iwp(type=logic.validation)
+- Block payment if account is suspended.
+- Require re-authentication for high-value invoices.
+
+## Data Dependencies @iwp(file=models,section=invoice)
+- Invoice summary
+- Payment status
+- Tax breakdown
+
+## Internal Notes @no-iwp
+Draft copy ideas for future onboarding.
+```
+
+### 6.5 Profile-Specific Structural Mapping
+
+Implementations **MAY** map page nodes to internal architectural classes (for example `views`, `logic`, `models`, `state`) according to the active profile policy.
+
+Such mappings **MUST NOT** force baseline authors to restructure source pages unless an optional strict profile explicitly requires it.
 
 ---
 
@@ -198,7 +249,7 @@ Requirements:
 - `permissions` **MUST** be explicit and deny-by-default when omitted.
 - `targets` **MAY** declare one or more runtime targets.
 - When multiple targets are declared, implementations **MUST** document target resolution precedence (for example `shared -> <target>` override).
-- Implementations **MUST** validate unknown top-level keys according to profile mode (strict or permissive mode is implementation-defined but must be documented).
+- Implementations **MUST** validate unknown top-level keys according to the selected profile mode (strict or permissive mode is implementation-defined but must be documented).
 
 Example:
 
@@ -237,7 +288,7 @@ Compilation **MAY** occur:
 - ahead-of-time (AOT),
 - or in a hybrid model.
 
-The implementation **MUST** document which timing model it uses and where validation gates execute.
+Implementations **MUST** document which timing model they use and where validation gates execute.
 
 ### 8.3 Source Embedding Constraint
 
@@ -248,7 +299,7 @@ Implementations **MAY** allow fenced examples for documentation, but such blocks
 
 Implementations **MAY** support an agentic runtime loop for controlled self-modification and iterative delivery (for example `propose -> diff -> verify -> approve -> apply -> monitor -> rollback`).
 
-When such a profile is enabled:
+When this optional profile is enabled:
 
 - all runtime-impacting edits **MUST** remain traceable to source intent nodes,
 - verification and drift-control gates in Sections 9.1 and 10.1 **MUST** still apply,
@@ -267,7 +318,7 @@ To preserve implementation diversity while keeping intent contracts stable:
 
 ## 9. Compiled Context Sidecar (`.iwc v1`)
 
-To preserve source readability while supporting machine retrieval, toolchains **MUST** generate `.iwc` sidecars in dual format:
+To preserve source readability while supporting machine retrieval, toolchains **MUST** generate `.iwc` sidecars in two formats:
 
 - `.iwp/compiled/json/**/*.iwc.json`
 - `.iwp/compiled/md/**/*.iwc.md`
@@ -287,11 +338,11 @@ Recommended output topology:
 .iwp/
 └── compiled/
     ├── json/
-    │   ├── views/pages/home.iwc.json
-    │   └── logic/on_add_expense.iwc.json
+    │   ├── pages/home.iwc.json
+    │   └── pages/billing.iwc.json
     └── md/
-        ├── views/pages/home.iwc.md
-        └── logic/on_add_expense.iwc.md
+        ├── pages/home.iwc.md
+        └── pages/billing.iwc.md
 ```
 
 `.iwc v1` shape:
@@ -302,13 +353,13 @@ Recommended output topology:
   "version": 1,
   "schema_version": "2.0.0",
   "generated_at": "2026-03-17T07:23:26.521181+00:00",
-  "source_path": "views/pages/home.md",
+  "source_path": "pages/home.md",
   "source_hash": "sha256:...",
   "dict": {
-    "kinds": ["views.pages.document", "views.pages.interaction_hooks"],
+    "kinds": ["pages.document", "logic.validation"],
     "titles": ["page_home", "page_home.interaction_hooks"],
     "sections": ["document", "interaction_hooks"],
-    "file_types": ["views.pages"]
+    "file_types": ["pages"]
   },
   "nodes": [
     ["n.a327", "Read Manifesto", 1, 1, 1, 0, 1, 21, 24, "- \"Read Manifesto\" delegates ..."]
@@ -336,10 +387,10 @@ To prevent intent drift, IWP implementations **MUST** maintain bidirectional tra
 Minimum requirements:
 
 1. Implementations **MUST** define a documented linkage policy that maps node categories (for example kind, criticality, or section) to required link coverage behavior.
-2. Runtime-impacting changes introduced within governed workflows **MUST** satisfy linkage requirements for impacted nodes according to the active policy/profile.
-3. Every runtime-impacting `node_id` **MUST** resolve to at least one implementation anchor (code symbol, test case, or generated artifact) when required by active policy/profile.
+2. Runtime-impacting changes introduced within governed workflows **MUST** satisfy linkage requirements for impacted nodes according to the active policy or profile.
+3. Every runtime-impacting `node_id` **MUST** resolve to at least one implementation anchor (code symbol, test case, or generated artifact) when required by the active policy or profile.
 4. Trace links **MUST** be machine-verifiable in local and CI verification flows.
-5. Missing or stale trace links **MUST** be diagnosed with severity determined by active policy/profile; strict profiles **MUST** fail on missing or stale critical links.
+5. Missing or stale trace links **MUST** be diagnosed with severity determined by the active policy or profile; strict profiles **MUST** fail on missing or stale critical links.
 
 Implementation note (non-normative): trace links may be represented as inline annotations, external mapping files, or equivalent structures, as long as conformance requirements remain satisfied.
 
@@ -348,7 +399,7 @@ Implementation note (non-normative): trace links may be represented as inline an
 IWP implementations **MUST** expose at least four validation layers:
 
 1. **Structure validation:** bundle topology and required files.
-2. **Semantic validation:** section legality and layer boundary rules.
+2. **Semantic validation:** annotation legality, section semantics, and profile-defined boundary rules.
 3. **Linkage validation:** source node references and traceability integrity.
 4. **Artifact validation:** compiled freshness and schema conformance.
 
@@ -361,16 +412,16 @@ Diagnostics **MUST** be machine-readable and include:
 
 ### 10.1 Intent-Implementation Drift Control and Merge Gates
 
-IWP implementations intended for team or CI use **MUST** define and document merge gates for drift control (that is, preventing misalignment between intent documents and executable behavior).
+IWP implementations intended for team or CI use **MUST** define and document merge gates for drift control (i.e., preventing misalignment between intent documents and executable behavior).
 
 Required gates:
 
 1. compiled freshness (`source_hash` alignment),
 2. trace linkage integrity (no missing or stale critical links),
-3. intent coverage thresholds (implementation-defined, documented, and allowed to vary by node category and profile),
+3. intent coverage thresholds (implementation-defined, documented, and allowed to vary by node category and active profile),
 4. regression checks for impacted nodes.
 
-In strict profile, failure of any required gate **MUST** block merge or release.
+In a strict profile, failure of any required gate **MUST** block merge or release.
 
 ### 10.2 Minimal Verification Evidence
 
@@ -411,7 +462,7 @@ To reduce adoption friction while preserving interoperability, implementations *
 
 Implementations **SHOULD** publish a compatibility matrix including at least:
 
-- supported IWP protocol major/minor version,
+- supported IWP protocol major/minor versions,
 - supported `.iwc` major version,
 - highest conformance level claimed,
 - enabled optional profile names.
@@ -438,7 +489,7 @@ IWP implementations **MUST** address at least the following risks:
 
 Minimum requirements:
 
-1. Permissions and capabilities are deny-by-default unless explicitly granted.
+1. Permissions and capabilities **MUST** follow a deny-by-default model unless explicitly granted.
 2. Plugin invocation is policy-checked at runtime.
 3. Compiled artifacts are freshness-checked via `source_hash`.
 4. Critical actions are auditable through structured execution logs.
@@ -450,8 +501,9 @@ Minimum requirements:
 
 ## 13. Enterprise Profile (Optional)
 
-For large multi-domain systems, implementations **MAY** provide a feature-first layout profile on top of baseline topology.
-This profile **MAY** also be applied to multi-target projects, using shared assets plus target-specific overlays where needed.
+For large multi-domain systems, implementations **MAY** evolve from baseline page-first authoring into a feature-first profile.
+This profile preserves page-first authoring while adding stronger structural boundaries for scale, ownership, and CI governance.
+It **MAY** also be used for multi-target projects, with shared assets and target-specific overlays where needed.
 
 Reference topology:
 
@@ -494,6 +546,11 @@ When this profile is used, recommended constraints are:
 - one-way dependency direction: `views -> logic -> state/models`,
 - minimal promotion to `shared/`,
 - test guardrails for both domain and cross-domain suites.
+
+Transition note:
+
+- In Core profile, teams can author directly in `pages/` with lightweight `@iwp` annotations.
+- In Enterprise profile, teams can progressively decompose very large pages into `features/<domain>/views|logic|models|state` without changing IWP traceability contracts.
 
 ---
 
