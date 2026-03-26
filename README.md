@@ -61,6 +61,8 @@ python scripts/package_plugins.py \
   - `main` 分支 push / 手动触发：若检测到冲突，自动 patch 升版并创建/更新 Bot PR
 - 推送 tag：`plugins-v*`
 - 手动触发：`workflow_dispatch`（需提供 `release_tag`）
+  - `iwp_runtime_release_tag` 与 `iwp_tools_release_tag` 可同时留空或同时填写
+  - 两者同时留空时，工作流会使用内置默认值：`v1.0-draft-05` / `v0.1.7`
 
 发布流程会：
 
@@ -83,9 +85,9 @@ python scripts/sync_iwp_runtime.py
 ```bash
 python scripts/sync_iwp_runtime.py \
   --source release \
-  --runtime-release-tag v1.0-draft-03 \
-  --tools-release-tag v0.1.5 \
-  --runtime-version v1.0-draft-03
+  --runtime-release-tag v1.0-draft-05 \
+  --tools-release-tag v0.1.7 \
+  --runtime-version v1.0-draft-05
 ```
 
 - 仅校验 lock 与 runtime 一致性：
@@ -94,7 +96,10 @@ python scripts/sync_iwp_runtime.py \
 python scripts/sync_iwp_runtime.py --check
 ```
 
-- `publish-plugins` 手动触发时可选传入 `iwp_runtime_release_tag` 与 `iwp_tools_release_tag`，工作流会先刷新 runtime 再打包。
+- `publish-plugins` 在 `workflow_dispatch` 下会先刷新 runtime 再打包：
+  - 若显式传入 `iwp_runtime_release_tag` 与 `iwp_tools_release_tag`，按传入值刷新；
+  - 若两者留空，按工作流内置默认值刷新；
+  - push tag 场景不自动追踪上游最新 release，仅校验当前仓库 lock。
 
 版本冲突自动化行为：
 

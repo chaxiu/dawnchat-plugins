@@ -11,11 +11,11 @@ on:
         required: true
         type: string
       iwp_runtime_release_tag:
-        description: "Optional instructware.org runtime release tag, e.g. v1.0-draft-03"
+        description: "Optional instructware.org runtime release tag, e.g. v1.0-draft-05"
         required: false
         type: string
       iwp_tools_release_tag:
-        description: "Optional iwp-tools release tag, e.g. v0.1.5"
+        description: "Optional iwp-tools release tag, e.g. v0.1.7"
         required: false
         type: string
 
@@ -36,6 +36,8 @@ jobs:
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_BUCKET: dawnchat-plugins
       R2_PUBLIC_BASE_URL: https://plugins.dawnchat.com
+      DEFAULT_IWP_RUNTIME_RELEASE_TAG: v1.0-draft-05
+      DEFAULT_IWP_TOOLS_RELEASE_TAG: v0.1.7
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -98,37 +100,39 @@ jobs:
             echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate IWP release tag inputs
+      - name: Resolve IWP release tags
         if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: iwp_tags
         shell: bash
         run: |
           runtime_tag="${{ github.event.inputs.iwp_runtime_release_tag }}"
           tools_tag="${{ github.event.inputs.iwp_tools_release_tag }}"
-          if [[ -n "${runtime_tag}" && -z "${tools_tag}" ]]; then
-            echo "iwp_tools_release_tag is required when iwp_runtime_release_tag is set." >&2
+          if [[ -z "${runtime_tag}" && -z "${tools_tag}" ]]; then
+            runtime_tag="${DEFAULT_IWP_RUNTIME_RELEASE_TAG}"
+            tools_tag="${DEFAULT_IWP_TOOLS_RELEASE_TAG}"
+          elif [[ -z "${runtime_tag}" || -z "${tools_tag}" ]]; then
+            echo "iwp_runtime_release_tag and iwp_tools_release_tag must both be set or both be empty." >&2
             exit 1
           fi
-          if [[ -z "${runtime_tag}" && -n "${tools_tag}" ]]; then
-            echo "iwp_runtime_release_tag is required when iwp_tools_release_tag is set." >&2
-            exit 1
-          fi
+          echo "runtime_tag=${runtime_tag}" >> "$GITHUB_OUTPUT"
+          echo "tools_tag=${tools_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Verify IWP runtime lock
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '') }}
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: |
           python scripts/sync_iwp_runtime.py --check
 
       - name: Refresh IWP runtime from release
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           python scripts/sync_iwp_runtime.py \
             --source release \
-            --runtime-release-tag "${{ github.event.inputs.iwp_runtime_release_tag }}" \
-            --tools-release-tag "${{ github.event.inputs.iwp_tools_release_tag }}" \
-            --runtime-version "${{ github.event.inputs.iwp_runtime_release_tag }}"
+            --runtime-release-tag "${{ steps.iwp_tags.outputs.runtime_tag }}" \
+            --tools-release-tag "${{ steps.iwp_tags.outputs.tools_tag }}" \
+            --runtime-version "${{ steps.iwp_tags.outputs.runtime_tag }}"
 
       - name: Verify IWP runtime lock after refresh
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.iwp_runtime_release_tag != '' && github.event.inputs.iwp_tools_release_tag != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           python scripts/sync_iwp_runtime.py --check
 
