@@ -1,0 +1,49 @@
+{
+  "id": "com.dawnchat.desktop-ai-tutor",
+  "name": "Desktop AI Tutor",
+  "version": "0.1.1",
+  "app_type": "desktop",
+  "description": "Self-evolving AI tutor plugin powered by Vue and Bun backend",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "permissions": [],
+  "capabilities": {
+    "tools": []
+  },
+  "runtime": {
+    "backend": "bun",
+    "root": "_ir",
+    "entry": "backend/entry/main.ts",
+    "isolated": false
+  },
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "preview": {
+    "frontend_dir": "frontend/web-src",
+    "workbench_layout": "agent_preview"
+  },
+  "opencode": {
+    "instruction_policy": {
+      "include_shared_rules": false,
+      "include_workspace_rules": true
+    }
+  },
+  "distribution": {
+    "packages": [
+      "dist",
+      "node_modules"
+    ]
+  },
+  "icon": "🧠",
+  "tags": [
+    "ai-tutor",
+    "self-evolving-ui",
+    "knowledge-qa",
+    "desktop",
+    "vue",
+    "bun"
+  ]
+}
