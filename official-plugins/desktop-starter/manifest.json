@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.desktop-starter",
   "name": "Desktop Starter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "app_type": "desktop",
   "description": "Desktop starter template powered by Vue and Bun backend",
   "author": "DawnChat Team",
