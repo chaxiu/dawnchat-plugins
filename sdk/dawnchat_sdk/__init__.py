@@ -68,6 +68,3 @@ __all__ = [
     "is_single_file_installed",
     "DownloadTaskStore",
 ]
-
-# UI module is optional and imported separately
-# from dawnchat_sdk.ui import setup_dawnchat_ui, Card, PrimaryButton, ...

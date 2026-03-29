@@ -1,9 +1,9 @@
 {
-  "id": "com.dawnchat.desktop-hello-world",
-  "name": "Desktop Hello World",
+  "id": "com.dawnchat.desktop-ai-assistant",
+  "name": "Desktop AI Assistant",
   "version": "0.1.1",
   "app_type": "desktop",
-  "description": "Minimal desktop hello world template powered by Vue and Bun backend",
+  "description": "Self-evolving AI assistant template powered by Vue and Bun backend",
   "author": "DawnChat Team",
   "min_host_version": "1.0.0",
   "permissions": [],
@@ -22,7 +22,15 @@
     "framework": "vue"
   },
   "preview": {
-    "frontend_dir": "frontend/web-src"
+    "frontend_dir": "frontend/web-src",
+    "workbench_layout": "agent_preview",
+    "python_sidecar_enabled": false
+  },
+  "opencode": {
+    "instruction_policy": {
+      "include_shared_rules": false,
+      "include_workspace_rules": true
+    }
   },
   "distribution": {
     "packages": [
@@ -30,10 +38,12 @@
       "node_modules"
     ]
   },
-  "icon": "👋",
+  "icon": "🧠",
   "tags": [
     "template",
-    "hello-world",
+    "ai-assistant",
+    "self-evolving-ui",
+    "knowledge-qa",
     "desktop",
     "vue",
     "bun"

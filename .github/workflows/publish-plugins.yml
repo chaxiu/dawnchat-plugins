@@ -68,12 +68,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-        # Keep pnpm until every official plugin web-src lockfile has migrated off pnpm-lock.yaml.
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -87,8 +81,22 @@ jobs:
         run: |
           python --version
           node --version
-          pnpm --version
           bun --version
+
+      - name: Remove pnpm lockfiles
+        shell: bash
+        run: |
+          find official-plugins -type f -name "pnpm-lock.yaml" -delete
+
+      - name: Verify starter bun lockfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f official-plugins/desktop-ai-assistant/_ir/frontend/web-src/bun.lock
+          test -f official-plugins/desktop-hello-world/_ir/frontend/web-src/bun.lock
+          test -f official-plugins/desktop-starter/_ir/frontend/web-src/bun.lock
+          test -f official-plugins/web-starter-vue/web-src/bun.lock
+          test -f official-plugins/mobile-starter-ionic/web-src/bun.lock
 
       - name: Resolve release tag
         id: release_tag
