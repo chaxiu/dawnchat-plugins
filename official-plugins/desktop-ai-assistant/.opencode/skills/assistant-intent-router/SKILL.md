@@ -11,13 +11,13 @@ metadata:
 
 - Parse user intent for Q&A, productivity, and automation-oriented assistant tasks.
 - Decide whether existing UI capabilities are sufficient.
-- Select one of two execution paths: Capability-First or Self-Evolving.
+- Select one of three execution paths: direct view-first capability use, ordered session narration, or Self-Evolving.
 
 ## Decision Rules
 
-- Choose Capability-First when existing capability can satisfy user intent and quality targets.
+- Choose `assistant-rich-display-execution` when one existing capability path can satisfy the task after capability listing and page introspection.
 - Choose `assistant-session-narration` when request needs ordered multi-step execution with host session lifecycle (`start/status/stop`).
-- Choose Self-Evolving when no listed capability can meet rendering needs.
+- Choose Self-Evolving when no listed capability or existing view contract can meet the request.
 - Prefer smallest viable path that preserves user outcome quality.
 
 ## Output Contract

@@ -19,7 +19,7 @@ describe("runtime capabilities", () => {
     window.__DAWNCHAT_UI_REGISTER_CAPABILITY__ = undefined;
     const result = registerCapability(
       {
-        name: "assistant.render_card",
+        name: "assistant.test_capability",
         description: "render",
         input_schema: {},
       },
@@ -34,7 +34,7 @@ describe("runtime capabilities", () => {
     const registerResult = registerCapabilities([
       {
         definition: {
-          name: "assistant.render_card",
+          name: "assistant.test_capability",
           description: "render",
           input_schema: {},
         },
@@ -42,18 +42,27 @@ describe("runtime capabilities", () => {
       },
       {
         definition: {
-          name: "assistant.clear_cards",
+          name: "assistant.other_test_capability",
           description: "clear",
           input_schema: {},
         },
         handler: async () => ({ ok: true }),
       },
     ]);
-    const unregisterResult = unregisterCapabilities(["assistant.render_card", "assistant.clear_cards"]);
+    const unregisterResult = unregisterCapabilities([
+      "assistant.test_capability",
+      "assistant.other_test_capability",
+    ]);
     expect(registerResult.registered).toEqual([]);
-    expect(registerResult.failed).toEqual(["assistant.render_card", "assistant.clear_cards"]);
+    expect(registerResult.failed).toEqual([
+      "assistant.test_capability",
+      "assistant.other_test_capability",
+    ]);
     expect(unregisterResult.unregistered).toEqual([]);
-    expect(unregisterResult.failed).toEqual(["assistant.render_card", "assistant.clear_cards"]);
+    expect(unregisterResult.failed).toEqual([
+      "assistant.test_capability",
+      "assistant.other_test_capability",
+    ]);
   });
 
   it("normalizes invalid payload values", () => {
@@ -73,7 +82,7 @@ describe("runtime capabilities", () => {
 
   it("returns false when bridge unregister api is unavailable", () => {
     window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__ = undefined;
-    const result = unregisterCapability("assistant.render_card");
+    const result = unregisterCapability("assistant.test_capability");
     expect(result).toBe(false);
   });
 });

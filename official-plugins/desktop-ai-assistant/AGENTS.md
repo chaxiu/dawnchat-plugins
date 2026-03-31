@@ -25,10 +25,11 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
 - Treat `dawnchat.ui.capabilities.list` as the source of top-level capability names only.
 - Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, and view capability contract.
+- Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
-- `dawnchat.ui.session.stop`
+  - `dawnchat.ui.session.stop`
 - In session steps, keep voice/narration data inside `steps[].action.payload` only.
 - Treat `steps[].action.payload` as opaque plugin payload and do not hardcode internal fields at host side.
 - `dawnchat.ui.session.start` no longer uses `idempotency_key`.
@@ -53,7 +54,11 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Capability handlers must return structured result payloads with explicit success/failure.
 - Newly added capabilities must become discoverable through `capabilities.list` immediately after HMR.
 - `view.*` and `guide.*` are session step action namespaces, not top-level capability names returned by `capabilities.list`.
+- Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
+- Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
+- The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap.ts`.
 - The current view registry lives in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
+- The current reference view registration lives in `_ir/frontend/web-src/src/views/pages/word/wordMainViewRegistration.ts`.
 - The current guide action definitions live in `_ir/frontend/web-src/src/runtime/guideRuntime.ts`.
 - The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
@@ -71,8 +76,9 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 
 - For Rich Display tasks:
   - first list capabilities
-  - then inspect page state with `assistant.view.describe` when the task involves page reasoning
-  - then invoke the selected capability with validated payload
+  - then inspect page state with `assistant.view.describe` whenever the task depends on page semantics, anchors, or resource state
+  - then prefer a single direct capability invoke when one step is enough
+  - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
 - For View-First tasks:
   - inspect current page via `assistant.view.describe`
   - use `view.open` for page entry and resource binding
@@ -82,7 +88,8 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - For Self-Evolving tasks:
   - update code minimally
   - install dependencies only when needed
-  - register new capability with schema and handler
+  - prefer new view registrations, page-local capabilities, or describe surface updates over adding broad top-level capabilities
+  - register new capability with schema and handler only when page-local mutation cannot fit existing runtime structure
   - re-run capability listing to confirm discoverability
   - prefer backward-compatible payload changes when possible
 

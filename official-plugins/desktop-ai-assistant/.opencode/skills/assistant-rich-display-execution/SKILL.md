@@ -1,6 +1,6 @@
 ---
 name: assistant-rich-display-execution
-description: Execute DawnChat Assistant rendering with existing capabilities only, focusing on concise Q&A output and robust payloads.
+description: Execute single-step DawnChat Assistant view-first interactions with existing capabilities only, using page introspection before action planning.
 compatibility: opencode
 metadata:
   audience: plugin-developers
@@ -9,24 +9,30 @@ metadata:
 
 ## What I do
 
-- Compose user-facing response with concise and high-signal text.
-- Invoke one or more existing UI capabilities for rich presentation.
-- Keep interaction deterministic and schema compliant.
+- Inspect the current page with `assistant.view.describe` when page semantics matter.
+- Choose the smallest existing capability path that satisfies the task.
+- Keep interaction deterministic, schema compliant, and concise for the end user.
 
 ## Rules
 
-- Use `dawnchat.ui.capability.invoke` only.
-- Keep payload minimal and aligned with function input schema.
-- If invoke fails, provide brief fallback text and report failure cause.
-- For ordered multi-step assistant flows, hand off to session workflow (`dawnchat.ui.session.start/status/stop`) instead of ad-hoc chaining.
+- Use `dawnchat.ui.capability.invoke` only for this flow.
+- Call `dawnchat.ui.capabilities.list` first.
+- When the task depends on page structure, anchors, resource state, or available page mutations, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` before deciding payload.
+- Keep payload minimal and aligned with the listed schema.
+- Prefer one direct capability call for single-step tasks.
+- If the task needs ordered `view.* + guide.*` orchestration, hand off to `assistant-session-narration` instead of ad-hoc chaining.
+- If invoke fails, return a brief fallback explanation and include the observed error code.
 
 ## Output Contract
 
+- Return the inspected page context when `assistant.view.describe` was used.
 - Return invoked function names and payload summary.
 - Return final user-facing short explanation text.
-- Return fallback behavior when rendering fails.
+- Return fallback behavior when invoke fails.
 
 ## Checklist
 
+- Capability list was read before planning invoke.
+- `assistant.view.describe` was used when page reasoning was required.
 - Capability invocation followed schema.
-- Render result is verified in runtime response.
+- Result was verified in runtime response.

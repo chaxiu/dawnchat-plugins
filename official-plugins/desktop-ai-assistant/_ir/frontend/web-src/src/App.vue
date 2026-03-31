@@ -1,47 +1,19 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 
-import { router } from "./router";
-import { registerCapabilities, unregisterCapabilities } from "./runtime/capabilities";
-import { useGuideState } from "./runtime/guideState";
-import { createSessionStepCapabilityRegistrations } from "./runtime/sessionStepExecutor";
-import { getViewRegistration } from "./runtime/viewRegistry";
-import { createViewDescribeCapabilityRegistration } from "./runtime/viewRuntime";
-import { useViewState } from "./runtime/viewState";
+import {
+  installAssistantRuntimeCapabilities,
+  uninstallAssistantRuntimeCapabilities,
+} from "./runtime/bootstrap";
 
 let registeredCapabilityNames: string[] = [];
-const { setCurrentCard, setActiveTip, setNarrationState, getGuideStateSnapshot } = useGuideState();
-const { setActiveViewState, getViewStateSnapshot } = useViewState();
 
 onMounted(() => {
-  const registrations = [
-    ...createSessionStepCapabilityRegistrations({
-      setCurrentCard,
-      setActiveTip,
-      setNarrationState,
-      setActiveViewState,
-      getViewStateSnapshot,
-      navigateToView: async (viewId) => {
-        const registration = getViewRegistration(viewId);
-        if (!registration) {
-          return;
-        }
-        await router.push(registration.manifest.route_path);
-      },
-    }),
-    createViewDescribeCapabilityRegistration({
-      setActiveViewState,
-      getViewStateSnapshot,
-      getGuideStateSnapshot,
-      navigateToView: () => undefined,
-    }),
-  ];
-  const registrationResult = registerCapabilities(registrations);
-  registeredCapabilityNames = registrationResult.registered;
+  registeredCapabilityNames = installAssistantRuntimeCapabilities();
 });
 
 onUnmounted(() => {
-  unregisterCapabilities(registeredCapabilityNames);
+  uninstallAssistantRuntimeCapabilities(registeredCapabilityNames);
   registeredCapabilityNames = [];
 });
 </script>
