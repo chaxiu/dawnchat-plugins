@@ -22,6 +22,17 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Always call `dawnchat.ui.capabilities.list` before invoking UI functions.
 - Invoke UI functions only via `dawnchat.ui.capability.invoke`.
 - Never assume function names or payload fields without listing current capabilities.
+- For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
+- Treat `dawnchat.ui.capabilities.list` as the source of top-level capability names only.
+- Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, and view capability contract.
+- For guided narration flows, prefer host session tools:
+  - `dawnchat.ui.session.start`
+  - `dawnchat.ui.session.status`
+- `dawnchat.ui.session.stop`
+- In session steps, keep voice/narration data inside `steps[].action.payload` only.
+- Treat `steps[].action.payload` as opaque plugin payload and do not hardcode internal fields at host side.
+- `dawnchat.ui.session.start` no longer uses `idempotency_key`.
+- When `session_busy` is returned, query `session.status` or stop active session before starting a new one.
 
 ## Runtime Recovery Policy
 
@@ -41,6 +52,10 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Every capability must expose a clear `input_schema`.
 - Capability handlers must return structured result payloads with explicit success/failure.
 - Newly added capabilities must become discoverable through `capabilities.list` immediately after HMR.
+- `view.*` and `guide.*` are session step action namespaces, not top-level capability names returned by `capabilities.list`.
+- The current view registry lives in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
+- The current guide action definitions live in `_ir/frontend/web-src/src/runtime/guideRuntime.ts`.
+- The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
 ## Evolution Guardrails (MVP)
 
@@ -56,7 +71,14 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 
 - For Rich Display tasks:
   - first list capabilities
-  - then invoke selected capability with validated payload
+  - then inspect page state with `assistant.view.describe` when the task involves page reasoning
+  - then invoke the selected capability with validated payload
+- For View-First tasks:
+  - inspect current page via `assistant.view.describe`
+  - use `view.open` for page entry and resource binding
+  - use `view.focus` for anchor changes
+  - use `view.capability.invoke` for page-local mutations
+  - use `guide.*` only for narration, tip, and overlay card expression
 - For Self-Evolving tasks:
   - update code minimally
   - install dependencies only when needed
@@ -69,6 +91,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - This plugin relies on workspace-scoped `AGENTS.md` and `.opencode/skills`.
 - Shared host rules may be excluded by manifest policy.
 - Keep this document and skill docs aligned with actual capability behavior.
+- Keep formal workflow skills and evaluation skills separate. Use evaluation skills only for self-check, trial, and acceptance verification.
 - Python sidecar MCP is available via host-injected `dawnchat_plugin_python`.
 - Always validate sidecar runtime state before relying on Python tool calls.
 - Keep role framing aligned with DawnChat Assistant, not a narrow single-domain persona.

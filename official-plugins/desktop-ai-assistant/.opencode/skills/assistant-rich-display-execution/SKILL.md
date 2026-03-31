@@ -18,6 +18,7 @@ metadata:
 - Use `dawnchat.ui.capability.invoke` only.
 - Keep payload minimal and aligned with function input schema.
 - If invoke fails, provide brief fallback text and report failure cause.
+- For ordered multi-step assistant flows, hand off to session workflow (`dawnchat.ui.session.start/status/stop`) instead of ad-hoc chaining.
 
 ## Output Contract
 

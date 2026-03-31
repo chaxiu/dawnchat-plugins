@@ -37,7 +37,7 @@ describe("card registry", () => {
       defineComponent({
         render() {
           return h(CardHost, {
-            cards: [{ card_type: "unknown", title: "x", data: {} } as any],
+            card: { card_type: "unknown", title: "x", data: {} } as any,
           });
         },
       })

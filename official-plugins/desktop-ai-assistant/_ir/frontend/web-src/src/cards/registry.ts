@@ -22,7 +22,7 @@ export function resolveCardComponent(cardType: string): Component | null {
 const CARD_FUNCTION_DEFINITIONS: UiCapabilityDefinition[] = [
   {
     name: "assistant.render_card",
-    description: "Render an assistant card with card_type/title/data payload",
+    description: "Legacy direct card render entry for compatibility and internal debugging",
     input_schema: {
       type: "object",
       properties: {
@@ -35,7 +35,7 @@ const CARD_FUNCTION_DEFINITIONS: UiCapabilityDefinition[] = [
   },
   {
     name: "assistant.clear_cards",
-    description: "Clear all rendered cards in the assistant canvas",
+    description: "Legacy direct card clear entry for compatibility and internal debugging",
     input_schema: {
       type: "object",
       properties: {},

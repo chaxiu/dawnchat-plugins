@@ -11,8 +11,7 @@ from .result_utils import normalize_tool_result
 
 websockets: Any
 try:
-    import websockets as _websockets
-    websockets = _websockets
+    websockets = importlib.import_module("websockets")
 except ImportError:
     websockets = None
 HAS_WEBSOCKETS = websockets is not None

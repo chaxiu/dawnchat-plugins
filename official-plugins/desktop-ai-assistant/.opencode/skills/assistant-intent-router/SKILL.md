@@ -16,6 +16,7 @@ metadata:
 ## Decision Rules
 
 - Choose Capability-First when existing capability can satisfy user intent and quality targets.
+- Choose `assistant-session-narration` when request needs ordered multi-step execution with host session lifecycle (`start/status/stop`).
 - Choose Self-Evolving when no listed capability can meet rendering needs.
 - Prefer smallest viable path that preserves user outcome quality.
 
@@ -24,6 +25,7 @@ metadata:
 - Return selected mode.
 - Return reason in one concise paragraph.
 - Return required next skill.
+- For session workflow, include whether interruption control is required (`session.stop` expected or not).
 
 ## Checklist
 
