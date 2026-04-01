@@ -19,6 +19,7 @@ metadata:
 - Call `dawnchat.ui.capabilities.list` first.
 - When the task depends on page structure, anchors, resource state, or available page mutations, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` before deciding payload.
 - If `assistant.view.describe` exposes `checkpoint_summary`, prefer reading it before mutating the page.
+- If a resume just succeeded and `continuation_hint.pending_wait` exists, do not treat the task as a normal single-step mutation; hand off to `assistant-session-narration`.
 - Keep payload minimal and aligned with the listed schema.
 - Prefer one direct capability call for single-step tasks.
 - If the task needs ordered `view.* + guide.*` orchestration, hand off to `assistant-session-narration` instead of ad-hoc chaining.

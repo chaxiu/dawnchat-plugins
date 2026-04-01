@@ -59,10 +59,31 @@ describe("workspace store", () => {
       status: "checkpointed",
       scene_view_id: "word.main",
       resource_id: "word:assistant",
+      workspace_schema_version: 2,
+    });
+    store.setContinuation({
+      last_completed_step_index: 1,
+      last_completed_step_id: "step-2",
+      event_cursor_seq: 12,
+      pending_wait: {
+        action_type: "flow.wait",
+        session_id: "sess-1",
+        step_id: "step-3",
+        step_index: 2,
+        total_steps: 4,
+        event_types: ["assistant.view.form.submitted"],
+        match: {
+          form_id: "paper-form",
+        },
+        timeout_ms: 30000,
+        event_cursor_seq: 12,
+        waiting_since_ms: 200,
+      },
     });
 
     expect(store.getWorkspaceSnapshot()).toEqual({
-      workspace_version: 8,
+      workspace_schema_version: 2,
+      workspace_version: 9,
       active_resource: {
         resource_type: "word",
         resource_id: "word:assistant",
@@ -121,6 +142,25 @@ describe("workspace store", () => {
         active_manifest: null,
         view_state_version: 2,
       },
+      continuation: {
+        last_completed_step_index: 1,
+        last_completed_step_id: "step-2",
+        event_cursor_seq: 12,
+        pending_wait: {
+          action_type: "flow.wait",
+          session_id: "sess-1",
+          step_id: "step-3",
+          step_index: 2,
+          total_steps: 4,
+          event_types: ["assistant.view.form.submitted"],
+          match: {
+            form_id: "paper-form",
+          },
+          timeout_ms: 30000,
+          event_cursor_seq: 12,
+          waiting_since_ms: 200,
+        },
+      },
       last_checkpoint_meta: {
         checkpoint_id: "checkpoint-1",
         resume_token: "resume-1",
@@ -129,9 +169,61 @@ describe("workspace store", () => {
         status: "checkpointed",
         scene_view_id: "word.main",
         resource_id: "word:assistant",
+        workspace_schema_version: 2,
+        source_action_type: undefined,
+        session_id: undefined,
+        step_id: undefined,
+        reason_code: undefined,
         error_code: undefined,
         error_message: undefined,
       },
     });
+  });
+
+  it("returns cloned snapshot data and keeps internal state immutable", () => {
+    const store = createWorkspaceStore({
+      getViewStateSnapshot: () => ({
+        active_view_id: "word.main",
+        active_anchor: "word.header",
+        current_resource: {
+          resource_type: "word",
+          resource_id: "word:assistant",
+          title: "词汇讲解",
+          data: {
+            word: "Assistant",
+          },
+        },
+        active_manifest: null,
+        view_state_version: 1,
+      }),
+      getGuideStateSnapshot: () => ({
+        current_card: null,
+        active_tip: null,
+        narration_state: {
+          status: "idle",
+          text: "",
+          updatedAtMs: 1,
+        },
+        guide_state_version: 1,
+      }),
+    });
+    store.setArtifacts([
+      {
+        id: "artifact-1",
+        kind: "note",
+        data: {
+          text: "v1",
+        },
+      },
+    ]);
+    const snapshot = store.getWorkspaceSnapshot();
+    (snapshot.artifacts[0].data as Record<string, unknown>).text = "mutated";
+    snapshot.continuation.event_cursor_seq = 99;
+
+    const nextSnapshot = store.getWorkspaceSnapshot();
+    expect(nextSnapshot.artifacts[0].data).toEqual({
+      text: "v1",
+    });
+    expect(nextSnapshot.continuation.event_cursor_seq).toBe(0);
   });
 });

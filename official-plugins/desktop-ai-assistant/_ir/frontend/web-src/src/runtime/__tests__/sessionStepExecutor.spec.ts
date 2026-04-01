@@ -4,6 +4,7 @@ import {
   createSessionStepHandler,
   type SessionStepExecutorDeps,
 } from "../sessionStepExecutor";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, createAssistantEventBus } from "../events";
 import { GUIDE_ACTIONS } from "../guideActions";
 import { createViewDescribeCapabilityRegistration } from "../viewRuntime";
 
@@ -140,6 +141,7 @@ const createDeps = (): SessionStepExecutorDeps => ({
     view_state_version: 1,
   })),
   onActiveSessionsChanged: vi.fn(),
+  emitRuntimeEvent: vi.fn(),
 });
 const sessionId = "sess-1";
 
@@ -253,6 +255,114 @@ describe("session step executor", () => {
       ok: false,
       error_code: "unsupported_action",
       message: "Unsupported action.type: view.close",
+    });
+  });
+
+  it("waits for matched event in flow.wait", async () => {
+    const deps = createDeps();
+    const eventBus = createAssistantEventBus();
+    const handler = createSessionStepHandler({
+      ...deps,
+      eventBus,
+    });
+    const waitPromise = handler({
+      session_id: sessionId,
+      step_id: "step-flow-wait",
+      action: {
+        type: "flow.wait",
+        payload: {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_COMPLETED],
+          match: {
+            action_type: "view.open",
+          },
+          timeout_ms: 200,
+        },
+      },
+    }, {});
+    await Promise.resolve();
+    const matchedEvent = eventBus.emit({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_COMPLETED,
+      source: "session",
+      session_id: sessionId,
+      payload: {
+        action_type: "view.open",
+      },
+    });
+
+    await expect(waitPromise).resolves.toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "matched",
+        matched_event: matchedEvent,
+        session_id: sessionId,
+        step_id: "step-flow-wait",
+        action_type: "flow.wait",
+      }),
+    });
+  });
+
+  it("forwards step index metadata into flow.wait continuation updates", async () => {
+    const onFlowWaitStateChanged = vi.fn();
+    const eventBus = createAssistantEventBus();
+    const handler = createSessionStepHandler({
+      ...createDeps(),
+      eventBus,
+      onFlowWaitStateChanged,
+    });
+    const waitPromise = handler({
+      session_id: sessionId,
+      step_id: "step-flow-indexed",
+      step_index: 2,
+      total_steps: 5,
+      action: {
+        type: "flow.wait",
+        payload: {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+          timeout_ms: 5,
+        },
+      },
+    }, {});
+
+    await waitPromise;
+
+    expect(onFlowWaitStateChanged).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      status: "waiting",
+      stepId: "step-flow-indexed",
+      stepIndex: 2,
+      totalSteps: 5,
+      pendingWait: expect.objectContaining({
+        step_index: 2,
+        total_steps: 5,
+      }),
+    }));
+  });
+
+  it("returns timeout for flow.wait when no event matched", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler({
+      ...deps,
+      eventBus: createAssistantEventBus(),
+    });
+    const result = await handler({
+      session_id: sessionId,
+      step_id: "step-flow-timeout",
+      action: {
+        type: "flow.wait",
+        payload: {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+          timeout_ms: 5,
+        },
+      },
+    }, {});
+    expect(result).toEqual({
+      ok: false,
+      error_code: "flow_wait_timeout",
+      message: "flow.wait timed out before matching any event",
+      data: {
+        latest_seq: 0,
+        waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+        recent_events: [],
+      },
     });
   });
 
@@ -782,6 +892,80 @@ describe("session step executor", () => {
         text: "cancel me",
       })
     );
+    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+  });
+
+  it("does not report cancelled narration as failed", async () => {
+    let resolveSpeak: ((value: Record<string, unknown>) => void) | null = null;
+    (window as any).__DAWNCHAT_HOST_VOICE__ = {
+      speak: vi.fn(
+        async () =>
+          await new Promise<Record<string, unknown>>((resolve) => {
+            resolveSpeak = resolve;
+          }),
+      ),
+      stop: vi.fn(async () => ({ ok: true, data: { stopped: true } })),
+      status: vi.fn(async () => ({
+        ok: true,
+        data: {
+          status: "cancelled",
+          task_id: "task-2",
+        },
+      })),
+    };
+    const onStepFailed = vi.fn();
+    const emitRuntimeEvent = vi.fn();
+    const deps = {
+      ...createDeps(),
+      onStepFailed,
+      emitRuntimeEvent,
+    };
+    const registrations = createSessionStepCapabilityRegistrations(deps);
+    const execute = registrations.find((item) => item.definition.name === "assistant.session_step_execute")?.handler;
+    const cancel = registrations.find((item) => item.definition.name === "assistant.session_step_cancel")?.handler;
+
+    const executePromise = execute?.({
+      session_id: sessionId,
+      step_id: "step-cancel-no-fail",
+      action: {
+        type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+        payload: {
+          text: "cancel without fail",
+        },
+      },
+    }, {}) as Promise<Record<string, unknown>>;
+
+    await Promise.resolve();
+    await cancel?.({
+      session_id: sessionId,
+      step_id: "step-cancel-no-fail",
+      reason: "user_cancelled",
+    }, {});
+
+    resolveAsyncStep(resolveSpeak, {
+      ok: false,
+      error_code: "voice_task_not_completed",
+      message: "voice task terminal status: cancelled",
+      data: {
+        task_id: "task-2",
+        status: "cancelled",
+      },
+    });
+
+    await expect(executePromise).resolves.toEqual({
+      ok: false,
+      error_code: "step_cancelled",
+      message: "guide narration cancelled",
+      data: {
+        status: "cancelled",
+        narration_text: "cancel without fail",
+        task_id: "task-2",
+      },
+    });
+    expect(onStepFailed).not.toHaveBeenCalled();
+    expect(emitRuntimeEvent).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_FAILED,
+    }));
     delete (window as any).__DAWNCHAT_HOST_VOICE__;
   });
 

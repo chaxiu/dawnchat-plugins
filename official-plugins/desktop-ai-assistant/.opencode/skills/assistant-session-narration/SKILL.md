@@ -24,6 +24,7 @@ metadata:
   - `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
 - If `assistant.view.describe` reports `resume_available=true`, treat it as recoverable metadata only.
 - Only call `assistant.workspace.resume` when the current task explicitly intends to continue the previous workspace.
+- After a successful resume, inspect `continuation_hint` before composing any new `session.start`.
 - `dawnchat.ui.session.start` payload does not include `idempotency_key`.
 - Do not include `steps[].narration`; narration/voice instructions belong in `action.payload`.
 - Do not require host/runtime layers to parse `steps[].action.payload` internals.
@@ -40,6 +41,7 @@ metadata:
   - call `dawnchat.ui.capabilities.list`
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
   - if the response contains checkpoint metadata, decide whether the current task should ignore it or explicitly resume it
+  - if resume succeeds, use `continuation_hint` to decide whether to continue from a wait boundary or plan a fresh sequence
   - decide whether the task needs direct `view.*` actions or a host-managed `session.start`
 - For narrated walkthroughs:
   - use `view.open` to enter the page
@@ -64,3 +66,5 @@ metadata:
 - If a step needs voice, voice fields are inside `action.payload` and executed by plugin runtime.
 - If the task depends on page structure, base the step plan on `assistant.view.describe` instead of guessing anchors or capability input.
 - If a recoverable checkpoint exists, keep resume explicit and do not let stale state override a new task plan.
+- If `continuation_hint.pending_wait` exists, avoid replaying the entire earlier session and prefer a short continuation session around the pending wait.
+- If `continuation_hint.last_completed_step_index` exists, treat it as a progress hint and avoid blindly re-sending obviously completed setup steps.

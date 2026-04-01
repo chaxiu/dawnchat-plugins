@@ -31,6 +31,7 @@ describe("assistant.view.describe", () => {
         guide_state_version: 5,
       })),
       getWorkspaceSnapshot: vi.fn(() => ({
+        workspace_schema_version: 2,
         workspace_version: 10,
         active_resource: {
           resource_type: "word",
@@ -75,6 +76,10 @@ describe("assistant.view.describe", () => {
           active_manifest: null,
           view_state_version: 4,
         },
+        continuation: {
+          event_cursor_seq: 0,
+          pending_wait: null,
+        },
         last_checkpoint_meta: {
           checkpoint_id: "checkpoint-1",
           resume_token: "resume-1",
@@ -83,6 +88,7 @@ describe("assistant.view.describe", () => {
           status: "checkpointed" as const,
           scene_view_id: "word.main",
           resource_id: "word:assistant",
+          workspace_schema_version: 2,
         },
       })),
       getCheckpointSummary: vi.fn(() => ({
@@ -93,6 +99,11 @@ describe("assistant.view.describe", () => {
         status: "checkpointed" as const,
         scene_view_id: "word.main",
         resource_id: "word:assistant",
+        workspace_schema_version: 2,
+        continuation_hint: {
+          event_cursor_seq: 0,
+          pending_wait: null,
+        },
       })),
       navigateToView: vi.fn(),
     });

@@ -36,4 +36,6 @@
 - If a recoverable state is reported, inspect `checkpoint_summary` and `resume_available` first.
 - Use `assistant.workspace.checkpoint.describe` to confirm the latest recoverable state.
 - Use `assistant.workspace.resume` only with an explicit `resume_token`.
+- After a successful resume, inspect `continuation_hint` before planning the next `dawnchat.ui.session.start`.
+- If `continuation_hint.pending_wait` exists, prefer a short follow-up session around that wait boundary instead of replaying the whole prior sequence.
 - Do not auto-resume solely because a checkpoint exists; prefer the current task intent over stale state.

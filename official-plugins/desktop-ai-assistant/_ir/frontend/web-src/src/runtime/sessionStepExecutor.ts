@@ -1,7 +1,9 @@
 import type { UiCapabilityHandler, UiCapabilityRegistration } from "./capabilities";
+import { createFlowRuntime, type FlowWaitStateChange } from "./flowRuntime";
 import { createGuideRuntime } from "./guideRuntime";
 import type { GuideNarrationState, GuideTipPayload } from "./guideState";
 import { createViewRuntime } from "./viewRuntime";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantEventBus, type AssistantRuntimeEventInput } from "./events";
 import type { WorkspaceCheckpointSummary } from "./checkpointTypes";
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "./viewState";
 import type { WorkspaceSnapshot } from "./workspaceTypes";
@@ -23,6 +25,8 @@ type StepCancelHandler = () => void | Promise<void>;
 export interface SessionStepRuntimeContext {
   sessionId: string;
   stepId?: string;
+  stepIndex?: number;
+  totalSteps?: number;
   timeoutMs?: number;
   isCancelled: () => boolean;
   onCancel: (handler: StepCancelHandler) => void;
@@ -37,6 +41,8 @@ type StepRuntimeHandlers = Record<string, StepActionHandler>;
 interface ActiveStepExecution {
   sessionId: string;
   stepId?: string;
+  stepIndex?: number;
+  totalSteps?: number;
   cancelled: boolean;
   cancelReason?: string;
   cancelHandlers: Set<StepCancelHandler>;
@@ -54,12 +60,24 @@ export interface SessionStepExecutorDeps {
   onStepApplied?: (payload: {
     sessionId: string;
     stepId?: string;
+    stepIndex?: number;
+    totalSteps?: number;
+    actionType: string;
+    timeoutMs?: number;
+  }) => void | Promise<void>;
+  onStepStarted?: (payload: {
+    sessionId: string;
+    stepId?: string;
+    stepIndex?: number;
+    totalSteps?: number;
     actionType: string;
     timeoutMs?: number;
   }) => void | Promise<void>;
   onStepFailed?: (payload: {
     sessionId: string;
     stepId?: string;
+    stepIndex?: number;
+    totalSteps?: number;
     actionType: string;
     errorCode?: string;
     message?: string;
@@ -67,9 +85,14 @@ export interface SessionStepExecutorDeps {
   onStepCancelled?: (payload: {
     sessionId: string;
     stepId?: string;
+    stepIndex?: number;
+    totalSteps?: number;
     reason?: string;
   }) => void | Promise<void>;
   onActiveSessionsChanged?: (sessionIds: string[]) => void;
+  eventBus?: AssistantEventBus;
+  onFlowWaitStateChanged?: (input: FlowWaitStateChange) => void | Promise<void>;
+  emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }
 
 function toRecord(raw: unknown): Record<string, unknown> {
@@ -96,6 +119,12 @@ function parseRuntimeActionType(actionType: string): {
 function parseStepPayload(raw: Record<string, unknown>) {
   const sessionId = typeof raw.session_id === "string" ? raw.session_id.trim() : "";
   const stepId = typeof raw.step_id === "string" ? raw.step_id : undefined;
+  const stepIndex = typeof raw.step_index === "number" && Number.isFinite(raw.step_index)
+    ? raw.step_index
+    : undefined;
+  const totalSteps = typeof raw.total_steps === "number" && Number.isFinite(raw.total_steps)
+    ? raw.total_steps
+    : undefined;
   const action = toRecord(raw.action);
   const actionType = String(action.type || "").trim();
   const actionPayload = toRecord(action.payload);
@@ -103,6 +132,8 @@ function parseStepPayload(raw: Record<string, unknown>) {
   return {
     sessionId,
     stepId,
+    stepIndex,
+    totalSteps,
     timeoutMs,
     actionType,
     actionPayload,
@@ -118,11 +149,28 @@ function parseCancelPayload(raw: Record<string, unknown>) {
 }
 
 function buildStepExecutionSchema(): Record<string, unknown> {
+  const flowWaitPayloadSchema = {
+    type: "object",
+    properties: {
+      event_types: {
+        type: "array",
+        minItems: 1,
+        items: { type: "string" },
+      },
+      match: { type: "object" },
+      timeout_ms: { type: "number", minimum: 0 },
+      session_id: { type: "string" },
+      step_id: { type: "string" },
+    },
+    required: ["event_types"],
+  };
   return {
     type: "object",
     properties: {
       session_id: { type: "string" },
       step_id: { type: "string" },
+      step_index: { type: "number", minimum: 0 },
+      total_steps: { type: "number", minimum: 1 },
       action: {
         type: "object",
         properties: {
@@ -130,6 +178,21 @@ function buildStepExecutionSchema(): Record<string, unknown> {
           payload: { type: "object" },
         },
         required: ["type"],
+        allOf: [
+          {
+            if: {
+              properties: {
+                type: { const: "flow.wait" },
+              },
+              required: ["type"],
+            },
+            then: {
+              properties: {
+                payload: flowWaitPayloadSchema,
+              },
+            },
+          },
+        ],
       },
       timeout_ms: { type: "number", minimum: 0 },
     },
@@ -153,11 +216,25 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
   execute: UiCapabilityHandler;
   cancel: UiCapabilityHandler;
 } {
+  const emitRuntimeEvent = (input: AssistantRuntimeEventInput) => {
+    deps.emitRuntimeEvent?.(input);
+  };
   const runtimeHandlers: Record<string, StepRuntimeHandlers> = {
-    guide: createGuideRuntime(deps),
-    view: createViewRuntime(deps),
+    guide: createGuideRuntime({
+      ...deps,
+      emitRuntimeEvent,
+    }),
+    view: createViewRuntime({
+      ...deps,
+      emitRuntimeEvent,
+    }),
     app: {},
-    flow: {},
+    flow: deps.eventBus
+      ? createFlowRuntime({
+          eventBus: deps.eventBus,
+          onWaitStateChange: deps.onFlowWaitStateChanged,
+        })
+      : {},
   };
   const activeExecutionBySessionId = new Map<string, ActiveStepExecution>();
   const syncVisualSessionState = () => {
@@ -165,7 +242,15 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
   };
 
   const execute: UiCapabilityHandler = async (rawPayload) => {
-    const { sessionId, stepId, timeoutMs, actionType, actionPayload } = parseStepPayload(rawPayload);
+    const {
+      sessionId,
+      stepId,
+      stepIndex,
+      totalSteps,
+      timeoutMs,
+      actionType,
+      actionPayload,
+    } = parseStepPayload(rawPayload);
     if (!sessionId) {
       return {
         ok: false,
@@ -208,14 +293,38 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     const execution: ActiveStepExecution = {
       sessionId,
       stepId,
+      stepIndex,
+      totalSteps,
       cancelled: false,
       cancelHandlers: new Set<StepCancelHandler>(),
     };
     activeExecutionBySessionId.set(sessionId, execution);
     syncVisualSessionState();
+    emitRuntimeEvent({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_STARTED,
+      source: "session",
+      session_id: sessionId,
+      step_id: stepId,
+      payload: {
+        action_type: actionType,
+        step_index: stepIndex,
+        total_steps: totalSteps,
+        timeout_ms: timeoutMs,
+      },
+    });
+    await deps.onStepStarted?.({
+      sessionId,
+      stepId,
+      stepIndex,
+      totalSteps,
+      actionType,
+      timeoutMs,
+    });
     const context: SessionStepRuntimeContext = {
       sessionId,
       stepId,
+      stepIndex,
+      totalSteps,
       timeoutMs,
       isCancelled: () => execution.cancelled,
       onCancel: (cancelHandler) => {
@@ -225,18 +334,49 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     try {
       const result = await handler(actionPayload, context);
       if (!result.ok) {
+        if (result.error_code === "step_cancelled") {
+          return result;
+        }
+        emitRuntimeEvent({
+          type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_FAILED,
+          source: "session",
+          session_id: sessionId,
+          step_id: stepId,
+          payload: {
+            action_type: actionType,
+            step_index: stepIndex,
+            total_steps: totalSteps,
+            error_code: result.error_code,
+            message: result.message,
+          },
+        });
         await deps.onStepFailed?.({
           sessionId,
           stepId,
+          stepIndex,
+          totalSteps,
           actionType,
           errorCode: result.error_code,
           message: result.message,
         });
         return result;
       }
+      emitRuntimeEvent({
+        type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_COMPLETED,
+        source: "session",
+        session_id: sessionId,
+        step_id: stepId,
+        payload: {
+          action_type: actionType,
+          step_index: stepIndex,
+          total_steps: totalSteps,
+        },
+      });
       await deps.onStepApplied?.({
         sessionId,
         stepId,
+        stepIndex,
+        totalSteps,
         actionType,
         timeoutMs,
       });
@@ -246,6 +386,8 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
           ...toRecord(result.data),
           session_id: sessionId,
           step_id: stepId,
+          step_index: stepIndex,
+          total_steps: totalSteps,
           action_type: actionType,
           timeout_ms: timeoutMs,
         },
@@ -301,7 +443,18 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     await deps.onStepCancelled?.({
       sessionId,
       stepId: activeExecution.stepId,
+      stepIndex: activeExecution.stepIndex,
+      totalSteps: activeExecution.totalSteps,
       reason: activeExecution.cancelReason,
+    });
+    emitRuntimeEvent({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_CANCELLED,
+      source: "session",
+      session_id: sessionId,
+      step_id: activeExecution.stepId,
+      payload: {
+        reason: activeExecution.cancelReason,
+      },
     });
     return {
       ok: true,

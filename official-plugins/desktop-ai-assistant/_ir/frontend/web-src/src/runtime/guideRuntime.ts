@@ -1,4 +1,5 @@
 import { toAssistantCardPayload } from "./capabilities";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "./events";
 import { GUIDE_ACTIONS, type GuideActionName } from "./guideActions";
 import { hostVoiceSpeak, hostVoiceStatus, hostVoiceStop } from "./hostBridge";
 import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
@@ -25,6 +26,7 @@ export interface GuideRuntimeDeps {
   setCurrentCard: (card: AssistantCardPayload) => number;
   setActiveTip: (tip: GuideTipPayload | null) => void;
   setNarrationState: (state: GuideNarrationState) => void;
+  emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }
 
 type GuideRuntimeHandlers = Record<GuideActionName, GuideActionHandler>;
@@ -71,10 +73,34 @@ function isCancelledVoiceResult(result: Record<string, unknown>, cancelRequested
 }
 
 export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers {
+  const emitNarrateEvent = (
+    type:
+      | typeof ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_PLAYING
+      | typeof ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_COMPLETED
+      | typeof ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_CANCELLED
+      | typeof ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED,
+    context: SessionStepRuntimeContext,
+    payload: Record<string, unknown>
+  ) => {
+    deps.emitRuntimeEvent?.({
+      type,
+      source: "guide",
+      session_id: context.sessionId,
+      step_id: context.stepId,
+      payload,
+    });
+  };
   return {
-    [GUIDE_ACTIONS.CARD_SHOW]: (payload) => {
+    [GUIDE_ACTIONS.CARD_SHOW]: (payload, context) => {
       const normalized = toAssistantCardPayload(payload);
-      deps.setCurrentCard(normalized);
+      deps.setCurrentCard({
+        ...normalized,
+        data: {
+          ...normalized.data,
+          session_id: context.sessionId,
+          step_id: context.stepId,
+        },
+      });
       return {
         ok: true,
         data: {
@@ -96,6 +122,10 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
       }
       if (context.isCancelled()) {
         deps.setNarrationState(buildNarrationState("cancelled", text));
+        emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_CANCELLED, context, {
+          text,
+          reason: "cancelled_before_start",
+        });
         return {
           ok: false,
           error_code: "step_cancelled",
@@ -109,6 +139,9 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
         await hostVoiceStop({});
       });
       deps.setNarrationState(buildNarrationState("playing", text));
+      emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_PLAYING, context, {
+        text,
+      });
       const result = await hostVoiceSpeak({
         text,
         voice: typeof narration.voice === "string" ? narration.voice : undefined,
@@ -122,6 +155,9 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
           await hostVoiceStatus({ taskId });
         }
         deps.setNarrationState(buildNarrationState("cancelled", text));
+        emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_CANCELLED, context, {
+          text,
+        });
         return {
           ok: false,
           error_code: "step_cancelled",
@@ -136,6 +172,11 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
       if (!result || result.ok !== true) {
         const errorMessage = String(result?.message || result?.error_code || "host voice speak failed");
         deps.setNarrationState(buildNarrationState("failed", text, errorMessage));
+        emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED, context, {
+          text,
+          error_message: errorMessage,
+          error_code: String(result?.error_code || "guide_narrate_failed"),
+        });
         return {
           ok: false,
           error_code: String(result?.error_code || "guide_narrate_failed"),
@@ -143,6 +184,9 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
         };
       }
       deps.setNarrationState(buildNarrationState("completed", text));
+      emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_COMPLETED, context, {
+        text,
+      });
       return {
         ok: true,
         data: {

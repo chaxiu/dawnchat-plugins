@@ -10,7 +10,7 @@ import {
 } from "./viewRuntime.shared";
 
 export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewActionHandler {
-  return async (payload) => {
+  return async (payload, context) => {
     const input = toRecord(payload);
     const viewId = typeof input.view_id === "string" ? input.view_id.trim() : "";
     const capabilityId = typeof input.capability === "string" ? input.capability.trim() : "";
@@ -54,7 +54,10 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
         message: `Anchor not found: ${nextAnchor}`,
       };
     }
-    const manifest = applyViewState(deps, activeState.registration, nextResource, nextAnchor);
+    const manifest = applyViewState(deps, activeState.registration, nextResource, nextAnchor, {
+      trigger: "view.capability.invoke",
+      context,
+    });
     return {
       ok: true,
       data: {

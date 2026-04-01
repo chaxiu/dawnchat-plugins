@@ -17,6 +17,7 @@ metadata:
 
 - Choose `assistant-rich-display-execution` when one existing capability path can satisfy the task after capability listing and page introspection.
 - Choose `assistant-session-narration` when request needs ordered multi-step execution with host session lifecycle (`start/status/stop`).
+- If recovery metadata suggests a prior session should continue from a wait boundary or ordered progress point, prefer `assistant-session-narration` over ad-hoc single-step mutation.
 - Choose Self-Evolving when no listed capability or existing view contract can meet the request.
 - Prefer smallest viable path that preserves user outcome quality.
 

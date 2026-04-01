@@ -10,7 +10,7 @@ import {
 } from "./viewRuntime.shared";
 
 export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler {
-  return async (payload) => {
+  return async (payload, context) => {
     const input = toRecord(payload);
     const viewId = typeof input.view_id === "string" ? input.view_id.trim() : "";
     if (!viewId) {
@@ -48,7 +48,10 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         message: `Anchor not found: ${activeAnchor}`,
       };
     }
-    const manifest = applyViewState(deps, registration, resource, activeAnchor);
+    const manifest = applyViewState(deps, registration, resource, activeAnchor, {
+      trigger: "view.open",
+      context,
+    });
     await deps.navigateToView(viewId);
     return {
       ok: true,

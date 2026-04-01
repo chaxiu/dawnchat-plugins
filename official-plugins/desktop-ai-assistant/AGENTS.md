@@ -27,11 +27,13 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, workspace snapshot, and recovery metadata.
 - Treat `assistant.workspace.checkpoint.describe` as the source of the latest recoverable checkpoint summary.
 - Use `assistant.workspace.resume` only with an explicit `resume_token`.
+- Treat `continuation_hint` as recovery metadata for planning the next `dawnchat.ui.session.start`, not as an instruction to auto-replay old steps.
 - Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
   - `dawnchat.ui.session.stop`
+  - `dawnchat.ui.session.wait`
 - In session steps, keep voice/narration data inside `steps[].action.payload` only.
 - Treat `steps[].action.payload` as opaque plugin payload and do not hardcode internal fields at host side.
 - `dawnchat.ui.session.start` no longer uses `idempotency_key`.
@@ -95,6 +97,10 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
   - inspect current state via `assistant.view.describe`
   - inspect the latest checkpoint via `assistant.workspace.checkpoint.describe`
   - call `assistant.workspace.resume` only when the current task explicitly intends to continue the prior workspace
+  - after a successful resume, read `continuation_hint` before planning any new session
+  - if `continuation_hint.pending_wait` exists, prefer a short follow-up session around that wait boundary instead of replaying the whole prior sequence
+  - when `continuation_hint.pending_wait` exists and the next move depends on a runtime signal, prefer `dawnchat.ui.session.wait` with `wait_for=runtime_event` and `since_seq=continuation_hint.event_cursor_seq`
+  - if `continuation_hint.last_completed_step_index` exists, treat earlier steps as progress hints and avoid blindly re-sending obviously completed setup steps
   - do not auto-resume if a new task already has a clearer current-page intent
 - For Self-Evolving tasks:
   - update code minimally

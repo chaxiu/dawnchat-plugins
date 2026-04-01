@@ -1,4 +1,5 @@
 import type { GuideStateSnapshot } from "./guideState";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "./events";
 import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
 import { getViewRegistration } from "./viewRegistry";
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "./viewState";
@@ -36,6 +37,7 @@ export interface ViewRuntimeDeps {
   getWorkspaceSnapshot?: () => WorkspaceSnapshot;
   getCheckpointSummary?: () => WorkspaceCheckpointSummary | null;
   navigateToView: (viewId: string) => Promise<void> | void;
+  emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }
 
 export type ViewRuntimeHandlers = Record<string, ViewActionHandler>;
@@ -143,7 +145,8 @@ export function applyViewState(
   deps: ViewRuntimeDeps,
   registration: ViewRegistration,
   resource: ViewResourceBinding,
-  activeAnchor?: string
+  activeAnchor?: string,
+  options?: { trigger?: string; context?: SessionStepRuntimeContext }
 ): ViewManifestSnapshot {
   const manifest = createManifestSnapshot(registration, resource, activeAnchor);
   deps.setActiveViewState({
@@ -151,6 +154,19 @@ export function applyViewState(
     activeAnchor,
     resource,
     manifest,
+  });
+  deps.emitRuntimeEvent?.({
+    type: ASSISTANT_RUNTIME_EVENT_TYPES.VIEW_STATE_APPLIED,
+    source: "view",
+    session_id: options?.context?.sessionId,
+    step_id: options?.context?.stepId,
+    payload: {
+      trigger: options?.trigger,
+      view_id: registration.manifest.view_id,
+      active_anchor: activeAnchor || "",
+      resource_type: resource.resource_type,
+      resource_id: resource.resource_id,
+    },
   });
   return manifest;
 }

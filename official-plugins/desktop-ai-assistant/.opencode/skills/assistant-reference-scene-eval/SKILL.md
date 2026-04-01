@@ -55,6 +55,7 @@ metadata:
 - Step 4: explicit resume checks
   - read `resume_token` from checkpoint metadata
   - call `assistant.workspace.resume` explicitly
+  - confirm the response exposes `continuation_hint`
   - confirm `assistant.view.describe` reflects the restored workspace
 - Step 5: failure path checks
   - send an invalid anchor
@@ -73,6 +74,7 @@ metadata:
 - guide overlay can coexist with the page after `word.main` is active.
 - checkpoint metadata is discoverable without auto-resuming the page.
 - `assistant.workspace.resume` only works with an explicit token.
+- resume response exposes `continuation_hint` for follow-up session planning.
 - invalid input returns stable errors such as:
   - `invalid_view_resource`
   - `invalid_view_capability_input`

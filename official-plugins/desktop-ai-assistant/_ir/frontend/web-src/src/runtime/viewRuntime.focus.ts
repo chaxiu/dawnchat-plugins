@@ -8,7 +8,7 @@ import {
 } from "./viewRuntime.shared";
 
 export function createViewFocusHandler(deps: ViewRuntimeDeps): ViewActionHandler {
-  return async (payload) => {
+  return async (payload, context) => {
     const input = toRecord(payload);
     const viewId = typeof input.view_id === "string" ? input.view_id.trim() : "";
     const anchorFromAnchor = typeof input.anchor === "string" ? input.anchor.trim() : "";
@@ -36,7 +36,10 @@ export function createViewFocusHandler(deps: ViewRuntimeDeps): ViewActionHandler
         message: `Anchor not found: ${anchor}`,
       };
     }
-    const manifest = applyViewState(deps, activeState.registration, activeState.resource, anchor);
+    const manifest = applyViewState(deps, activeState.registration, activeState.resource, anchor, {
+      trigger: "view.focus",
+      context,
+    });
     return {
       ok: true,
       data: {
