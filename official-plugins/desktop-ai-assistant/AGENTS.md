@@ -24,7 +24,9 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Never assume function names or payload fields without listing current capabilities.
 - For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
 - Treat `dawnchat.ui.capabilities.list` as the source of top-level capability names only.
-- Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, and view capability contract.
+- Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, workspace snapshot, and recovery metadata.
+- Treat `assistant.workspace.checkpoint.describe` as the source of the latest recoverable checkpoint summary.
+- Use `assistant.workspace.resume` only with an explicit `resume_token`.
 - Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
   - `dawnchat.ui.session.start`
@@ -56,6 +58,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - `view.*` and `guide.*` are session step action namespaces, not top-level capability names returned by `capabilities.list`.
 - Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
 - Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
+- Recoverable state must be discoverable without automatically taking over the current UI.
 - The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap.ts`.
 - The current view registry lives in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
 - The current reference view registration lives in `_ir/frontend/web-src/src/views/pages/word/wordMainViewRegistration.ts`.
@@ -77,14 +80,22 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - For Rich Display tasks:
   - first list capabilities
   - then inspect page state with `assistant.view.describe` whenever the task depends on page semantics, anchors, or resource state
+  - if checkpoint metadata exists, decide explicitly whether the current task should ignore it or resume it
   - then prefer a single direct capability invoke when one step is enough
   - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
 - For View-First tasks:
   - inspect current page via `assistant.view.describe`
+  - treat `resume_available` as optional recovery metadata, not as an automatic next step
+  - use `assistant.workspace.checkpoint.describe` before any resume decision after refresh or restart
   - use `view.open` for page entry and resource binding
   - use `view.focus` for anchor changes
   - use `view.capability.invoke` for page-local mutations
   - use `guide.*` only for narration, tip, and overlay card expression
+- For Explicit Resume tasks:
+  - inspect current state via `assistant.view.describe`
+  - inspect the latest checkpoint via `assistant.workspace.checkpoint.describe`
+  - call `assistant.workspace.resume` only when the current task explicitly intends to continue the prior workspace
+  - do not auto-resume if a new task already has a clearer current-page intent
 - For Self-Evolving tasks:
   - update code minimally
   - install dependencies only when needed
@@ -99,6 +110,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Shared host rules may be excluded by manifest policy.
 - Keep this document and skill docs aligned with actual capability behavior.
 - Keep formal workflow skills and evaluation skills separate. Use evaluation skills only for self-check, trial, and acceptance verification.
+- For brand new view work, prefer the dedicated `assistant-new-view-authoring` skill and keep `assistant-evolution-implement` as the broader evolution wrapper.
 - Python sidecar MCP is available via host-injected `dawnchat_plugin_python`.
 - Always validate sidecar runtime state before relying on Python tool calls.
 - Keep role framing aligned with DawnChat Assistant, not a narrow single-domain persona.

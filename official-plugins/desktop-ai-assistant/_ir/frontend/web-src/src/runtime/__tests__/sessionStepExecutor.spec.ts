@@ -818,6 +818,7 @@ describe("session step executor", () => {
           text: "guide ready",
           updatedAtMs: 100,
         },
+        guide_state_version: 1,
       })),
     };
     const registration = createViewDescribeCapabilityRegistration(deps);

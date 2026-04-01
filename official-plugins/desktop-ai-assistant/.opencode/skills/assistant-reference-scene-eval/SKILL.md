@@ -42,6 +42,9 @@ metadata:
     - `active_anchor`
     - `current_resource`
     - `guide_state`
+- Step 3: checkpoint visibility checks
+  - call `dawnchat.ui.capability.invoke(function=assistant.workspace.checkpoint.describe)`
+  - confirm checkpoint metadata is visible without changing the current page
 - Step 3: success path checks
   - open `word.main`
   - focus `word.meaning`
@@ -49,7 +52,11 @@ metadata:
   - focus `word.etymology`
   - invoke `set_title`
   - run a guide expression step such as `guide.narrate` or `guide.card.show`
-- Step 4: failure path checks
+- Step 4: explicit resume checks
+  - read `resume_token` from checkpoint metadata
+  - call `assistant.workspace.resume` explicitly
+  - confirm `assistant.view.describe` reflects the restored workspace
+- Step 5: failure path checks
   - send an invalid anchor
   - send an invalid capability id
   - send invalid capability input
@@ -64,6 +71,8 @@ metadata:
 - `view.capability.invoke(append_etymology)` updates the etymology list and active anchor.
 - `view.capability.invoke(set_title)` updates the page title.
 - guide overlay can coexist with the page after `word.main` is active.
+- checkpoint metadata is discoverable without auto-resuming the page.
+- `assistant.workspace.resume` only works with an explicit token.
 - invalid input returns stable errors such as:
   - `invalid_view_resource`
   - `invalid_view_capability_input`
@@ -85,3 +94,4 @@ metadata:
 - No guessing of anchor names or capability input without reading `assistant.view.describe`.
 - No mixing this evaluation flow into the normal narration skill.
 - Re-check `assistant.view.describe` after a failed action before concluding state is broken.
+- Treat recovery metadata as discoverable state, not an instruction to auto-override the current task.

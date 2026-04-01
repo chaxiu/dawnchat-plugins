@@ -83,6 +83,15 @@ export function useViewState() {
     viewStateVersion.value += 1;
   };
 
+  const restoreViewState = (snapshot: ViewStateSnapshot) => {
+    activeViewId.value = snapshot.active_view_id;
+    activeAnchor.value = snapshot.active_anchor;
+    currentResource.value = snapshot.current_resource ? cloneResource(snapshot.current_resource) : null;
+    activeManifest.value = snapshot.active_manifest ? cloneManifest(snapshot.active_manifest) : null;
+    viewStateVersion.value += 1;
+    return viewStateVersion.value;
+  };
+
   const getViewStateSnapshot = (): ViewStateSnapshot => {
     return {
       active_view_id: activeViewId.value,
@@ -101,6 +110,7 @@ export function useViewState() {
     viewStateVersion,
     setActiveViewState,
     clearViewState,
+    restoreViewState,
     getViewStateSnapshot,
   };
 }

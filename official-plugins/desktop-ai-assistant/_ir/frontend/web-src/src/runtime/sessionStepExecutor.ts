@@ -2,10 +2,22 @@ import type { UiCapabilityHandler, UiCapabilityRegistration } from "./capabiliti
 import { createGuideRuntime } from "./guideRuntime";
 import type { GuideNarrationState, GuideTipPayload } from "./guideState";
 import { createViewRuntime } from "./viewRuntime";
+import type { WorkspaceCheckpointSummary } from "./checkpointTypes";
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "./viewState";
+import type { WorkspaceSnapshot } from "./workspaceTypes";
 import type { AssistantCardPayload } from "../cards/types";
 
-type StepActionResult = Record<string, unknown> | Promise<Record<string, unknown>>;
+type StepActionResult = {
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error_code?: string;
+  message?: string;
+} | Promise<{
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error_code?: string;
+  message?: string;
+}>;
 type StepCancelHandler = () => void | Promise<void>;
 
 export interface SessionStepRuntimeContext {
@@ -36,7 +48,27 @@ export interface SessionStepExecutorDeps {
   setNarrationState: (state: GuideNarrationState) => void;
   setActiveViewState: (state: SetActiveViewStateInput) => number;
   getViewStateSnapshot: () => ViewStateSnapshot;
+  getWorkspaceSnapshot?: () => WorkspaceSnapshot;
+  getCheckpointSummary?: () => WorkspaceCheckpointSummary | null;
   navigateToView: (viewId: string) => Promise<void> | void;
+  onStepApplied?: (payload: {
+    sessionId: string;
+    stepId?: string;
+    actionType: string;
+    timeoutMs?: number;
+  }) => void | Promise<void>;
+  onStepFailed?: (payload: {
+    sessionId: string;
+    stepId?: string;
+    actionType: string;
+    errorCode?: string;
+    message?: string;
+  }) => void | Promise<void>;
+  onStepCancelled?: (payload: {
+    sessionId: string;
+    stepId?: string;
+    reason?: string;
+  }) => void | Promise<void>;
 }
 
 function toRecord(raw: unknown): Record<string, unknown> {
@@ -188,8 +220,21 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     try {
       const result = await handler(actionPayload, context);
       if (!result.ok) {
+        await deps.onStepFailed?.({
+          sessionId,
+          stepId,
+          actionType,
+          errorCode: result.error_code,
+          message: result.message,
+        });
         return result;
       }
+      await deps.onStepApplied?.({
+        sessionId,
+        stepId,
+        actionType,
+        timeoutMs,
+      });
       return {
         ...result,
         data: {
@@ -247,6 +292,11 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
         await cancelHandler();
       })
     );
+    await deps.onStepCancelled?.({
+      sessionId,
+      stepId: activeExecution.stepId,
+      reason: activeExecution.cancelReason,
+    });
     return {
       ok: true,
       data: {

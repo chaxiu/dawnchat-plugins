@@ -19,16 +19,17 @@ export interface GuideStateSnapshot {
   current_card: AssistantCardPayload | null;
   active_tip: GuideTipPayload | null;
   narration_state: GuideNarrationState;
+  guide_state_version: number;
 }
 
 const currentCard = ref<AssistantCardPayload | null>(null);
-
 const activeTip = ref<GuideTipPayload | null>(null);
 const narrationState = ref<GuideNarrationState>({
   status: "idle",
   text: "",
   updatedAtMs: Date.now(),
 });
+const guideStateVersion = ref(0);
 
 function cloneJsonValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -62,19 +63,30 @@ function cloneNarrationState(state: GuideNarrationState): GuideNarrationState {
 export function useGuideState() {
   const setCurrentCard = (card: AssistantCardPayload) => {
     currentCard.value = cloneCard(card);
-    return 1;
+    guideStateVersion.value += 1;
+    return guideStateVersion.value;
   };
 
   const clearCurrentCard = () => {
     currentCard.value = null;
+    guideStateVersion.value += 1;
   };
 
   const setActiveTip = (tip: GuideTipPayload | null) => {
     activeTip.value = tip ? cloneTip(tip) : null;
+    guideStateVersion.value += 1;
   };
 
   const setNarrationState = (nextState: GuideNarrationState) => {
     narrationState.value = cloneNarrationState(nextState);
+    guideStateVersion.value += 1;
+  };
+
+  const restoreGuideState = (snapshot: GuideStateSnapshot) => {
+    currentCard.value = snapshot.current_card ? cloneCard(snapshot.current_card) : null;
+    activeTip.value = snapshot.active_tip ? cloneTip(snapshot.active_tip) : null;
+    narrationState.value = cloneNarrationState(snapshot.narration_state);
+    guideStateVersion.value += 1;
   };
 
   const getGuideStateSnapshot = (): GuideStateSnapshot => {
@@ -82,6 +94,7 @@ export function useGuideState() {
       current_card: currentCard.value ? cloneCard(currentCard.value) : null,
       active_tip: activeTip.value ? cloneTip(activeTip.value) : null,
       narration_state: cloneNarrationState(narrationState.value),
+      guide_state_version: guideStateVersion.value,
     };
   };
 
@@ -89,10 +102,12 @@ export function useGuideState() {
     currentCard,
     activeTip,
     narrationState,
+    guideStateVersion,
     setCurrentCard,
     clearCurrentCard,
     setActiveTip,
     setNarrationState,
+    restoreGuideState,
     getGuideStateSnapshot,
   };
 }

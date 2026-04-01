@@ -5,7 +5,17 @@ import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
 import type { AssistantCardPayload } from "../cards/types";
 import type { GuideNarrationState, GuideTipPayload } from "./guideState";
 
-type StepActionResult = Record<string, unknown> | Promise<Record<string, unknown>>;
+type StepActionResult = {
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error_code?: string;
+  message?: string;
+} | Promise<{
+  ok: boolean;
+  data?: Record<string, unknown>;
+  error_code?: string;
+  message?: string;
+}>;
 type GuideActionHandler = (
   payload: Record<string, unknown>,
   context: SessionStepRuntimeContext
