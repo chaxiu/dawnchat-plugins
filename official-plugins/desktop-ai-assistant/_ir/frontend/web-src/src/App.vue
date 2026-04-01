@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 
+import AssistantOrbLayer from "./components/AssistantOrbLayer.vue";
 import {
   installAssistantRuntimeCapabilities,
   uninstallAssistantRuntimeCapabilities,
@@ -22,10 +23,8 @@ onUnmounted(() => {
   <main class="assistant-shell">
     <div class="aurora aurora-a"></div>
     <div class="aurora aurora-b"></div>
-    <header class="title-bar">
-      <h1>Desktop AI Assistant</h1>
-    </header>
-    <section class="card-stage">
+    <AssistantOrbLayer />
+    <section class="shell-stage">
       <RouterView />
     </section>
   </main>
@@ -35,7 +34,8 @@ onUnmounted(() => {
 .assistant-shell {
   position: relative;
   min-height: 100vh;
-  padding: 18px 0 20px;
+  min-height: 100dvh;
+  padding: 0;
   color: var(--text-primary);
   overflow: hidden;
 }
@@ -61,27 +61,10 @@ onUnmounted(() => {
   top: 70px;
   background: radial-gradient(circle, rgba(129, 140, 248, 0.46) 0%, rgba(49, 46, 129, 0) 72%);
 }
-.title-bar {
+.shell-stage {
   position: relative;
   z-index: 1;
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 16px 8px;
-}
-h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
-  letter-spacing: 0.01em;
-  color: #eef6ff;
-  text-shadow: 0 0 22px rgba(56, 189, 248, 0.22);
-}
-.card-stage {
-  position: relative;
-  z-index: 1;
-}
-@media (max-width: 760px) {
-  .title-bar {
-    padding: 0 16px 4px;
-  }
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 </style>

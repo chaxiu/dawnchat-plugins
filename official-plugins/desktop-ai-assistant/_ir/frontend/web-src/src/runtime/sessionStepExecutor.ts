@@ -69,6 +69,7 @@ export interface SessionStepExecutorDeps {
     stepId?: string;
     reason?: string;
   }) => void | Promise<void>;
+  onActiveSessionsChanged?: (sessionIds: string[]) => void;
 }
 
 function toRecord(raw: unknown): Record<string, unknown> {
@@ -159,6 +160,9 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     flow: {},
   };
   const activeExecutionBySessionId = new Map<string, ActiveStepExecution>();
+  const syncVisualSessionState = () => {
+    deps.onActiveSessionsChanged?.(Array.from(activeExecutionBySessionId.keys()));
+  };
 
   const execute: UiCapabilityHandler = async (rawPayload) => {
     const { sessionId, stepId, timeoutMs, actionType, actionPayload } = parseStepPayload(rawPayload);
@@ -208,6 +212,7 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
       cancelHandlers: new Set<StepCancelHandler>(),
     };
     activeExecutionBySessionId.set(sessionId, execution);
+    syncVisualSessionState();
     const context: SessionStepRuntimeContext = {
       sessionId,
       stepId,
@@ -248,6 +253,7 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
     } finally {
       if (activeExecutionBySessionId.get(sessionId) === execution) {
         activeExecutionBySessionId.delete(sessionId);
+        syncVisualSessionState();
       }
     }
   };

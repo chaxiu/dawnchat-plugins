@@ -2,6 +2,11 @@
 import { computed } from "vue";
 
 import { resolveCardComponent } from "../cards/registry";
+import {
+  GUIDE_STACK_BOTTOM,
+  GUIDE_STACK_LEFT,
+  GUIDE_STACK_MAX_WIDTH,
+} from "../runtime/assistantUiLayout";
 import type { AssistantCardPayload } from "../cards/types";
 import type { GuideNarrationState, GuideTipPayload } from "../runtime/guideState";
 
@@ -28,10 +33,16 @@ const activeNarration = computed(() => {
 const hasVisibleGuideUi = computed(() => {
   return Boolean(activeCanvasCard.value || activeNarration.value || props.tip);
 });
+
+const hostStyle = computed(() => ({
+  left: `${GUIDE_STACK_LEFT}px`,
+  bottom: `${GUIDE_STACK_BOTTOM}px`,
+  width: `min(${GUIDE_STACK_MAX_WIDTH}px, calc(100vw - 32px))`,
+}));
 </script>
 
 <template>
-  <section v-if="hasVisibleGuideUi" class="host">
+  <section v-if="hasVisibleGuideUi" class="host" :style="hostStyle">
     <aside
       v-if="activeNarration"
       class="narration-banner"
@@ -61,24 +72,25 @@ const hasVisibleGuideUi = computed(() => {
 <style scoped>
 .host {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 4;
-  width: min(360px, calc(100vw - 32px));
+  z-index: 7;
   display: grid;
   gap: 10px;
+  pointer-events: none;
 }
 .narration-banner,
 .tip-banner,
 .card-item {
   padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(103, 232, 249, 0.24);
-  background: rgba(8, 47, 73, 0.58);
-  color: #e0f2fe;
+  border-radius: 16px;
+  border: 1px solid rgba(186, 230, 253, 0.22);
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(9px);
+  color: #f0f9ff;
+  box-shadow: 0 10px 26px rgba(2, 6, 23, 0.32);
+  pointer-events: auto;
 }
 .narration-banner {
-  border-color: rgba(129, 140, 248, 0.32);
+  border-color: rgba(129, 140, 248, 0.36);
   background: rgba(30, 41, 59, 0.72);
 }
 .narration-banner strong,
@@ -130,7 +142,7 @@ const hasVisibleGuideUi = computed(() => {
   padding: 0;
   overflow: hidden;
   border-color: rgba(103, 232, 249, 0.28);
-  background: rgba(15, 23, 42, 0.82);
+  background: rgba(15, 23, 42, 0.86);
 }
 .card-item :deep(.card) {
   min-height: 0;

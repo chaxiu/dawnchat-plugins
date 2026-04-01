@@ -1,0 +1,8 @@
+export const ORB_DOCK_SIZE = 164;
+export const ORB_DOCK_LEFT = 20;
+export const ORB_DOCK_BOTTOM = 20;
+export const ORB_GUIDE_STACK_GAP = 14;
+
+export const GUIDE_STACK_MAX_WIDTH = 360;
+export const GUIDE_STACK_LEFT = ORB_DOCK_LEFT;
+export const GUIDE_STACK_BOTTOM = ORB_DOCK_BOTTOM + ORB_DOCK_SIZE + ORB_GUIDE_STACK_GAP;

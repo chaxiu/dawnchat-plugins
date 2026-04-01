@@ -4,8 +4,10 @@ import { defineComponent, nextTick } from "vue";
 
 import App from "../App.vue";
 import { useGuideState } from "../runtime/guideState";
+import { useSessionVisualState } from "../runtime/sessionVisualState";
 import { useViewState } from "../runtime/viewState";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
+import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 import WordMainView from "../views/pages/word/WordMainView.vue";
 
 const Playground = defineComponent({
@@ -14,6 +16,27 @@ const Playground = defineComponent({
 
 describe("app router shell", () => {
   it("renders route navigation and switches pages", async () => {
+    const originalPath2D = (globalThis as any).Path2D;
+    (globalThis as any).Path2D = class {
+      moveTo() {}
+      lineTo() {}
+      closePath() {}
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      clearRect: vi.fn(),
+      setTransform: vi.fn(),
+      fillRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      fill: vi.fn(),
+      createRadialGradient: vi.fn(() => ({
+        addColorStop: vi.fn(),
+      })),
+      globalCompositeOperation: "source-over",
+      globalAlpha: 1,
+      filter: "none",
+      fillStyle: "",
+    } as unknown as CanvasRenderingContext2D);
     useGuideState().clearCurrentCard();
     useGuideState().setActiveTip(null);
     useGuideState().setNarrationState({
@@ -22,15 +45,21 @@ describe("app router shell", () => {
       updatedAtMs: Date.now(),
     });
     useViewState().clearViewState();
+    useSessionVisualState().setSessionIdle();
 
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
-        { path: "/", redirect: "/views/word/main" },
+        { path: "/", redirect: "/views/welcome" },
         {
           path: "/views",
           component: HomeAssistantPage,
           children: [
+            {
+              path: "welcome",
+              name: "assistant-welcome",
+              component: AssistantWelcomePage,
+            },
             {
               path: "word/main",
               component: WordMainView,
@@ -49,12 +78,16 @@ describe("app router shell", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Desktop AI Assistant");
-    expect(wrapper.text()).toContain("Word View Ready");
+    expect(wrapper.text()).toContain("Hello, I am your AI assistant");
+    expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("hero");
 
     await router.push("/playground");
     await nextTick();
+    expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("dock");
 
     expect(wrapper.text()).toContain("Playground Page");
+    expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("dock");
+    vi.restoreAllMocks();
+    (globalThis as any).Path2D = originalPath2D;
   });
 });

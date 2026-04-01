@@ -18,21 +18,21 @@ const etymology = computed(() => {
 const capabilityTitles = computed(() => {
   return activeManifest.value?.capabilities.map((capability) => capability.title) || [];
 });
+
+const isWordWorkspaceReady = computed(
+  () => isActiveWordView.value && Boolean(currentResource.value) && Boolean(activeManifest.value),
+);
 </script>
 
 <template>
   <section class="view-root" data-view-id="word.main">
-    <div v-if="!isActiveWordView || !currentResource || !activeManifest" class="empty-state">
-      <strong>Word View Ready</strong>
-      <span>Waiting for view.open action...</span>
-    </div>
-    <div v-else class="workspace">
+    <div v-if="isWordWorkspaceReady" class="workspace">
       <header
         class="panel panel-header"
         :data-anchor="activeAnchor === 'word.header' ? 'active' : 'inactive'"
       >
         <span class="chip">Word View</span>
-        <h2>{{ currentResource.title || "词汇工作区" }}</h2>
+        <h2>{{ currentResource!.title || "词汇工作区" }}</h2>
         <p>{{ word || "未设置单词" }}</p>
       </header>
 
@@ -71,16 +71,58 @@ const capabilityTitles = computed(() => {
         </div>
       </footer>
     </div>
+
+    <div v-else class="word-idle">
+      <p class="word-idle__title">Word workspace</p>
+      <p class="word-idle__hint">
+        Waiting for <code>view.open</code> from the host with an active word resource.
+      </p>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .view-root {
   width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .workspace {
   display: grid;
   gap: 16px;
+}
+.word-idle {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  padding: 24px 16px;
+  min-height: min(420px, 70vh);
+  border-radius: 20px;
+  border: 1px dashed rgba(103, 232, 249, 0.22);
+  background: rgba(15, 23, 42, 0.45);
+  text-align: center;
+  color: #cbd5e1;
+}
+.word-idle__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.word-idle__hint {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+.word-idle code {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.9);
+  color: #a5f3fc;
 }
 .panel {
   border: 1px solid rgba(103, 232, 249, 0.18);
@@ -157,16 +199,5 @@ const capabilityTitles = computed(() => {
   background: rgba(30, 41, 59, 0.84);
   color: #e2e8f0;
   font-size: 0.82rem;
-}
-.empty-state {
-  min-height: calc(100vh - 220px);
-  border-radius: 24px;
-  border: 1px dashed rgba(148, 163, 184, 0.3);
-  background: rgba(15, 23, 42, 0.42);
-  color: #cbd5e1;
-  display: grid;
-  place-items: center;
-  gap: 6px;
-  text-align: center;
 }
 </style>

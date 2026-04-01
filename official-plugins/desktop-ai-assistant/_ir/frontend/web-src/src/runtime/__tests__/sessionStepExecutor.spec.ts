@@ -139,6 +139,7 @@ const createDeps = (): SessionStepExecutorDeps => ({
     },
     view_state_version: 1,
   })),
+  onActiveSessionsChanged: vi.fn(),
 });
 const sessionId = "sess-1";
 
@@ -796,6 +797,43 @@ describe("session step executor", () => {
     const cancelRegistration = registrations.find((item) => item.definition.name === "assistant.session_step_cancel");
     expect(cancelRegistration).toBeTruthy();
     expect(cancelRegistration?.definition.input_schema).toBeTruthy();
+  });
+
+  it("syncs active session ids for visual state", async () => {
+    const deps = createDeps();
+    let resolveSpeak: ((value: Record<string, unknown>) => void) | null = null;
+    (window as any).__DAWNCHAT_HOST_VOICE__ = {
+      speak: vi.fn(
+        async () =>
+          await new Promise<Record<string, unknown>>((resolve) => {
+            resolveSpeak = resolve;
+          }),
+      ),
+      stop: vi.fn(async () => ({ ok: true })),
+      status: vi.fn(async () => ({ ok: true, data: { status: "completed" } })),
+    };
+    const handler = createSessionStepHandler(deps);
+    const executePromise = handler(
+      {
+        session_id: sessionId,
+        step_id: "step-visual-state",
+        action: {
+          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          payload: {
+            text: "state sync",
+          },
+        },
+      },
+      {},
+    );
+    await Promise.resolve();
+    expect(deps.onActiveSessionsChanged).toHaveBeenCalledWith([sessionId]);
+
+    resolveAsyncStep(resolveSpeak, { ok: true, data: { status: "completed" } });
+    await executePromise;
+
+    expect(deps.onActiveSessionsChanged).toHaveBeenLastCalledWith([]);
+    delete (window as any).__DAWNCHAT_HOST_VOICE__;
   });
 
   it("builds assistant.view.describe capability and returns active snapshot", async () => {

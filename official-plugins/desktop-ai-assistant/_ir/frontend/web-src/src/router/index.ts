@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { listViewRegistrations } from "../runtime/viewRegistry";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
 import PlaygroundPage from "../views/pages/playground/PlaygroundPage.vue";
+import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 
 const viewRoutes = listViewRegistrations().map((registration) => ({
   path: registration.route.path,
@@ -15,13 +16,20 @@ export const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/views/word/main",
+      redirect: "/views/welcome",
     },
     {
       path: "/views",
       name: "views",
       component: HomeAssistantPage,
-      children: viewRoutes,
+      children: [
+        {
+          path: "welcome",
+          name: "assistant-welcome",
+          component: AssistantWelcomePage,
+        },
+        ...viewRoutes,
+      ],
     },
     {
       path: "/playground",

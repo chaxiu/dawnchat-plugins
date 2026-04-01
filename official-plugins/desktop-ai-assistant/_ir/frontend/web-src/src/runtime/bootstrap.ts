@@ -3,6 +3,7 @@ import { registerCapabilities, unregisterCapabilities } from "./capabilities";
 import { createCheckpointRuntime } from "./checkpointRuntime";
 import { useGuideState } from "./guideState";
 import { createSessionStepCapabilityRegistrations } from "./sessionStepExecutor";
+import { useSessionVisualState } from "./sessionVisualState";
 import { createViewDescribeCapabilityRegistration } from "./viewRuntime";
 import { getViewRegistration } from "./viewRegistry";
 import { useViewState } from "./viewState";
@@ -32,6 +33,7 @@ export function installAssistantRuntimeCapabilities(): string[] {
     restoreViewState,
   } = useViewState();
   const navigateToView = createViewNavigator();
+  const { setFromActiveSessions } = useSessionVisualState();
   const workspaceStore = createWorkspaceStore({
     getGuideStateSnapshot,
     getViewStateSnapshot,
@@ -81,6 +83,7 @@ export function installAssistantRuntimeCapabilities(): string[] {
           errorMessage: reason,
         });
       },
+      onActiveSessionsChanged: setFromActiveSessions,
     }),
     createViewDescribeCapabilityRegistration({
       setActiveViewState,
@@ -96,5 +99,6 @@ export function installAssistantRuntimeCapabilities(): string[] {
 }
 
 export function uninstallAssistantRuntimeCapabilities(names: string[]) {
+  useSessionVisualState().setSessionIdle();
   unregisterCapabilities(names);
 }

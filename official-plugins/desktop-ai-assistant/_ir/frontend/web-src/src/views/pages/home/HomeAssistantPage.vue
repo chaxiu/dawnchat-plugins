@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRoute } from "vue-router";
 
 import CardHost from "../../../components/CardHost.vue";
 import { useGuideState } from "../../../runtime/guideState";
 import { useViewState } from "../../../runtime/viewState";
 
+const route = useRoute();
 const { currentCard, activeTip, narrationState } = useGuideState();
 const { activeViewId, activeAnchor, activeManifest, currentResource } = useViewState();
+
+/** 独立欢迎路由：全屏沉浸式，不挤在业务视图的空态里 */
+const isAssistantWelcome = computed(() => route.name === "assistant-welcome");
 
 const activeViewSummaryEntries = computed(() => {
   if (!activeManifest.value) {
@@ -22,9 +27,9 @@ const activeViewSummaryEntries = computed(() => {
 </script>
 
 <template>
-  <section class="page-shell">
+  <section class="page-shell" :class="{ 'page-shell--welcome': isAssistantWelcome }">
     <aside
-      v-if="activeManifest"
+      v-if="activeManifest && !isAssistantWelcome"
       class="view-banner"
       :data-view-id="activeViewId || activeManifest.view_id"
     >
@@ -67,6 +72,13 @@ const activeViewSummaryEntries = computed(() => {
   margin: 0 auto;
   min-height: calc(100vh - 140px);
   padding: 16px;
+}
+.page-shell--welcome {
+  max-width: none;
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
 }
 .view-stage {
   position: relative;
