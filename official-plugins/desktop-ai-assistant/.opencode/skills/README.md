@@ -9,7 +9,7 @@
 - `assistant-python-sidecar-check`: Validate Python sidecar runtime state and MCP endpoint availability.
 - `assistant-rich-display-execution`: Render content via existing capabilities only.
 - `assistant-session-narration`: Build session.start payloads with stable narration.text and plugin action passthrough.
-- `assistant-wait-resume-handoff`: Continue explicitly resumed workspaces from `continuation_hint` and `flow.wait` boundaries.
+- `assistant-wait-continuation-handoff`: Continue from `continuation.pending_wait` and `flow.wait` boundaries without replaying stale setup steps.
 - `assistant-evolution-implement`: Add or modify UI capabilities through code changes.
 - `assistant-new-view-authoring`: Add a brand new view using the standard contract/resource/capabilities/registration split.
 - `assistant-evolution-verify`: Enforce typecheck/unit/build and runtime capability checks.
@@ -22,8 +22,8 @@
   - `assistant-intent-router` -> `assistant-runtime-diagnose` -> `assistant-python-sidecar-check` -> `assistant-capability-discovery` -> `assistant-rich-display-execution` -> `assistant-delivery-report`
 - Ordered guide/view walkthrough:
   - `assistant-intent-router` -> `assistant-runtime-diagnose` -> `assistant-python-sidecar-check` -> `assistant-capability-discovery` -> `assistant-session-narration` -> `assistant-delivery-report`
-- Checkpoint-aware recovery:
-  - `assistant-runtime-diagnose` -> `assistant-capability-discovery` -> `assistant-runtime-recover` -> `assistant-wait-resume-handoff` -> `assistant-delivery-report`
+- Continuation-aware recovery:
+  - `assistant-runtime-diagnose` -> `assistant-capability-discovery` -> `assistant-runtime-recover` -> `assistant-wait-continuation-handoff` -> `assistant-delivery-report`
 - Capability gap request:
   - `assistant-intent-router` -> `assistant-runtime-diagnose` -> `assistant-python-sidecar-check` -> `assistant-capability-discovery` -> `assistant-evolution-implement` -> `assistant-runtime-recover` -> `assistant-evolution-verify` -> `assistant-delivery-report`
 - New view request:
@@ -31,12 +31,10 @@
 - Reference-scene regression check:
   - `assistant-runtime-diagnose` -> `assistant-runtime-recover` -> `assistant-reference-scene-eval` -> `assistant-evolution-verify` -> `assistant-delivery-report`
 
-## Recovery Notes
+## Continuation Notes
 
-- Treat `assistant.view.describe` as the page and workspace snapshot entrypoint.
-- If a recoverable state is reported, inspect `checkpoint_summary` and `resume_available` first.
-- Use `assistant.workspace.checkpoint.describe` to confirm the latest recoverable state.
-- Use `assistant.workspace.resume` only with an explicit `resume_token`.
-- After a successful resume, inspect `continuation_hint` before planning the next `dawnchat.ui.session.start`.
-- If `continuation_hint.pending_wait` exists, prefer `assistant-wait-resume-handoff` and a short wait-aware continuation instead of replaying the whole prior sequence.
-- Do not auto-resume solely because a checkpoint exists; prefer the current task intent over stale state.
+- Treat `assistant.view.describe` as the page and runtime observation entrypoint.
+- If continuation state is reported, inspect `continuation` first.
+- Use `continuation.pending_wait` and `continuation.event_cursor_seq` to decide whether a follow-up `dawnchat.ui.session.wait` is more appropriate than a fresh session.
+- If `continuation.pending_wait` exists, prefer `assistant-wait-continuation-handoff` and a short wait-aware continuation instead of replaying the whole prior sequence.
+- Do not let stale continuation state override the current task intent.

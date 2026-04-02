@@ -15,7 +15,7 @@ metadata:
   - `*.capabilities`
   - `*ViewRegistration`
 - Keep page rendering, resource normalization, capability mutations, and runtime registration clearly separated.
-- Ensure the new view is compatible with `assistant.view.describe`, workspace snapshotting, and checkpoint/resume.
+- Ensure the new view is compatible with `assistant.view.describe` and the current minimal runtime observation fields.
 
 ## When to invoke
 
@@ -52,7 +52,7 @@ metadata:
 - Keep `buildStateSummary` small, structured, and useful for `assistant.view.describe`.
 - Ensure the resource and capability contracts are visible through `assistant.view.describe`.
 
-## Workspace and checkpoint rules
+## Workspace observation rules
 
 - The view layer should not manage workspace store directly.
 - The view owns:
@@ -61,10 +61,10 @@ metadata:
   - page-local capability behavior
   - state summary
 - Runtime owns:
-  - workspace snapshot aggregation
-  - checkpoint persistence
-  - explicit resume behavior
-- New views must restore correctly from `viewState` and summary data after explicit resume.
+  - `active_resource_slice` aggregation
+  - `task_progress` observation
+  - `continuation` observation
+- New views must expose stable `buildStateSummary()` output without depending on legacy recovery semantics.
 
 ## Recommended implementation order
 
@@ -85,7 +85,7 @@ metadata:
 - `view.capability.invoke` succeeds for valid inputs.
 - Invalid capability input returns stable errors.
 - `assistant.view.describe` includes the new view in `available_views`.
-- Explicit resume restores the new view without auto-taking over unrelated tasks.
+- `assistant.view.describe` exposes the new view without introducing extra runtime observation fields.
 
 ## Output Contract
 
