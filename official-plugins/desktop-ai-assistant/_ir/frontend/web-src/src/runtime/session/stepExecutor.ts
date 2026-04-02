@@ -1,36 +1,20 @@
-import type { UiCapabilityHandler, UiCapabilityRegistration } from "./capabilities";
-import { createFlowRuntime, type FlowWaitStateChange } from "./flowRuntime";
-import { createGuideRuntime } from "./guideRuntime";
-import type { GuideNarrationState, GuideTipPayload } from "./guideState";
-import { createViewRuntime } from "./viewRuntime";
-import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantEventBus, type AssistantRuntimeEventInput } from "./events";
-import type { WorkspaceCheckpointSummary } from "./checkpointTypes";
-import type { SetActiveViewStateInput, ViewStateSnapshot } from "./viewState";
-import type { WorkspaceSnapshot } from "./workspaceTypes";
-import type { AssistantCardPayload } from "../cards/types";
+import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
+import { createAppRuntime } from "../appRuntime";
+import type {
+  SessionStepCancelHandler,
+  SessionStepRuntimeContext,
+  StepActionResult,
+} from "../contracts/sessionStep";
+import { createFlowRuntime, type FlowWaitStateChange } from "../flowRuntime";
+import { createGuideRuntime } from "../guide/runtime";
+import type { GuideNarrationState, GuideTipPayload } from "../guide/state";
+import { createViewRuntime } from "../view";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantEventBus, type AssistantRuntimeEventInput } from "../events";
+import type { SetActiveViewStateInput, ViewStateSnapshot } from "../view";
+import type { WorkspaceArtifact, WorkspaceTaskProgress } from "../workspace";
+import type { AssistantCardPayload } from "../../cards/types";
 
-type StepActionResult = {
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-} | Promise<{
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-}>;
-type StepCancelHandler = () => void | Promise<void>;
-
-export interface SessionStepRuntimeContext {
-  sessionId: string;
-  stepId?: string;
-  stepIndex?: number;
-  totalSteps?: number;
-  timeoutMs?: number;
-  isCancelled: () => boolean;
-  onCancel: (handler: StepCancelHandler) => void;
-}
+export type { SessionStepRuntimeContext } from "../contracts/sessionStep";
 
 type StepActionHandler = (
   payload: Record<string, unknown>,
@@ -45,7 +29,7 @@ interface ActiveStepExecution {
   totalSteps?: number;
   cancelled: boolean;
   cancelReason?: string;
-  cancelHandlers: Set<StepCancelHandler>;
+  cancelHandlers: Set<SessionStepCancelHandler>;
 }
 
 export interface SessionStepExecutorDeps {
@@ -54,8 +38,9 @@ export interface SessionStepExecutorDeps {
   setNarrationState: (state: GuideNarrationState) => void;
   setActiveViewState: (state: SetActiveViewStateInput) => number;
   getViewStateSnapshot: () => ViewStateSnapshot;
-  getWorkspaceSnapshot?: () => WorkspaceSnapshot;
-  getCheckpointSummary?: () => WorkspaceCheckpointSummary | null;
+  setTaskProgress?: (progress: WorkspaceTaskProgress) => void;
+  upsertArtifact?: (artifact: WorkspaceArtifact) => WorkspaceArtifact;
+  removeArtifact?: (artifactId: string) => boolean;
   navigateToView: (viewId: string) => Promise<void> | void;
   onStepApplied?: (payload: {
     sessionId: string;
@@ -228,7 +213,12 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
       ...deps,
       emitRuntimeEvent,
     }),
-    app: {},
+    app: createAppRuntime({
+      setTaskProgress: deps.setTaskProgress,
+      upsertArtifact: deps.upsertArtifact,
+      removeArtifact: deps.removeArtifact,
+      emitRuntimeEvent,
+    }),
     flow: deps.eventBus
       ? createFlowRuntime({
           eventBus: deps.eventBus,
@@ -296,7 +286,7 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
       stepIndex,
       totalSteps,
       cancelled: false,
-      cancelHandlers: new Set<StepCancelHandler>(),
+      cancelHandlers: new Set<SessionStepCancelHandler>(),
     };
     activeExecutionBySessionId.set(sessionId, execution);
     syncVisualSessionState();

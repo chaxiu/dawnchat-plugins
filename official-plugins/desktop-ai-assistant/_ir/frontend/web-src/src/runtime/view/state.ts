@@ -1,6 +1,7 @@
 import { ref } from "vue";
 
-import type { ViewManifestSnapshot, ViewResourceBinding } from "./viewManifest";
+import { cloneViewStateSummarySchema } from "./manifest";
+import type { ViewManifestSnapshot, ViewResourceBinding } from "./manifest";
 
 export interface ViewStateSnapshot {
   active_view_id: string;
@@ -47,6 +48,7 @@ function cloneManifest(manifest: ViewManifestSnapshot): ViewManifestSnapshot {
     title: manifest.title,
     route_name: manifest.route_name,
     route_path: manifest.route_path,
+    state_mode: manifest.state_mode,
     anchors: manifest.anchors.map((anchor) => ({ ...anchor })),
     capabilities: manifest.capabilities.map((capability) => ({
       ...capability,
@@ -61,6 +63,7 @@ function cloneManifest(manifest: ViewManifestSnapshot): ViewManifestSnapshot {
       default_resource: cloneResource(manifest.resource_contract.default_resource),
       error_codes: manifest.resource_contract.error_codes ? [...manifest.resource_contract.error_codes] : undefined,
     },
+    state_summary_schema: cloneViewStateSummarySchema(manifest.state_summary_schema),
     state_summary: cloneRecord(manifest.state_summary),
   };
 }
@@ -84,6 +87,8 @@ export function useViewState() {
   };
 
   const restoreViewState = (snapshot: ViewStateSnapshot) => {
+    // This only restores the assistant runtime's current view snapshot.
+    // Stateful views must still own their actual business persistence.
     activeViewId.value = snapshot.active_view_id;
     activeAnchor.value = snapshot.active_anchor;
     currentResource.value = snapshot.current_resource ? cloneResource(snapshot.current_resource) : null;

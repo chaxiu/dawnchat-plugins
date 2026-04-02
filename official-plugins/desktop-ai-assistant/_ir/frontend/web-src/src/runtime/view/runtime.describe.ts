@@ -1,12 +1,13 @@
-import type { UiCapabilityHandler, UiCapabilityRegistration } from "./capabilities";
-import { listViewRegistrations } from "./viewRegistry";
+import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
+import { listViewRegistrations } from "./registry";
 import {
   cloneCapabilityDefinition,
   cloneResource,
   cloneSchema,
-  toRecord,
   type ViewRuntimeDeps,
-} from "./viewRuntime.shared";
+  toRecord,
+} from "./runtime.shared";
+import { cloneViewStateSummarySchema } from "./manifest";
 
 function buildViewDescribeSchema(): Record<string, unknown> {
   return {
@@ -24,6 +25,7 @@ function buildViewDescribeItem(registration: ReturnType<typeof listViewRegistrat
     title: registration.manifest.title,
     route_name: registration.manifest.route_name,
     route_path: registration.manifest.route_path,
+    state_mode: registration.manifest.state_mode,
     anchors: registration.manifest.anchors.map((anchor) => ({ ...anchor })),
     capabilities: registration.manifest.capabilities.map(cloneCapabilityDefinition),
     resource_contract: {
@@ -34,6 +36,7 @@ function buildViewDescribeItem(registration: ReturnType<typeof listViewRegistrat
         ? [...registration.manifest.resource_contract.error_codes]
         : undefined,
     },
+    state_summary_schema: cloneViewStateSummarySchema(registration.manifest.state_summary_schema),
   };
 }
 
@@ -46,8 +49,9 @@ export function createViewDescribeCapabilityRegistration(
     const availableViews = listViewRegistrations().map(buildViewDescribeItem);
     const currentSnapshot = deps.getViewStateSnapshot();
     const guideState = deps.getGuideStateSnapshot?.() || null;
-    const workspaceSnapshot = deps.getWorkspaceSnapshot?.() || null;
-    const checkpointSummary = deps.getCheckpointSummary?.() || null;
+    const taskProgress = deps.getTaskProgressSnapshot?.() || null;
+    const activeResourceSlice = deps.getActiveResourceSliceSnapshot?.() || null;
+    const continuation = deps.getContinuationSnapshot?.() || null;
     const requestedManifest = requestedViewId
       ? availableViews.find((view) => view.view_id === requestedViewId) || null
       : null;
@@ -64,19 +68,11 @@ export function createViewDescribeCapabilityRegistration(
         active_manifest: currentSnapshot.active_manifest,
         view_state_version: currentSnapshot.view_state_version,
         guide_state: guideState,
+        task_progress: taskProgress,
+        active_resource_slice: activeResourceSlice,
+        continuation,
         available_views: availableViews,
         requested_view: requestedManifest,
-        workspace_snapshot: workspaceSnapshot,
-        checkpoint_summary: checkpointSummary,
-        resume_available: Boolean(checkpointSummary),
-        resume_token: checkpointSummary?.resume_token || "",
-        recovery_hints: checkpointSummary
-          ? [
-              "checkpoint_available",
-              "resume_requires_explicit_token",
-              "do_not_auto_resume_without_current_task_intent",
-            ]
-          : [],
       },
     };
   };
@@ -84,7 +80,7 @@ export function createViewDescribeCapabilityRegistration(
   return {
     definition: {
       name: "assistant.view.describe",
-      description: "Describe registered views and return the current active workspace snapshot",
+      description: "Describe registered views and return the current assistant-facing runtime observation",
       input_schema: buildViewDescribeSchema(),
     },
     handler,

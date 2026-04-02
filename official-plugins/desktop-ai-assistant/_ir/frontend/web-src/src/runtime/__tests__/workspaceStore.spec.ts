@@ -1,7 +1,7 @@
-import { createWorkspaceStore } from "../workspaceStore";
+import { createWorkspaceStore } from "../workspace";
 
 describe("workspace store", () => {
-  it("aggregates current view, guide, task progress, artifacts and checkpoint meta", () => {
+  it("returns minimal runtime observation snapshots", () => {
     const store = createWorkspaceStore({
       getViewStateSnapshot: () => ({
         active_view_id: "word.main",
@@ -16,21 +16,41 @@ describe("workspace store", () => {
             etymology: ["支持富媒体呈现"],
           },
         },
-        active_manifest: null,
+        active_manifest: {
+          view_id: "word.main",
+          resource_type: "word",
+          title: "Word Workspace",
+          route_name: "view-word-main",
+          route_path: "/views/word/main",
+          state_mode: "lightweight",
+          anchors: [
+            { id: "word.header", title: "Header" },
+            { id: "word.meaning", title: "Meaning" },
+          ],
+          capabilities: [],
+          resource_contract: {
+            resource_schema: { type: "object" },
+            open_payload_schema: { type: "object" },
+            default_resource: {
+              resource_type: "word",
+              resource_id: "word:assistant",
+              title: "词汇讲解",
+              data: { word: "Assistant" },
+            },
+          },
+          state_summary_schema: {
+            type: "object" as const,
+            properties: {
+              word: { type: "string" },
+              active_anchor: { type: "string" },
+            },
+          },
+          state_summary: {
+            word: "Assistant",
+            active_anchor: "word.header",
+          },
+        },
         view_state_version: 2,
-      }),
-      getGuideStateSnapshot: () => ({
-        current_card: null,
-        active_tip: {
-          message: "已进入工作区",
-          level: "info",
-        },
-        narration_state: {
-          status: "completed",
-          text: "ready",
-          updatedAtMs: 12,
-        },
-        guide_state_version: 3,
       }),
     });
 
@@ -46,21 +66,16 @@ describe("workspace store", () => {
         id: "artifact-1",
         kind: "note",
         title: "word-note",
+        resource_type: "word",
+        resource_id: "word:assistant",
+        view_id: "word.main",
+        created_at_ms: 90,
+        updated_at_ms: 95,
         data: {
           text: "Assistant",
         },
       },
     ]);
-    store.setLastCheckpointMeta({
-      checkpoint_id: "checkpoint-1",
-      resume_token: "resume-1",
-      saved_at_ms: 100,
-      trigger: "view.open",
-      status: "checkpointed",
-      scene_view_id: "word.main",
-      resource_id: "word:assistant",
-      workspace_schema_version: 2,
-    });
     store.setContinuation({
       last_completed_step_index: 1,
       last_completed_step_id: "step-2",
@@ -81,106 +96,47 @@ describe("workspace store", () => {
       },
     });
 
-    expect(store.getWorkspaceSnapshot()).toEqual({
-      workspace_schema_version: 2,
-      workspace_version: 9,
-      active_resource: {
-        resource_type: "word",
-        resource_id: "word:assistant",
-        title: "词汇讲解",
-        data: {
-          word: "Assistant",
-          meaning: "你的自进化智能助理",
-          etymology: ["支持富媒体呈现"],
-        },
-      },
-      active_view: "word.main",
-      active_anchor: "word.header",
-      task_progress: {
-        status: "running",
-        current_task_id: "task-1",
-        completed_steps: 1,
-        total_steps: 3,
-        summary: "正在处理词义讲解",
-      },
-      artifacts: [
-        {
-          id: "artifact-1",
-          kind: "note",
-          title: "word-note",
-          data: {
-            text: "Assistant",
-          },
-        },
-      ],
-      guide_state: {
-        current_card: null,
-        active_tip: {
-          message: "已进入工作区",
-          level: "info",
-        },
-        narration_state: {
-          status: "completed",
-          text: "ready",
-          updatedAtMs: 12,
-        },
-        guide_state_version: 3,
-      },
-      view_state: {
-        active_view_id: "word.main",
+    expect(store.getTaskProgressSnapshot()).toEqual({
+      status: "running",
+      current_task_id: "task-1",
+      completed_steps: 1,
+      total_steps: 3,
+      summary: "正在处理词义讲解",
+    });
+    expect(store.getActiveResourceSliceSnapshot()).toEqual({
+      resource_type: "word",
+      resource_id: "word:assistant",
+      title: "词汇讲解",
+      view_id: "word.main",
+      state_summary: {
+        word: "Assistant",
         active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
-          title: "词汇讲解",
-          data: {
-            word: "Assistant",
-            meaning: "你的自进化智能助理",
-            etymology: ["支持富媒体呈现"],
-          },
-        },
-        active_manifest: null,
-        view_state_version: 2,
       },
-      continuation: {
-        last_completed_step_index: 1,
-        last_completed_step_id: "step-2",
+      artifact_ids: ["artifact-1"],
+      artifact_count: 1,
+    });
+    expect(store.getContinuationSnapshot()).toEqual({
+      last_completed_step_index: 1,
+      last_completed_step_id: "step-2",
+      event_cursor_seq: 12,
+      pending_wait: {
+        action_type: "flow.wait",
+        session_id: "sess-1",
+        step_id: "step-3",
+        step_index: 2,
+        total_steps: 4,
+        event_types: ["assistant.view.form.submitted"],
+        match: {
+          form_id: "paper-form",
+        },
+        timeout_ms: 30000,
         event_cursor_seq: 12,
-        pending_wait: {
-          action_type: "flow.wait",
-          session_id: "sess-1",
-          step_id: "step-3",
-          step_index: 2,
-          total_steps: 4,
-          event_types: ["assistant.view.form.submitted"],
-          match: {
-            form_id: "paper-form",
-          },
-          timeout_ms: 30000,
-          event_cursor_seq: 12,
-          waiting_since_ms: 200,
-        },
-      },
-      last_checkpoint_meta: {
-        checkpoint_id: "checkpoint-1",
-        resume_token: "resume-1",
-        saved_at_ms: 100,
-        trigger: "view.open",
-        status: "checkpointed",
-        scene_view_id: "word.main",
-        resource_id: "word:assistant",
-        workspace_schema_version: 2,
-        source_action_type: undefined,
-        session_id: undefined,
-        step_id: undefined,
-        reason_code: undefined,
-        error_code: undefined,
-        error_message: undefined,
+        waiting_since_ms: 200,
       },
     });
   });
 
-  it("returns cloned snapshot data and keeps internal state immutable", () => {
+  it("returns cloned observation data and keeps internal state immutable", () => {
     const store = createWorkspaceStore({
       getViewStateSnapshot: () => ({
         active_view_id: "word.main",
@@ -193,37 +149,145 @@ describe("workspace store", () => {
             word: "Assistant",
           },
         },
-        active_manifest: null,
-        view_state_version: 1,
-      }),
-      getGuideStateSnapshot: () => ({
-        current_card: null,
-        active_tip: null,
-        narration_state: {
-          status: "idle",
-          text: "",
-          updatedAtMs: 1,
+        active_manifest: {
+          view_id: "word.main",
+          resource_type: "word",
+          title: "Word Workspace",
+          route_name: "view-word-main",
+          route_path: "/views/word/main",
+          state_mode: "lightweight",
+          anchors: [],
+          capabilities: [],
+          resource_contract: {
+            resource_schema: { type: "object" },
+            open_payload_schema: { type: "object" },
+            default_resource: {
+              resource_type: "word",
+              resource_id: "word:assistant",
+              title: "词汇讲解",
+              data: { word: "Assistant" },
+            },
+          },
+          state_summary_schema: {
+            type: "object" as const,
+            properties: {
+              word: { type: "string" },
+            },
+          },
+          state_summary: {
+            word: "Assistant",
+          },
         },
-        guide_state_version: 1,
+        view_state_version: 1,
       }),
     });
     store.setArtifacts([
       {
         id: "artifact-1",
         kind: "note",
+        resource_type: "word",
+        resource_id: "word:assistant",
+        view_id: "word.main",
+        created_at_ms: 1,
+        updated_at_ms: 1,
         data: {
           text: "v1",
         },
       },
     ]);
-    const snapshot = store.getWorkspaceSnapshot();
-    (snapshot.artifacts[0].data as Record<string, unknown>).text = "mutated";
-    snapshot.continuation.event_cursor_seq = 99;
+    const sliceSnapshot = store.getActiveResourceSliceSnapshot();
+    const continuationSnapshot = store.getContinuationSnapshot();
+    if (sliceSnapshot) {
+      (sliceSnapshot.state_summary as Record<string, unknown>).word = "mutated";
+      sliceSnapshot.artifact_ids[0] = "artifact-mutated";
+    }
+    continuationSnapshot.event_cursor_seq = 99;
 
-    const nextSnapshot = store.getWorkspaceSnapshot();
-    expect(nextSnapshot.artifacts[0].data).toEqual({
-      text: "v1",
+    const nextSliceSnapshot = store.getActiveResourceSliceSnapshot();
+    expect(nextSliceSnapshot).toEqual(expect.objectContaining({
+      state_summary: {
+        word: "Assistant",
+      },
+      artifact_ids: ["artifact-1"],
+    }));
+    expect(store.getContinuationSnapshot().event_cursor_seq).toBe(0);
+  });
+
+  it("keeps active_resource_slice bound to current active resource only", () => {
+    let currentResourceId = "word:assistant";
+    const store = createWorkspaceStore({
+      getViewStateSnapshot: () => ({
+        active_view_id: "word.main",
+        active_anchor: "word.header",
+        current_resource: {
+          resource_type: "word",
+          resource_id: currentResourceId,
+          title: currentResourceId,
+          data: {
+            word: currentResourceId,
+          },
+        },
+        active_manifest: {
+          view_id: "word.main",
+          resource_type: "word",
+          title: "Word Workspace",
+          route_name: "view-word-main",
+          route_path: "/views/word/main",
+          state_mode: "lightweight",
+          anchors: [],
+          capabilities: [],
+          resource_contract: {
+            resource_schema: { type: "object" },
+            open_payload_schema: { type: "object" },
+            default_resource: {
+              resource_type: "word",
+              resource_id: "word:assistant",
+              title: "词汇讲解",
+              data: { word: "Assistant" },
+            },
+          },
+          state_summary_schema: {
+            type: "object" as const,
+            properties: {
+              word: { type: "string" },
+            },
+          },
+          state_summary: {
+            word: currentResourceId,
+          },
+        },
+        view_state_version: 1,
+      }),
     });
-    expect(nextSnapshot.continuation.event_cursor_seq).toBe(0);
+
+    store.setArtifacts([
+      {
+        id: "artifact-word-1",
+        kind: "note",
+        resource_type: "word",
+        resource_id: "word:assistant",
+      },
+      {
+        id: "artifact-word-2",
+        kind: "note",
+        resource_type: "word",
+        resource_id: "word:agent",
+      },
+    ]);
+
+    const snapshotA = store.getActiveResourceSliceSnapshot();
+    expect(snapshotA).toEqual(expect.objectContaining({
+      resource_id: "word:assistant",
+      artifact_ids: ["artifact-word-1"],
+      artifact_count: 1,
+    }));
+
+    currentResourceId = "word:agent";
+    const snapshotB = store.getActiveResourceSliceSnapshot();
+    expect(snapshotB).toEqual(expect.objectContaining({
+      resource_id: "word:agent",
+      artifact_ids: ["artifact-word-2"],
+      artifact_count: 1,
+    }));
   });
 });

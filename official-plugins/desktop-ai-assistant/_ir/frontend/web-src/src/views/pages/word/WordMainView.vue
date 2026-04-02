@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useViewState } from "../../../runtime/viewState";
+import { useViewState } from "../../../runtime/view";
 
 const { activeViewId, activeAnchor, currentResource, activeManifest } = useViewState();
 

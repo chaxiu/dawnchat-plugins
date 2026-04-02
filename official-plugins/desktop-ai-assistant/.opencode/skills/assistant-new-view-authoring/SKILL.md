@@ -47,7 +47,7 @@ metadata:
 
 ## Required runtime integration
 
-- Register the new view in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
+- Register the new view in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
 - Ensure route metadata in registration matches the actual page route.
 - Keep `buildStateSummary` small, structured, and useful for `assistant.view.describe`.
 - Ensure the resource and capability contracts are visible through `assistant.view.describe`.
@@ -73,7 +73,7 @@ metadata:
 - Create `*.resource` for `view.open` normalization.
 - Create `*.capabilities` for page-local mutations.
 - Create `*ViewRegistration` and connect the files.
-- Register the view in `viewRegistry.ts`.
+- Register the view in `view/registry.ts`.
 - Confirm `assistant.view.describe` exposes the new contract.
 - Add focused contract/runtime tests.
 

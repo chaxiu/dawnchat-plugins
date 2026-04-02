@@ -30,15 +30,34 @@ export interface ViewCapabilityDefinition {
   error_codes?: string[];
 }
 
+export interface ViewStateSummarySchema extends Record<string, unknown> {
+  type: "object";
+  properties: Record<string, unknown>;
+  required?: string[];
+}
+
+export type ViewStateMode = "stateful" | "lightweight";
+
+export function cloneViewStateSummarySchema(
+  schema: ViewStateSummarySchema
+): ViewStateSummarySchema {
+  return JSON.parse(JSON.stringify(schema)) as ViewStateSummarySchema;
+}
+
 export interface ViewManifest {
   view_id: string;
   resource_type: string;
   title: string;
   route_name: string;
   route_path: string;
+  // `stateful` views own their real state and persistence strategy.
+  // `lightweight` views are assistant-facing helper surfaces and should not
+  // assume automatic restore from runtime snapshots.
+  state_mode: ViewStateMode;
   anchors: ViewAnchorDefinition[];
   capabilities: ViewCapabilityDefinition[];
   resource_contract: ViewResourceContract;
+  state_summary_schema: ViewStateSummarySchema;
 }
 
 export interface ViewManifestSnapshot extends ViewManifest {

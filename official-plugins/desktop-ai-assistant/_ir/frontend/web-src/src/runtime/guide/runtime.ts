@@ -1,22 +1,10 @@
-import { toAssistantCardPayload } from "./capabilities";
-import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "./events";
-import { GUIDE_ACTIONS, type GuideActionName } from "./guideActions";
-import { hostVoiceSpeak, hostVoiceStatus, hostVoiceStop } from "./hostBridge";
-import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
-import type { AssistantCardPayload } from "../cards/types";
-import type { GuideNarrationState, GuideTipPayload } from "./guideState";
-
-type StepActionResult = {
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-} | Promise<{
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-}>;
+import { toAssistantCardPayload } from "../capabilities";
+import type { SessionStepRuntimeContext, StepActionResult } from "../contracts/sessionStep";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "../events";
+import { GUIDE_ACTIONS, type GuideActionName } from "./actions";
+import { hostVoiceSpeak, hostVoiceStatus, hostVoiceStop } from "../hostBridge";
+import type { AssistantCardPayload } from "../../cards/types";
+import type { GuideNarrationState, GuideTipPayload } from "./state";
 type GuideActionHandler = (
   payload: Record<string, unknown>,
   context: SessionStepRuntimeContext

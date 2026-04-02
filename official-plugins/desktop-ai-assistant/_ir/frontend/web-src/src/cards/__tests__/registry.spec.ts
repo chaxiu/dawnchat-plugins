@@ -7,6 +7,7 @@ import { resolveCardComponent } from "../registry";
 describe("card registry", () => {
   it("resolves known card type", () => {
     expect(resolveCardComponent("word")).toBeTruthy();
+    expect(resolveCardComponent("confirm")).toBeTruthy();
     expect(resolveCardComponent("unknown")).toBeNull();
   });
 

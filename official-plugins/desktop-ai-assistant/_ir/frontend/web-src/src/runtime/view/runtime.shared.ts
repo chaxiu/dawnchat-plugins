@@ -1,29 +1,22 @@
-import type { GuideStateSnapshot } from "./guideState";
-import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "./events";
-import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
-import { getViewRegistration } from "./viewRegistry";
-import type { SetActiveViewStateInput, ViewStateSnapshot } from "./viewState";
+import type { GuideStateSnapshot } from "../guide/state";
+import type { SessionStepRuntimeContext, StepActionResult } from "../contracts/sessionStep";
+import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantRuntimeEventInput } from "../events";
+import { getViewRegistration } from "./registry";
+import type { SetActiveViewStateInput, ViewStateSnapshot } from "./state";
 import type {
   ViewCapabilityDefinition,
   ViewManifestSnapshot,
   ViewOpenResult,
   ViewRegistration,
   ViewResourceBinding,
-} from "./viewManifest";
-import type { WorkspaceCheckpointSummary } from "./checkpointTypes";
-import type { WorkspaceSnapshot } from "./workspaceTypes";
-
-export type StepActionResult = {
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-} | Promise<{
-  ok: boolean;
-  data?: Record<string, unknown>;
-  error_code?: string;
-  message?: string;
-}>;
+} from "./manifest";
+import { cloneViewStateSummarySchema } from "./manifest";
+import type {
+  WorkspaceContinuation,
+  WorkspaceResourceSlice,
+  WorkspaceTaskProgress,
+} from "../workspace/types";
+import { assertValidViewStateSummary } from "./stateSummaryValidation";
 
 export type ViewActionHandler = (
   payload: Record<string, unknown>,
@@ -34,8 +27,9 @@ export interface ViewRuntimeDeps {
   setActiveViewState: (state: SetActiveViewStateInput) => number;
   getViewStateSnapshot: () => ViewStateSnapshot;
   getGuideStateSnapshot?: () => GuideStateSnapshot;
-  getWorkspaceSnapshot?: () => WorkspaceSnapshot;
-  getCheckpointSummary?: () => WorkspaceCheckpointSummary | null;
+  getTaskProgressSnapshot?: () => WorkspaceTaskProgress;
+  getActiveResourceSliceSnapshot?: () => WorkspaceResourceSlice | null;
+  getContinuationSnapshot?: () => WorkspaceContinuation;
   navigateToView: (viewId: string) => Promise<void> | void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }
@@ -83,12 +77,19 @@ export function createManifestSnapshot(
   resource: ViewResourceBinding,
   activeAnchor?: string
 ): ViewManifestSnapshot {
+  const stateSummary = registration.buildStateSummary(resource, activeAnchor);
+  assertValidViewStateSummary(
+    registration.manifest.view_id,
+    registration.manifest.state_summary_schema,
+    stateSummary
+  );
   return {
     view_id: registration.manifest.view_id,
     resource_type: registration.manifest.resource_type,
     title: registration.manifest.title,
     route_name: registration.manifest.route_name,
     route_path: registration.manifest.route_path,
+    state_mode: registration.manifest.state_mode,
     anchors: registration.manifest.anchors.map((anchor) => ({ ...anchor })),
     capabilities: registration.manifest.capabilities.map(cloneCapabilityDefinition),
     resource_contract: {
@@ -99,7 +100,8 @@ export function createManifestSnapshot(
         ? [...registration.manifest.resource_contract.error_codes]
         : undefined,
     },
-    state_summary: registration.buildStateSummary(resource, activeAnchor),
+    state_summary_schema: cloneViewStateSummarySchema(registration.manifest.state_summary_schema),
+    state_summary: stateSummary,
   };
 }
 

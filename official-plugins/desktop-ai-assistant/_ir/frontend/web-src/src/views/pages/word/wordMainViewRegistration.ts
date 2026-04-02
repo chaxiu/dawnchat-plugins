@@ -1,5 +1,5 @@
 import WordMainView from "./WordMainView.vue";
-import type { ViewRegistration } from "../../../runtime/viewManifest";
+import type { ViewRegistration } from "../../../runtime/view";
 import { invokeWordMainCapability, buildWordMainStateSummary } from "./wordMain.capabilities";
 import { cloneWordResource, createWordMainManifest, WORD_DEFAULT_RESOURCE } from "./wordMain.contract";
 import { openWordMainView } from "./wordMain.resource";

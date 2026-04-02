@@ -1,6 +1,6 @@
 import { createAssistantEventBus, ASSISTANT_RUNTIME_EVENT_TYPES } from "../events";
 import { createFlowRuntime } from "../flowRuntime";
-import type { SessionStepRuntimeContext } from "../sessionStepExecutor";
+import type { SessionStepRuntimeContext } from "../contracts/sessionStep";
 
 function createContext(timeoutMs?: number): {
   context: SessionStepRuntimeContext;
@@ -30,8 +30,45 @@ function createContext(timeoutMs?: number): {
 }
 
 describe("flow runtime wait", () => {
+  it("matches a recent event before registering realtime wait", async () => {
+    const eventBus = createAssistantEventBus({ storage: null });
+    const flowRuntime = createFlowRuntime({ eventBus });
+    const { context } = createContext(200);
+    const existingEvent = eventBus.emit({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED,
+      source: "guide",
+      session_id: "sess-flow",
+      step_id: "step-flow",
+      payload: {
+        confirm_id: "confirm-delete",
+        confirmed: true,
+      },
+    });
+
+    await expect(
+      flowRuntime.wait(
+        {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED],
+          session_id: "sess-flow",
+          step_id: "step-flow",
+          match: {
+            confirm_id: "confirm-delete",
+            confirmed: true,
+          },
+        },
+        context
+      )
+    ).resolves.toEqual({
+      ok: true,
+      data: {
+        status: "matched",
+        matched_event: existingEvent,
+      },
+    });
+  });
+
   it("resolves when matching event is emitted", async () => {
-    const eventBus = createAssistantEventBus();
+    const eventBus = createAssistantEventBus({ storage: null });
     const onWaitStateChange = vi.fn();
     const flowRuntime = createFlowRuntime({ eventBus, onWaitStateChange });
     const { context } = createContext(200);
@@ -80,13 +117,13 @@ describe("flow runtime wait", () => {
   });
 
   it("returns timeout error when no event matches", async () => {
-    const eventBus = createAssistantEventBus();
+    const eventBus = createAssistantEventBus({ storage: null });
     const flowRuntime = createFlowRuntime({ eventBus });
     const { context } = createContext();
     await expect(
       flowRuntime.wait(
         {
-          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED],
           timeout_ms: 5,
         },
         context
@@ -97,14 +134,14 @@ describe("flow runtime wait", () => {
       message: "flow.wait timed out before matching any event",
       data: {
         latest_seq: 0,
-        waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+        waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED],
         recent_events: [],
       },
     });
   });
 
   it("returns cancelled when context is cancelled", async () => {
-    const eventBus = createAssistantEventBus();
+    const eventBus = createAssistantEventBus({ storage: null });
     const flowRuntime = createFlowRuntime({ eventBus });
     const { context, cancel } = createContext(200);
     const waiting = flowRuntime.wait(

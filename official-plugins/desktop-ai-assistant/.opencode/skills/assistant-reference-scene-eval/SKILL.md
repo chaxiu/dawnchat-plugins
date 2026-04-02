@@ -23,8 +23,8 @@ metadata:
 
 - Top-level capability names come from `dawnchat.ui.capabilities.list`.
 - Registered views, route entry, anchors, capability contract, resource contract, and current page state come from `assistant.view.describe`.
-- Current view registry lives in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
-- Current guide actions live in `_ir/frontend/web-src/src/runtime/guideRuntime.ts`.
+- Current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
+- Current guide actions live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - Current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
 ## Evaluation flow

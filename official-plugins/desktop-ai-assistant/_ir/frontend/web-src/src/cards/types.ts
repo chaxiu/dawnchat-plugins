@@ -1,4 +1,4 @@
-export type AssistantCardType = "word" | "quiz" | "media";
+export type AssistantCardType = "word" | "quiz" | "media" | "confirm";
 
 export interface AssistantCardPayload {
   card_type: AssistantCardType;

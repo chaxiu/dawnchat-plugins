@@ -1,4 +1,4 @@
-import type { ViewManifest, ViewResourceBinding } from "../../../runtime/viewManifest";
+import type { ViewManifest, ViewResourceBinding } from "../../../runtime/view";
 
 export const WORD_DEFAULT_RESOURCE: ViewResourceBinding = {
   resource_type: "word",
@@ -11,6 +11,18 @@ export const WORD_DEFAULT_RESOURCE: ViewResourceBinding = {
   },
 };
 
+const WORD_STATE_SUMMARY_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    resource_title: { type: "string" },
+    word: { type: "string" },
+    has_meaning: { type: "boolean" },
+    etymology_count: { type: "number" },
+    active_anchor: { type: "string" },
+  },
+  required: ["resource_title", "word", "has_meaning", "etymology_count", "active_anchor"],
+};
+
 export function createWordMainManifest(): ViewManifest {
   return {
     view_id: "word.main",
@@ -18,6 +30,7 @@ export function createWordMainManifest(): ViewManifest {
     title: "Word Workspace",
     route_name: "view-word-main",
     route_path: "/views/word/main",
+    state_mode: "lightweight",
     anchors: [
       { id: "word.header", title: "Header", description: "单词标题与概览区域" },
       { id: "word.meaning", title: "Meaning", description: "单词释义与讲解重点区域" },
@@ -150,6 +163,7 @@ export function createWordMainManifest(): ViewManifest {
       default_resource: cloneWordResource(WORD_DEFAULT_RESOURCE),
       error_codes: ["invalid_view_resource", "anchor_not_found"],
     },
+    state_summary_schema: WORD_STATE_SUMMARY_SCHEMA,
   };
 }
 

@@ -3,16 +3,27 @@ import {
   createSessionStepCapabilityRegistrations,
   createSessionStepHandler,
   type SessionStepExecutorDeps,
-} from "../sessionStepExecutor";
+} from "../session/stepExecutor";
 import { ASSISTANT_RUNTIME_EVENT_TYPES, createAssistantEventBus } from "../events";
-import { GUIDE_ACTIONS } from "../guideActions";
-import { createViewDescribeCapabilityRegistration } from "../viewRuntime";
+import { GUIDE_ACTIONS } from "../guide/actions";
+import type { WorkspaceArtifact } from "../workspace";
+import { createViewDescribeCapabilityRegistration } from "../view";
 
 const createDeps = (): SessionStepExecutorDeps => ({
   setCurrentCard: vi.fn(() => 1),
   setActiveTip: vi.fn(),
   setNarrationState: vi.fn(),
   setActiveViewState: vi.fn(() => 1),
+  setTaskProgress: vi.fn(),
+  upsertArtifact: vi.fn((artifact: WorkspaceArtifact) => ({
+    ...artifact,
+    resource_type: artifact.resource_type || "word",
+    resource_id: artifact.resource_id || "word:assistant",
+    view_id: artifact.view_id || "word.main",
+    created_at_ms: artifact.created_at_ms || 1,
+    updated_at_ms: artifact.updated_at_ms || 2,
+  })),
+  removeArtifact: vi.fn(() => true),
   navigateToView: vi.fn(),
   getViewStateSnapshot: vi.fn(() => ({
     active_view_id: "word.main",
@@ -33,6 +44,7 @@ const createDeps = (): SessionStepExecutorDeps => ({
       title: "Word Workspace",
       route_name: "view-word-main",
       route_path: "/views/word/main",
+      state_mode: "lightweight" as const,
       anchors: [
         { id: "word.header", title: "Header", description: "单词标题与概览区域" },
         { id: "word.meaning", title: "Meaning", description: "单词释义与讲解重点区域" },
@@ -132,6 +144,13 @@ const createDeps = (): SessionStepExecutorDeps => ({
           },
         },
         error_codes: ["invalid_view_resource", "anchor_not_found"],
+      },
+      state_summary_schema: {
+        type: "object" as const,
+        properties: {
+          word: { type: "string" },
+          active_anchor: { type: "string" },
+        },
       },
       state_summary: {
         word: "Assistant",
@@ -301,6 +320,53 @@ describe("session step executor", () => {
     });
   });
 
+  it("matches confirm responded events in flow.wait", async () => {
+    const deps = createDeps();
+    const eventBus = createAssistantEventBus();
+    const handler = createSessionStepHandler({
+      ...deps,
+      eventBus,
+    });
+    const waitPromise = handler({
+      session_id: sessionId,
+      step_id: "step-confirm-wait",
+      action: {
+        type: "flow.wait",
+        payload: {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED],
+          match: {
+            confirm_id: "confirm-delete",
+            confirmed: true,
+          },
+          timeout_ms: 200,
+        },
+      },
+    }, {});
+    await Promise.resolve();
+    const matchedEvent = eventBus.emit({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED,
+      source: "guide",
+      session_id: sessionId,
+      step_id: "step-confirm-card",
+      payload: {
+        confirm_id: "confirm-delete",
+        confirmed: true,
+        response: "confirmed",
+      },
+    });
+
+    await expect(waitPromise).resolves.toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "matched",
+        matched_event: matchedEvent,
+        session_id: sessionId,
+        step_id: "step-confirm-wait",
+        action_type: "flow.wait",
+      }),
+    });
+  });
+
   it("forwards step index metadata into flow.wait continuation updates", async () => {
     const onFlowWaitStateChanged = vi.fn();
     const eventBus = createAssistantEventBus();
@@ -317,7 +383,7 @@ describe("session step executor", () => {
       action: {
         type: "flow.wait",
         payload: {
-          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED],
           timeout_ms: 5,
         },
       },
@@ -349,7 +415,7 @@ describe("session step executor", () => {
       action: {
         type: "flow.wait",
         payload: {
-          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED],
           timeout_ms: 5,
         },
       },
@@ -359,8 +425,8 @@ describe("session step executor", () => {
       error_code: "flow_wait_timeout",
       message: "flow.wait timed out before matching any event",
       data: {
-        latest_seq: 0,
-        waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.CHECKPOINT_RESUMED],
+        latest_seq: 2,
+        waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED],
         recent_events: [],
       },
     });
@@ -437,6 +503,56 @@ describe("session step executor", () => {
       ok: false,
       error_code: "invalid_view_resource",
       message: "word.main requires resource.data.word to be a non-empty string",
+    });
+  });
+
+  it("opens article.main without changing runtime dispatcher semantics", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler(deps);
+    const result = await handler({
+      session_id: sessionId,
+      step_id: "step-article-open",
+      action: {
+        type: "view.open",
+        payload: {
+          view_id: "article.main",
+          resource: {
+            resource_type: "article",
+            title: "Phase 9 Validation",
+            data: {
+              summary: "用最小第二场景验证模板能力。",
+              sections: ["Contract hardening", "Workspace half-step"],
+              annotations: ["No runtime rewrite"],
+              tags: ["phase9", "validation"],
+            },
+          },
+          initial_anchor: "article.summary",
+        },
+      },
+    }, {});
+    expect(deps.setActiveViewState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        viewId: "article.main",
+        activeAnchor: "article.summary",
+        resource: expect.objectContaining({
+          resource_type: "article",
+          title: "Phase 9 Validation",
+        }),
+      })
+    );
+    expect(deps.navigateToView).toHaveBeenCalledWith("article.main");
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "applied",
+        view_id: "article.main",
+        active_anchor: "article.summary",
+        route_path: "/views/article/main",
+        resource_type: "article",
+        session_id: sessionId,
+        step_id: "step-article-open",
+        action_type: "view.open",
+      }),
     });
   });
 
@@ -629,6 +745,120 @@ describe("session step executor", () => {
       ok: false,
       error_code: "view_capability_not_found",
       message: "View capability not found: missing_capability",
+    });
+  });
+
+  it("updates workspace task progress through app.task.progress.set", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler(deps);
+    const result = await handler({
+      session_id: sessionId,
+      step_id: "step-app-progress",
+      action: {
+        type: "app.task.progress.set",
+        payload: {
+          status: "paused",
+          summary: "Waiting for article review",
+          completed_steps: 2,
+          total_steps: 4,
+        },
+      },
+    }, {});
+    expect(deps.setTaskProgress).toHaveBeenCalledWith({
+      status: "paused",
+      current_task_id: sessionId,
+      completed_steps: 2,
+      total_steps: 4,
+      summary: "Waiting for article review",
+    });
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "applied",
+        scope: "workspace",
+        task_progress: {
+          status: "paused",
+          current_task_id: sessionId,
+          completed_steps: 2,
+          total_steps: 4,
+          summary: "Waiting for article review",
+        },
+        session_id: sessionId,
+        step_id: "step-app-progress",
+        action_type: "app.task.progress.set",
+      }),
+    });
+  });
+
+  it("upserts a resource-owned artifact through app.artifact.upsert", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler(deps);
+    const result = await handler({
+      session_id: sessionId,
+      step_id: "step-app-artifact",
+      action: {
+        type: "app.artifact.upsert",
+        payload: {
+          artifact: {
+            id: "artifact-1",
+            kind: "annotation",
+            title: "Validation note",
+            data: {
+              text: "Second scene should not rewrite runtime",
+            },
+          },
+        },
+      },
+    }, {});
+    expect(deps.upsertArtifact).toHaveBeenCalledWith(expect.objectContaining({
+      id: "artifact-1",
+      kind: "annotation",
+      title: "Validation note",
+    }));
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "applied",
+        scope: "active_context",
+        artifact: expect.objectContaining({
+          id: "artifact-1",
+          kind: "annotation",
+          resource_type: "word",
+          resource_id: "word:assistant",
+          view_id: "word.main",
+        }),
+        session_id: sessionId,
+        step_id: "step-app-artifact",
+        action_type: "app.artifact.upsert",
+      }),
+    });
+  });
+
+  it("removes artifact through app.artifact.remove in active context", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler(deps);
+    const result = await handler({
+      session_id: sessionId,
+      step_id: "step-app-artifact-remove",
+      action: {
+        type: "app.artifact.remove",
+        payload: {
+          artifact_id: "artifact-1",
+        },
+      },
+    }, {});
+    expect(deps.removeArtifact).toHaveBeenCalledWith("artifact-1");
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "applied",
+        scope: "active_context",
+        artifact_id: "artifact-1",
+        removed: true,
+        session_id: sessionId,
+        step_id: "step-app-artifact-remove",
+        action_type: "app.artifact.remove",
+      }),
     });
   });
 
@@ -1066,6 +1296,10 @@ describe("session step executor", () => {
           }),
         }),
         available_views: expect.arrayContaining([
+          expect.objectContaining({
+            view_id: "article.main",
+            route_path: "/views/article/main",
+          }),
           expect.objectContaining({
             view_id: "word.main",
             route_path: "/views/word/main",

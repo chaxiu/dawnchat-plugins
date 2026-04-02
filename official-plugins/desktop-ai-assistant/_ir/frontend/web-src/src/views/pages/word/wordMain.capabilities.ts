@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../runtime/viewManifest";
+import type { ViewCapabilityResult, ViewResourceBinding } from "../../../runtime/view";
 import { cloneWordResource } from "./wordMain.contract";
 import { buildOperationError, toStringArray } from "./wordMain.resource";
 

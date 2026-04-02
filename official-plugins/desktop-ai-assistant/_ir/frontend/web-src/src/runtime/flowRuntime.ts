@@ -1,5 +1,5 @@
-import type { SessionStepRuntimeContext } from "./sessionStepExecutor";
-import type { StepActionResult } from "./viewRuntime.shared";
+import type { SessionStepRuntimeContext } from "./contracts/sessionStep";
+import type { StepActionResult } from "./contracts/sessionStep";
 import type { AssistantEventBus, AssistantRuntimeEventType } from "./events";
 
 type FlowActionHandler = (
@@ -84,6 +84,23 @@ function buildRecentEventsSummary(
   }));
 }
 
+function buildWaitMatchOptions(
+  payload: Record<string, unknown>,
+  match: Record<string, unknown>
+): {
+  event_types: AssistantRuntimeEventType[];
+  session_id?: string;
+  step_id?: string;
+  payload_match: Record<string, unknown>;
+} {
+  return {
+    event_types: toEventTypes(payload.event_types),
+    session_id: typeof payload.session_id === "string" ? payload.session_id.trim() : undefined,
+    step_id: typeof payload.step_id === "string" ? payload.step_id.trim() : undefined,
+    payload_match: match,
+  };
+}
+
 export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
   return {
     wait: async (payload, context) => {
@@ -108,6 +125,31 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
         abortController.abort();
       });
       const eventCursorSeq = deps.eventBus.getLatestSeq();
+      const payloadMatch = toRecord(input.match);
+      const waitMatchOptions = buildWaitMatchOptions(input, payloadMatch);
+      const recentMatches = deps.eventBus.getRecentEvents({
+        ...waitMatchOptions,
+        limit: 1,
+      });
+      if (recentMatches.length > 0) {
+        const matchedEvent = recentMatches[recentMatches.length - 1];
+        await deps.onWaitStateChange?.({
+          status: "matched",
+          sessionId: context.sessionId,
+          stepId: context.stepId,
+          stepIndex: context.stepIndex,
+          totalSteps: context.totalSteps,
+          eventCursorSeq: matchedEvent.seq,
+          pendingWait: null,
+        });
+        return {
+          ok: true,
+          data: {
+            status: "matched",
+            matched_event: matchedEvent,
+          },
+        };
+      }
       const pendingWait = {
         action_type: "flow.wait" as const,
         session_id: context.sessionId,
@@ -115,7 +157,7 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
         step_index: context.stepIndex,
         total_steps: context.totalSteps,
         event_types: eventTypes,
-        match: Object.keys(toRecord(input.match)).length > 0 ? toRecord(input.match) : undefined,
+        match: Object.keys(payloadMatch).length > 0 ? payloadMatch : undefined,
         timeout_ms: resolveTimeoutMs(input, context),
         event_cursor_seq: eventCursorSeq,
         waiting_since_ms: Date.now(),
@@ -131,10 +173,7 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
       });
       try {
         const matchedEvent = await deps.eventBus.waitForMatch({
-          event_types: eventTypes,
-          session_id: typeof input.session_id === "string" ? input.session_id.trim() : undefined,
-          step_id: typeof input.step_id === "string" ? input.step_id.trim() : undefined,
-          payload_match: toRecord(input.match),
+          ...waitMatchOptions,
           timeout_ms: resolveTimeoutMs(input, context),
           signal: abortController.signal,
         });

@@ -8,7 +8,7 @@ import {
   GUIDE_STACK_MAX_WIDTH,
 } from "../runtime/assistantUiLayout";
 import type { AssistantCardPayload } from "../cards/types";
-import type { GuideNarrationState, GuideTipPayload } from "../runtime/guideState";
+import type { GuideNarrationState, GuideTipPayload } from "../runtime/guide/state";
 
 const props = defineProps<{
   card: AssistantCardPayload | null;

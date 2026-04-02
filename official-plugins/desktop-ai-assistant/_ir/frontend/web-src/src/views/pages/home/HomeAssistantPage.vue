@@ -3,8 +3,8 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import CardHost from "../../../components/CardHost.vue";
-import { useGuideState } from "../../../runtime/guideState";
-import { useViewState } from "../../../runtime/viewState";
+import { useGuideState } from "../../../runtime/guide/state";
+import { useViewState } from "../../../runtime/view";
 
 const route = useRoute();
 const { currentCard, activeTip, narrationState } = useGuideState();

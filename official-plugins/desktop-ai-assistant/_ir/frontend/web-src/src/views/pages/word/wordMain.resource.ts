@@ -1,4 +1,4 @@
-import type { ViewOperationFailure, ViewOpenSuccess, ViewResourceBinding } from "../../../runtime/viewManifest";
+import type { ViewOperationFailure, ViewOpenSuccess, ViewResourceBinding } from "../../../runtime/view";
 import { cloneWordResource, WORD_DEFAULT_RESOURCE } from "./wordMain.contract";
 
 function toRecord(raw: unknown): Record<string, unknown> {

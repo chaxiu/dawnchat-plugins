@@ -1,4 +1,4 @@
-import { getViewRegistration } from "./viewRegistry";
+import { getViewRegistration } from "./registry";
 import {
   applyViewState,
   cloneResource,
@@ -7,7 +7,7 @@ import {
   toRecord,
   type ViewActionHandler,
   type ViewRuntimeDeps,
-} from "./viewRuntime.shared";
+} from "./runtime.shared";
 
 export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler {
   return async (payload, context) => {

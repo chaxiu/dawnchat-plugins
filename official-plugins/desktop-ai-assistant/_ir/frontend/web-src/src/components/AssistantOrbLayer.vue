@@ -7,7 +7,7 @@ import {
   ORB_DOCK_LEFT,
   ORB_DOCK_SIZE,
 } from "../runtime/assistantUiLayout";
-import { useSessionVisualState } from "../runtime/sessionVisualState";
+import { useSessionVisualState } from "../runtime/session/visualState";
 import AiWaveCore from "./AiWaveCore.vue";
 
 const route = useRoute();

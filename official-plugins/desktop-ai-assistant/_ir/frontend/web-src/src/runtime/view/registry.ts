@@ -1,7 +1,9 @@
-import { wordMainViewRegistration } from "../views/pages/word/wordMainViewRegistration";
-import type { ViewRegistration, ViewRouteDefinition } from "./viewManifest";
+import { articleMainViewRegistration } from "../../views/pages/article/articleMainViewRegistration";
+import { wordMainViewRegistration } from "../../views/pages/word/wordMainViewRegistration";
+import type { ViewRegistration, ViewRouteDefinition } from "./manifest";
 
 const viewRegistry: Record<string, ViewRegistration> = {
+  [articleMainViewRegistration.manifest.view_id]: articleMainViewRegistration,
   [wordMainViewRegistration.manifest.view_id]: wordMainViewRegistration,
 };
 

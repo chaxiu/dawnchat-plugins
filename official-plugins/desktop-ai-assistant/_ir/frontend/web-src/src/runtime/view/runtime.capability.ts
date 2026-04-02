@@ -7,7 +7,7 @@ import {
   toRecord,
   type ViewActionHandler,
   type ViewRuntimeDeps,
-} from "./viewRuntime.shared";
+} from "./runtime.shared";
 
 export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewActionHandler {
   return async (payload, context) => {

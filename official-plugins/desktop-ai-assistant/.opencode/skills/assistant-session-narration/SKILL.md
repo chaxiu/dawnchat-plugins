@@ -32,7 +32,7 @@ metadata:
 - If action details evolve, update plugin capability handlers only.
 - Treat `view.*` and `guide.*` as step action namespaces, not top-level capability names.
 - Get the registered view list, anchors, route entry, resource contract, and view capability contract from `assistant.view.describe`.
-- The current guide action implementations live in `_ir/frontend/web-src/src/runtime/guideRuntime.ts`.
+- The current guide action implementations live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
 ## Recommended Flow
@@ -41,7 +41,8 @@ metadata:
   - call `dawnchat.ui.capabilities.list`
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
   - if the response contains checkpoint metadata, decide whether the current task should ignore it or explicitly resume it
-  - if resume succeeds, use `continuation_hint` to decide whether to continue from a wait boundary or plan a fresh sequence
+  - if resume succeeds and `continuation_hint.pending_wait` exists, hand off to `assistant-wait-resume-handoff`
+  - otherwise use `continuation_hint` to decide whether to continue from a wait boundary or plan a fresh sequence
   - decide whether the task needs direct `view.*` actions or a host-managed `session.start`
 - For narrated walkthroughs:
   - use `view.open` to enter the page

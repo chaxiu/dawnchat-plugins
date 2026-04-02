@@ -3,9 +3,9 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import { defineComponent, nextTick } from "vue";
 
 import App from "../App.vue";
-import { useGuideState } from "../runtime/guideState";
-import { useSessionVisualState } from "../runtime/sessionVisualState";
-import { useViewState } from "../runtime/viewState";
+import { useGuideState } from "../runtime/guide/state";
+import { useSessionVisualState } from "../runtime/session/visualState";
+import { useViewState } from "../runtime/view";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
 import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 import WordMainView from "../views/pages/word/WordMainView.vue";

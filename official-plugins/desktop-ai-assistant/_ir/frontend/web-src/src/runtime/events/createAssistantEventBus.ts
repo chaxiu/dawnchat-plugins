@@ -7,8 +7,176 @@ import type {
 
 type EventListener = (event: AssistantRuntimeEventEnvelope) => void;
 
-function createEventId(seq: number): string {
-  return `evt-${Date.now()}-${seq}`;
+type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+interface AssistantEventBusOptions {
+  storage?: StorageLike | null;
+  storageKey?: string;
+  maxHistorySize?: number;
+  persistWindowMs?: number;
+  now?: () => number;
+}
+
+interface PersistedAssistantEventState {
+  version: 1;
+  stream_id: string;
+  seq: number;
+  updated_at_ms: number;
+  history: AssistantRuntimeEventEnvelope[];
+}
+
+const DEFAULT_STORAGE_KEY = "dawnchat.assistant.runtime.events.v1";
+const DEFAULT_MAX_HISTORY_SIZE = 300;
+const DEFAULT_PERSIST_WINDOW_MS = 30 * 60 * 1000;
+
+function createStreamId(now: number): string {
+  return `stream-${now}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function createEventId(streamId: string, seq: number, now: number): string {
+  return `evt-${streamId}-${now}-${seq}`;
+}
+
+function getStorage(storage?: StorageLike | null): StorageLike | null {
+  if (storage === null) {
+    return null;
+  }
+  if (storage) {
+    return storage;
+  }
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function isEventEnvelope(raw: unknown): raw is AssistantRuntimeEventEnvelope {
+  if (!isRecord(raw)) {
+    return false;
+  }
+  return (
+    typeof raw.event_id === "string"
+    && typeof raw.seq === "number"
+    && Number.isFinite(raw.seq)
+    && typeof raw.type === "string"
+    && typeof raw.ts_ms === "number"
+    && Number.isFinite(raw.ts_ms)
+    && typeof raw.source === "string"
+    && isRecord(raw.payload)
+  );
+}
+
+function normalizeHistory(rawHistory: unknown, maxHistorySize: number): AssistantRuntimeEventEnvelope[] {
+  if (!Array.isArray(rawHistory)) {
+    return [];
+  }
+  const history = rawHistory
+    .filter(isEventEnvelope)
+    .sort((left, right) => left.seq - right.seq);
+  if (history.length <= maxHistorySize) {
+    return history;
+  }
+  return history.slice(history.length - maxHistorySize);
+}
+
+function loadPersistedState(options: {
+  storage: StorageLike | null;
+  storageKey: string;
+  maxHistorySize: number;
+  persistWindowMs: number;
+  now: number;
+}): {
+  streamId: string;
+  seq: number;
+  history: AssistantRuntimeEventEnvelope[];
+} {
+  const { storage, storageKey, maxHistorySize, persistWindowMs, now } = options;
+  if (!storage) {
+    return {
+      streamId: createStreamId(now),
+      seq: 0,
+      history: [],
+    };
+  }
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) {
+      return {
+        streamId: createStreamId(now),
+        seq: 0,
+        history: [],
+      };
+    }
+    const parsed = JSON.parse(raw) as PersistedAssistantEventState;
+    if (
+      !parsed
+      || parsed.version !== 1
+      || typeof parsed.stream_id !== "string"
+      || !parsed.stream_id.trim()
+      || typeof parsed.seq !== "number"
+      || !Number.isFinite(parsed.seq)
+      || typeof parsed.updated_at_ms !== "number"
+      || !Number.isFinite(parsed.updated_at_ms)
+    ) {
+      storage.removeItem(storageKey);
+      return {
+        streamId: createStreamId(now),
+        seq: 0,
+        history: [],
+      };
+    }
+    if (now - parsed.updated_at_ms > persistWindowMs) {
+      storage.removeItem(storageKey);
+      return {
+        streamId: createStreamId(now),
+        seq: 0,
+        history: [],
+      };
+    }
+    const history = normalizeHistory(parsed.history, maxHistorySize);
+    const latestSeq = history.length > 0 ? history[history.length - 1].seq : 0;
+    return {
+      streamId: parsed.stream_id,
+      seq: Math.max(Math.floor(parsed.seq), latestSeq),
+      history,
+    };
+  } catch {
+    storage.removeItem(storageKey);
+    return {
+      streamId: createStreamId(now),
+      seq: 0,
+      history: [],
+    };
+  }
+}
+
+function persistState(
+  storage: StorageLike | null,
+  storageKey: string,
+  streamId: string,
+  seq: number,
+  history: AssistantRuntimeEventEnvelope[],
+  now: number
+): void {
+  if (!storage) {
+    return;
+  }
+  const payload: PersistedAssistantEventState = {
+    version: 1,
+    stream_id: streamId,
+    seq,
+    updated_at_ms: now,
+    history,
+  };
+  try {
+    storage.setItem(storageKey, JSON.stringify(payload));
+  } catch {
+    // Ignore storage write failures to keep runtime events in-memory.
+  }
 }
 
 function isRecord(raw: unknown): raw is Record<string, unknown> {
@@ -57,10 +225,22 @@ export interface AssistantEventBus {
   getRecentEvents: (options?: AssistantRuntimeEventQueryOptions) => AssistantRuntimeEventEnvelope[];
 }
 
-export function createAssistantEventBus(): AssistantEventBus {
-  let seq = 0;
-  const history: AssistantRuntimeEventEnvelope[] = [];
-  const MAX_HISTORY_SIZE = 300;
+export function createAssistantEventBus(options: AssistantEventBusOptions = {}): AssistantEventBus {
+  const now = options.now || (() => Date.now());
+  const storageKey = options.storageKey || DEFAULT_STORAGE_KEY;
+  const maxHistorySize = options.maxHistorySize || DEFAULT_MAX_HISTORY_SIZE;
+  const persistWindowMs = options.persistWindowMs || DEFAULT_PERSIST_WINDOW_MS;
+  const storage = getStorage(options.storage);
+  const persistedState = loadPersistedState({
+    storage,
+    storageKey,
+    maxHistorySize,
+    persistWindowMs,
+    now: now(),
+  });
+  const history: AssistantRuntimeEventEnvelope[] = [...persistedState.history];
+  let seq = persistedState.seq;
+  let streamId = persistedState.streamId;
   const listeners = new Set<{
     listener: EventListener;
     options?: AssistantRuntimeEventMatchOptions;
@@ -68,11 +248,12 @@ export function createAssistantEventBus(): AssistantEventBus {
 
   const emit = (input: AssistantRuntimeEventInput): AssistantRuntimeEventEnvelope => {
     seq += 1;
+    const eventTs = now();
     const event: AssistantRuntimeEventEnvelope = {
-      event_id: createEventId(seq),
+      event_id: createEventId(streamId, seq, eventTs),
       seq,
       type: input.type,
-      ts_ms: Date.now(),
+      ts_ms: eventTs,
       source: input.source,
       session_id: input.session_id,
       step_id: input.step_id,
@@ -85,9 +266,10 @@ export function createAssistantEventBus(): AssistantEventBus {
       registration.listener(event);
     }
     history.push(event);
-    if (history.length > MAX_HISTORY_SIZE) {
-      history.splice(0, history.length - MAX_HISTORY_SIZE);
+    if (history.length > maxHistorySize) {
+      history.splice(0, history.length - maxHistorySize);
     }
+    persistState(storage, storageKey, streamId, seq, history, eventTs);
     return event;
   };
 

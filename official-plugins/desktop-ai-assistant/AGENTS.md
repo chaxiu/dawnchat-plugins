@@ -61,10 +61,10 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
 - Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
 - Recoverable state must be discoverable without automatically taking over the current UI.
-- The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap.ts`.
-- The current view registry lives in `_ir/frontend/web-src/src/runtime/viewRegistry.ts`.
+- The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap/`.
+- The current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
 - The current reference view registration lives in `_ir/frontend/web-src/src/views/pages/word/wordMainViewRegistration.ts`.
-- The current guide action definitions live in `_ir/frontend/web-src/src/runtime/guideRuntime.ts`.
+- The current guide action definitions live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
 ## Evolution Guardrails (MVP)
@@ -98,7 +98,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
   - inspect the latest checkpoint via `assistant.workspace.checkpoint.describe`
   - call `assistant.workspace.resume` only when the current task explicitly intends to continue the prior workspace
   - after a successful resume, read `continuation_hint` before planning any new session
-  - if `continuation_hint.pending_wait` exists, prefer a short follow-up session around that wait boundary instead of replaying the whole prior sequence
+  - if `continuation_hint.pending_wait` exists, prefer the dedicated `assistant-wait-resume-handoff` skill instead of replaying the whole prior sequence
   - when `continuation_hint.pending_wait` exists and the next move depends on a runtime signal, prefer `dawnchat.ui.session.wait` with `wait_for=runtime_event` and `since_seq=continuation_hint.event_cursor_seq`
   - if `continuation_hint.last_completed_step_index` exists, treat earlier steps as progress hints and avoid blindly re-sending obviously completed setup steps
   - do not auto-resume if a new task already has a clearer current-page intent
@@ -117,6 +117,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Keep this document and skill docs aligned with actual capability behavior.
 - Keep formal workflow skills and evaluation skills separate. Use evaluation skills only for self-check, trial, and acceptance verification.
 - For brand new view work, prefer the dedicated `assistant-new-view-authoring` skill and keep `assistant-evolution-implement` as the broader evolution wrapper.
+- For continuation-heavy recovery work, prefer the dedicated `assistant-wait-resume-handoff` skill.
 - Python sidecar MCP is available via host-injected `dawnchat_plugin_python`.
 - Always validate sidecar runtime state before relying on Python tool calls.
 - Keep role framing aligned with DawnChat Assistant, not a narrow single-domain persona.

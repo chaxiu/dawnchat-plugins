@@ -11,9 +11,9 @@ export const ASSISTANT_RUNTIME_EVENT_TYPES = {
   GUIDE_NARRATE_FAILED: "assistant.guide.narrate.failed",
   GUIDE_QUIZ_SUBMITTED: "assistant.guide.quiz.submitted",
   GUIDE_CONFIRM_RESPONDED: "assistant.guide.confirm.responded",
-  CHECKPOINT_SAVED: "assistant.checkpoint.saved",
-  CHECKPOINT_STATUS_CHANGED: "assistant.checkpoint.status",
-  CHECKPOINT_RESUMED: "assistant.checkpoint.resumed",
+  WORKSPACE_TASK_PROGRESS_UPDATED: "assistant.workspace.task_progress.updated",
+  WORKSPACE_ARTIFACT_UPSERTED: "assistant.workspace.artifact.upserted",
+  WORKSPACE_ARTIFACT_REMOVED: "assistant.workspace.artifact.removed",
 } as const;
 
 export type AssistantRuntimeEventType =
@@ -24,8 +24,7 @@ export type AssistantRuntimeEventSource =
   | "flow"
   | "guide"
   | "view"
-  | "workspace"
-  | "checkpoint";
+  | "workspace";
 
 export interface AssistantRuntimeEventEnvelope {
   event_id: string;

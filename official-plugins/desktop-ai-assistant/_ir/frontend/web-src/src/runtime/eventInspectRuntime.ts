@@ -1,6 +1,6 @@
 import type { UiCapabilityHandler, UiCapabilityRegistration } from "./capabilities";
 import type { AssistantEventBus, AssistantRuntimeEventType } from "./events";
-import { toRecord } from "./viewRuntime.shared";
+import { toRecord } from "./view/runtime.shared";
 
 interface EventInspectRuntimeDeps {
   eventBus: AssistantEventBus;
@@ -62,7 +62,7 @@ export function createEventPeekCapabilityRegistration(
   return {
     definition: {
       name: "assistant.runtime.event.peek",
-      description: "Read recent runtime events for debugging and flow.wait diagnostics",
+      description: "Read recent runtime events for debugging, inspection, and flow.wait diagnostics",
       input_schema: buildEventPeekSchema(),
     },
     handler,

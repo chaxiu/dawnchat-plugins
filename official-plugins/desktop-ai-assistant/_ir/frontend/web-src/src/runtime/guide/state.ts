@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-import type { AssistantCardPayload } from "../cards/types";
+import type { AssistantCardPayload } from "../../cards/types";
 
 export interface GuideTipPayload {
   message: string;
@@ -30,6 +30,14 @@ const narrationState = ref<GuideNarrationState>({
   updatedAtMs: Date.now(),
 });
 const guideStateVersion = ref(0);
+
+function buildIdleNarrationState(): GuideNarrationState {
+  return {
+    status: "idle",
+    text: "",
+    updatedAtMs: Date.now(),
+  };
+}
 
 function cloneJsonValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -89,6 +97,13 @@ export function useGuideState() {
     guideStateVersion.value += 1;
   };
 
+  const resetGuideState = () => {
+    currentCard.value = null;
+    activeTip.value = null;
+    narrationState.value = buildIdleNarrationState();
+    guideStateVersion.value += 1;
+  };
+
   const getGuideStateSnapshot = (): GuideStateSnapshot => {
     return {
       current_card: currentCard.value ? cloneCard(currentCard.value) : null,
@@ -108,6 +123,7 @@ export function useGuideState() {
     setActiveTip,
     setNarrationState,
     restoreGuideState,
+    resetGuideState,
     getGuideStateSnapshot,
   };
 }

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import { listViewRegistrations } from "../runtime/viewRegistry";
+import { listViewRegistrations } from "../runtime/view";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
 import PlaygroundPage from "../views/pages/playground/PlaygroundPage.vue";
 import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
