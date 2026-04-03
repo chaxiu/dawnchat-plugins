@@ -50,7 +50,7 @@ export function createViewDescribeCapabilityRegistration(
     const currentSnapshot = deps.getViewStateSnapshot();
     const guideState = deps.getGuideStateSnapshot?.() || null;
     const taskProgress = deps.getTaskProgressSnapshot?.() || null;
-    const activeResourceSlice = deps.getActiveResourceSliceSnapshot?.() || null;
+    const activeResourceContext = deps.getActiveResourceContextSnapshot?.() || null;
     const continuation = deps.getContinuationSnapshot?.() || null;
     const requestedManifest = requestedViewId
       ? availableViews.find((view) => view.view_id === requestedViewId) || null
@@ -69,7 +69,7 @@ export function createViewDescribeCapabilityRegistration(
         view_state_version: currentSnapshot.view_state_version,
         guide_state: guideState,
         task_progress: taskProgress,
-        active_resource_slice: activeResourceSlice,
+        active_resource_context: activeResourceContext,
         continuation,
         available_views: availableViews,
         requested_view: requestedManifest,

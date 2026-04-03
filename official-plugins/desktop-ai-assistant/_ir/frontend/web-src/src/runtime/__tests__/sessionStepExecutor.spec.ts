@@ -6,7 +6,6 @@ import {
 } from "../session/stepExecutor";
 import { ASSISTANT_RUNTIME_EVENT_TYPES, createAssistantEventBus } from "../events";
 import { GUIDE_ACTIONS } from "../guide/actions";
-import type { WorkspaceArtifact } from "../workspace";
 import { createViewDescribeCapabilityRegistration } from "../view";
 
 const createDeps = (): SessionStepExecutorDeps => ({
@@ -15,15 +14,6 @@ const createDeps = (): SessionStepExecutorDeps => ({
   setNarrationState: vi.fn(),
   setActiveViewState: vi.fn(() => 1),
   setTaskProgress: vi.fn(),
-  upsertArtifact: vi.fn((artifact: WorkspaceArtifact) => ({
-    ...artifact,
-    resource_type: artifact.resource_type || "word",
-    resource_id: artifact.resource_id || "word:assistant",
-    view_id: artifact.view_id || "word.main",
-    created_at_ms: artifact.created_at_ms || 1,
-    updated_at_ms: artifact.updated_at_ms || 2,
-  })),
-  removeArtifact: vi.fn(() => true),
   navigateToView: vi.fn(),
   getViewStateSnapshot: vi.fn(() => ({
     active_view_id: "word.main",
@@ -748,14 +738,14 @@ describe("session step executor", () => {
     });
   });
 
-  it("updates workspace task progress through app.task.progress.set", async () => {
+  it("updates session task progress through session.task.progress.set", async () => {
     const deps = createDeps();
     const handler = createSessionStepHandler(deps);
     const result = await handler({
       session_id: sessionId,
-      step_id: "step-app-progress",
+      step_id: "step-session-progress",
       action: {
-        type: "app.task.progress.set",
+        type: "session.task.progress.set",
         payload: {
           status: "paused",
           summary: "Waiting for article review",
@@ -775,7 +765,7 @@ describe("session step executor", () => {
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        scope: "workspace",
+        scope: "session",
         task_progress: {
           status: "paused",
           current_task_id: sessionId,
@@ -784,80 +774,8 @@ describe("session step executor", () => {
           summary: "Waiting for article review",
         },
         session_id: sessionId,
-        step_id: "step-app-progress",
-        action_type: "app.task.progress.set",
-      }),
-    });
-  });
-
-  it("upserts a resource-owned artifact through app.artifact.upsert", async () => {
-    const deps = createDeps();
-    const handler = createSessionStepHandler(deps);
-    const result = await handler({
-      session_id: sessionId,
-      step_id: "step-app-artifact",
-      action: {
-        type: "app.artifact.upsert",
-        payload: {
-          artifact: {
-            id: "artifact-1",
-            kind: "annotation",
-            title: "Validation note",
-            data: {
-              text: "Second scene should not rewrite runtime",
-            },
-          },
-        },
-      },
-    }, {});
-    expect(deps.upsertArtifact).toHaveBeenCalledWith(expect.objectContaining({
-      id: "artifact-1",
-      kind: "annotation",
-      title: "Validation note",
-    }));
-    expect(result).toEqual({
-      ok: true,
-      data: expect.objectContaining({
-        status: "applied",
-        scope: "active_context",
-        artifact: expect.objectContaining({
-          id: "artifact-1",
-          kind: "annotation",
-          resource_type: "word",
-          resource_id: "word:assistant",
-          view_id: "word.main",
-        }),
-        session_id: sessionId,
-        step_id: "step-app-artifact",
-        action_type: "app.artifact.upsert",
-      }),
-    });
-  });
-
-  it("removes artifact through app.artifact.remove in active context", async () => {
-    const deps = createDeps();
-    const handler = createSessionStepHandler(deps);
-    const result = await handler({
-      session_id: sessionId,
-      step_id: "step-app-artifact-remove",
-      action: {
-        type: "app.artifact.remove",
-        payload: {
-          artifact_id: "artifact-1",
-        },
-      },
-    }, {});
-    expect(deps.removeArtifact).toHaveBeenCalledWith("artifact-1");
-    expect(result).toEqual({
-      ok: true,
-      data: expect.objectContaining({
-        status: "applied",
-        scope: "active_context",
-        artifact_id: "artifact-1",
-        removed: true,
-        session_id: sessionId,
-        step_id: "step-app-artifact-remove",
-        action_type: "app.artifact.remove",
+        step_id: "step-session-progress",
+        action_type: "session.task.progress.set",
       }),
     });
   });

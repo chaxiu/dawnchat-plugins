@@ -10,7 +10,7 @@ import {
   getViewRegistration,
   useViewState,
 } from "../view";
-import { createWorkspaceStore } from "../workspace";
+import { createRuntimeObservationStore } from "../observation";
 
 function createViewNavigator() {
   return async (viewId: string) => {
@@ -37,11 +37,11 @@ export function composeAssistantRuntimeRegistrations() {
   } = useViewState();
   const navigateToView = createViewNavigator();
   const { setFromActiveSessions } = useSessionVisualState();
-  const workspaceStore = createWorkspaceStore({
+  const observationStore = createRuntimeObservationStore({
     getViewStateSnapshot,
   });
   const sessionLifecycleHooks = createSessionLifecycleHooks({
-    workspaceStore,
+    observationStore,
   });
   const registrations = [
     ...createSessionStepCapabilityRegistrations({
@@ -50,9 +50,7 @@ export function composeAssistantRuntimeRegistrations() {
       setNarrationState,
       setActiveViewState,
       getViewStateSnapshot,
-      setTaskProgress: workspaceStore.setTaskProgress,
-      upsertArtifact: workspaceStore.upsertArtifact,
-      removeArtifact: workspaceStore.removeArtifact,
+      setTaskProgress: observationStore.setTaskProgress,
       navigateToView,
       eventBus,
       emitRuntimeEvent,
@@ -63,9 +61,9 @@ export function composeAssistantRuntimeRegistrations() {
       setActiveViewState,
       getViewStateSnapshot,
       getGuideStateSnapshot,
-      getTaskProgressSnapshot: workspaceStore.getTaskProgressSnapshot,
-      getActiveResourceSliceSnapshot: workspaceStore.getActiveResourceSliceSnapshot,
-      getContinuationSnapshot: workspaceStore.getContinuationSnapshot,
+      getTaskProgressSnapshot: observationStore.getTaskProgressSnapshot,
+      getActiveResourceContextSnapshot: observationStore.getActiveResourceContextSnapshot,
+      getContinuationSnapshot: observationStore.getContinuationSnapshot,
       navigateToView,
     }),
     createEventPeekCapabilityRegistration({

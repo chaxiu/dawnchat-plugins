@@ -1,5 +1,5 @@
 import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
-import { createAppRuntime } from "../appRuntime";
+import { createSessionRuntime } from "../sessionRuntime";
 import type {
   SessionStepCancelHandler,
   SessionStepRuntimeContext,
@@ -11,7 +11,7 @@ import type { GuideNarrationState, GuideTipPayload } from "../guide/state";
 import { createViewRuntime } from "../view";
 import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantEventBus, type AssistantRuntimeEventInput } from "../events";
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "../view";
-import type { WorkspaceArtifact, WorkspaceTaskProgress } from "../workspace";
+import type { SessionTaskProgress } from "../observation";
 import type { AssistantCardPayload } from "../../cards/types";
 
 export type { SessionStepRuntimeContext } from "../contracts/sessionStep";
@@ -38,9 +38,7 @@ export interface SessionStepExecutorDeps {
   setNarrationState: (state: GuideNarrationState) => void;
   setActiveViewState: (state: SetActiveViewStateInput) => number;
   getViewStateSnapshot: () => ViewStateSnapshot;
-  setTaskProgress?: (progress: WorkspaceTaskProgress) => void;
-  upsertArtifact?: (artifact: WorkspaceArtifact) => WorkspaceArtifact;
-  removeArtifact?: (artifactId: string) => boolean;
+  setTaskProgress?: (progress: SessionTaskProgress) => void;
   navigateToView: (viewId: string) => Promise<void> | void;
   onStepApplied?: (payload: {
     sessionId: string;
@@ -213,10 +211,8 @@ export function createSessionStepCapabilityHandlers(deps: SessionStepExecutorDep
       ...deps,
       emitRuntimeEvent,
     }),
-    app: createAppRuntime({
+    session: createSessionRuntime({
       setTaskProgress: deps.setTaskProgress,
-      upsertArtifact: deps.upsertArtifact,
-      removeArtifact: deps.removeArtifact,
       emitRuntimeEvent,
     }),
     flow: deps.eventBus

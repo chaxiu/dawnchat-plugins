@@ -51,7 +51,7 @@ metadata:
   - run a guide expression step such as `guide.narrate` or `guide.card.show`
 - Step 4: continuation visibility checks
   - confirm `assistant.view.describe` exposes `task_progress`
-  - confirm `assistant.view.describe` exposes `active_resource_slice`
+  - confirm `assistant.view.describe` exposes `active_resource_context`
   - confirm `assistant.view.describe` exposes `continuation`
 - Step 5: failure path checks
   - send an invalid anchor

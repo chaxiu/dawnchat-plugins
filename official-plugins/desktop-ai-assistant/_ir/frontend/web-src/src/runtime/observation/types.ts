@@ -1,4 +1,4 @@
-export interface WorkspaceTaskProgress {
+export interface SessionTaskProgress {
   status: "idle" | "running" | "paused" | "completed" | "failed";
   current_task_id?: string;
   completed_steps?: number;
@@ -6,31 +6,15 @@ export interface WorkspaceTaskProgress {
   summary?: string;
 }
 
-export interface WorkspaceArtifact {
-  id: string;
-  kind: string;
-  title?: string;
-  resource_type?: string;
-  resource_id?: string;
-  view_id?: string;
-  created_at_ms?: number;
-  updated_at_ms?: number;
-  data?: Record<string, unknown>;
-}
-
-export interface WorkspaceResourceSlice {
-  // Phase 10 boundary: this is a single "active resource" summary,
-  // not a multi-resource aggregation map.
+export interface ActiveResourceContext {
   resource_type: string;
   resource_id?: string;
   title?: string;
   view_id: string;
   state_summary: Record<string, unknown>;
-  artifact_ids: string[];
-  artifact_count: number;
 }
 
-export interface WorkspacePendingWait {
+export interface SessionPendingWait {
   action_type: "flow.wait";
   session_id: string;
   step_id?: string;
@@ -43,9 +27,9 @@ export interface WorkspacePendingWait {
   waiting_since_ms: number;
 }
 
-export interface WorkspaceContinuation {
+export interface SessionContinuation {
   last_completed_step_index?: number;
   last_completed_step_id?: string;
   event_cursor_seq: number;
-  pending_wait: WorkspacePendingWait | null;
+  pending_wait: SessionPendingWait | null;
 }

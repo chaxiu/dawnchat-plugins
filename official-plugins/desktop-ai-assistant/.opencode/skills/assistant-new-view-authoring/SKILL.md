@@ -52,16 +52,16 @@ metadata:
 - Keep `buildStateSummary` small, structured, and useful for `assistant.view.describe`.
 - Ensure the resource and capability contracts are visible through `assistant.view.describe`.
 
-## Workspace observation rules
+## Runtime observation rules
 
-- The view layer should not manage workspace store directly.
+- The view layer should not manage runtime observation store directly.
 - The view owns:
   - resource shape
   - anchors
   - page-local capability behavior
   - state summary
 - Runtime owns:
-  - `active_resource_slice` aggregation
+  - `active_resource_context` aggregation
   - `task_progress` observation
   - `continuation` observation
 - New views must expose stable `buildStateSummary()` output without depending on legacy recovery semantics.

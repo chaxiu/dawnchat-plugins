@@ -25,7 +25,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
 - Treat `dawnchat.ui.capabilities.list` as the source of top-level capability names only.
 - Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, and minimal runtime observation fields.
-- Treat `task_progress`, `active_resource_slice`, and `continuation` as the only supported runtime observation fields.
+- Treat `task_progress`, `active_resource_context`, and `continuation` as the only supported runtime observation fields.
 - Treat `continuation` as a planning hint for the next `dawnchat.ui.session.start` or `dawnchat.ui.session.wait`, not as an instruction to auto-replay old steps.
 - Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
@@ -85,7 +85,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
   - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
 - For View-First tasks:
   - inspect current page via `assistant.view.describe`
-  - inspect `task_progress`, `active_resource_slice`, and `continuation` only when they matter to the current task
+  - inspect `task_progress`, `active_resource_context`, and `continuation` only when they matter to the current task
   - use `view.open` for page entry and resource binding
   - use `view.focus` for anchor changes
   - use `view.capability.invoke` for page-local mutations

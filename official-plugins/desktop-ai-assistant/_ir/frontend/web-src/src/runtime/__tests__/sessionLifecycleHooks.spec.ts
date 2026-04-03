@@ -2,12 +2,12 @@ import { createSessionLifecycleHooks } from "../session/lifecycleHooks";
 
 describe("session lifecycle hooks", () => {
   it("updates task progress when a step completes", () => {
-    const workspaceStore = {
+    const observationStore = {
       setTaskProgress: vi.fn(),
       patchContinuation: vi.fn(),
     };
     const hooks = createSessionLifecycleHooks({
-      workspaceStore,
+      observationStore,
     });
 
     hooks.onStepApplied({
@@ -18,14 +18,14 @@ describe("session lifecycle hooks", () => {
       actionType: "view.open",
     });
 
-    expect(workspaceStore.setTaskProgress).toHaveBeenCalledWith({
+    expect(observationStore.setTaskProgress).toHaveBeenCalledWith({
       status: "completed",
       current_task_id: "sess-1",
       completed_steps: 2,
       total_steps: 2,
       summary: "view.open completed",
     });
-    expect(workspaceStore.patchContinuation).toHaveBeenCalledWith({
+    expect(observationStore.patchContinuation).toHaveBeenCalledWith({
       last_completed_step_index: 1,
       last_completed_step_id: "step-2",
       pending_wait: null,
@@ -33,12 +33,12 @@ describe("session lifecycle hooks", () => {
   });
 
   it("records pending wait continuation state before flow.wait resolves", () => {
-    const workspaceStore = {
+    const observationStore = {
       setTaskProgress: vi.fn(),
       patchContinuation: vi.fn(),
     };
     const hooks = createSessionLifecycleHooks({
-      workspaceStore,
+      observationStore,
     });
 
     hooks.onFlowWaitStateChanged({
@@ -64,13 +64,13 @@ describe("session lifecycle hooks", () => {
       },
     });
 
-    expect(workspaceStore.patchContinuation).toHaveBeenCalledWith({
+    expect(observationStore.patchContinuation).toHaveBeenCalledWith({
       event_cursor_seq: 12,
       pending_wait: expect.objectContaining({
         event_types: ["assistant.guide.confirm.responded"],
       }),
     });
-    expect(workspaceStore.setTaskProgress).toHaveBeenCalledWith({
+    expect(observationStore.setTaskProgress).toHaveBeenCalledWith({
       status: "paused",
       current_task_id: "sess-wait",
       completed_steps: 2,

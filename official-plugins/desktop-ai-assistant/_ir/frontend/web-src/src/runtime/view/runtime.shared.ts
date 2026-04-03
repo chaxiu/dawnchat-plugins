@@ -12,10 +12,10 @@ import type {
 } from "./manifest";
 import { cloneViewStateSummarySchema } from "./manifest";
 import type {
-  WorkspaceContinuation,
-  WorkspaceResourceSlice,
-  WorkspaceTaskProgress,
-} from "../workspace/types";
+  ActiveResourceContext,
+  SessionContinuation,
+  SessionTaskProgress,
+} from "../observation/types";
 import { assertValidViewStateSummary } from "./stateSummaryValidation";
 
 export type ViewActionHandler = (
@@ -27,9 +27,9 @@ export interface ViewRuntimeDeps {
   setActiveViewState: (state: SetActiveViewStateInput) => number;
   getViewStateSnapshot: () => ViewStateSnapshot;
   getGuideStateSnapshot?: () => GuideStateSnapshot;
-  getTaskProgressSnapshot?: () => WorkspaceTaskProgress;
-  getActiveResourceSliceSnapshot?: () => WorkspaceResourceSlice | null;
-  getContinuationSnapshot?: () => WorkspaceContinuation;
+  getTaskProgressSnapshot?: () => SessionTaskProgress;
+  getActiveResourceContextSnapshot?: () => ActiveResourceContext | null;
+  getContinuationSnapshot?: () => SessionContinuation;
   navigateToView: (viewId: string) => Promise<void> | void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }

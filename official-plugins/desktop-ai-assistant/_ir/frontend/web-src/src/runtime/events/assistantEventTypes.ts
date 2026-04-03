@@ -11,9 +11,7 @@ export const ASSISTANT_RUNTIME_EVENT_TYPES = {
   GUIDE_NARRATE_FAILED: "assistant.guide.narrate.failed",
   GUIDE_QUIZ_SUBMITTED: "assistant.guide.quiz.submitted",
   GUIDE_CONFIRM_RESPONDED: "assistant.guide.confirm.responded",
-  WORKSPACE_TASK_PROGRESS_UPDATED: "assistant.workspace.task_progress.updated",
-  WORKSPACE_ARTIFACT_UPSERTED: "assistant.workspace.artifact.upserted",
-  WORKSPACE_ARTIFACT_REMOVED: "assistant.workspace.artifact.removed",
+  SESSION_TASK_PROGRESS_UPDATED: "assistant.session.task_progress.updated",
 } as const;
 
 export type AssistantRuntimeEventType =
@@ -23,8 +21,7 @@ export type AssistantRuntimeEventSource =
   | "session"
   | "flow"
   | "guide"
-  | "view"
-  | "workspace";
+  | "view";
 
 export interface AssistantRuntimeEventEnvelope {
   event_id: string;

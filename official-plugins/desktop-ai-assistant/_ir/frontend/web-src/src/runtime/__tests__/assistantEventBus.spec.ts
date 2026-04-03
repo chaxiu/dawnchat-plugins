@@ -103,8 +103,8 @@ describe("assistant event bus", () => {
       payload: { index: 2 },
     });
     bus.emit({
-      type: ASSISTANT_RUNTIME_EVENT_TYPES.WORKSPACE_ARTIFACT_UPSERTED,
-      source: "workspace",
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_TASK_PROGRESS_UPDATED,
+      source: "session",
       session_id: "sess-2",
       payload: { index: 3 },
     });

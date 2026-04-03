@@ -34,7 +34,7 @@ describe("assistant.view.describe", () => {
         status: "running" as const,
         current_task_id: "task-1",
       })),
-      getActiveResourceSliceSnapshot: vi.fn(() => ({
+      getActiveResourceContextSnapshot: vi.fn(() => ({
         resource_type: "word",
         resource_id: "word:assistant",
         title: "词汇讲解",
@@ -43,8 +43,6 @@ describe("assistant.view.describe", () => {
           word: "Assistant",
           active_anchor: "word.meaning",
         },
-        artifact_ids: ["artifact-word-1"],
-        artifact_count: 1,
       })),
       getContinuationSnapshot: vi.fn(() => ({
         event_cursor_seq: 0,
@@ -66,11 +64,10 @@ describe("assistant.view.describe", () => {
           status: "running",
           current_task_id: "task-1",
         }),
-        active_resource_slice: expect.objectContaining({
+        active_resource_context: expect.objectContaining({
           resource_type: "word",
           resource_id: "word:assistant",
           view_id: "word.main",
-          artifact_ids: ["artifact-word-1"],
         }),
         continuation: expect.objectContaining({
           event_cursor_seq: 0,

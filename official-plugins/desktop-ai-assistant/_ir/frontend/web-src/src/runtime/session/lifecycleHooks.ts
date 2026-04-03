@@ -1,8 +1,8 @@
 import type { FlowWaitStateChange } from "../flowRuntime";
-import type { WorkspaceTaskProgress } from "../workspace";
+import type { SessionTaskProgress } from "../observation";
 
-interface SessionLifecycleWorkspaceStore {
-  setTaskProgress: (nextProgress: WorkspaceTaskProgress) => void;
+interface SessionLifecycleObservationStore {
+  setTaskProgress: (nextProgress: SessionTaskProgress) => void;
   patchContinuation: (partialContinuation: {
     last_completed_step_index?: number;
     last_completed_step_id?: string;
@@ -12,7 +12,7 @@ interface SessionLifecycleWorkspaceStore {
 }
 
 export interface SessionLifecycleHooksDeps {
-  workspaceStore: SessionLifecycleWorkspaceStore;
+  observationStore: SessionLifecycleObservationStore;
 }
 
 export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
@@ -30,14 +30,14 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
       actionType: string;
       timeoutMs?: number;
     }) => {
-      deps.workspaceStore.setTaskProgress({
+      deps.observationStore.setTaskProgress({
         status: "running",
         current_task_id: sessionId,
         completed_steps: stepIndex,
         total_steps: totalSteps,
         summary: `Running ${actionType}`,
       });
-      deps.workspaceStore.patchContinuation({
+      deps.observationStore.patchContinuation({
         pending_wait: null,
       });
     },
@@ -56,14 +56,14 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
       timeoutMs?: number;
     }) => {
       const completedSteps = typeof stepIndex === "number" ? stepIndex + 1 : undefined;
-      deps.workspaceStore.setTaskProgress({
+      deps.observationStore.setTaskProgress({
         status: completedSteps && totalSteps && completedSteps >= totalSteps ? "completed" : "running",
         current_task_id: sessionId,
         completed_steps: completedSteps,
         total_steps: totalSteps,
         summary: `${actionType} completed`,
       });
-      deps.workspaceStore.patchContinuation({
+      deps.observationStore.patchContinuation({
         last_completed_step_index: stepIndex,
         last_completed_step_id: stepId,
         pending_wait: null,
@@ -86,14 +86,14 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
       errorCode?: string;
       message?: string;
     }) => {
-      deps.workspaceStore.setTaskProgress({
+      deps.observationStore.setTaskProgress({
         status: "failed",
         current_task_id: sessionId,
         completed_steps: stepIndex,
         total_steps: totalSteps,
         summary: message || `${actionType} failed`,
       });
-      deps.workspaceStore.patchContinuation({
+      deps.observationStore.patchContinuation({
         pending_wait: null,
       });
     },
@@ -110,14 +110,14 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
       totalSteps?: number;
       reason?: string;
     }) => {
-      deps.workspaceStore.setTaskProgress({
+      deps.observationStore.setTaskProgress({
         status: "paused",
         current_task_id: sessionId,
         completed_steps: stepIndex,
         total_steps: totalSteps,
         summary: reason || "session step cancelled",
       });
-      deps.workspaceStore.patchContinuation({
+      deps.observationStore.patchContinuation({
         pending_wait: null,
       });
     },
@@ -130,12 +130,12 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
       eventCursorSeq,
       pendingWait,
     }: FlowWaitStateChange) => {
-      deps.workspaceStore.patchContinuation({
+      deps.observationStore.patchContinuation({
         event_cursor_seq: eventCursorSeq,
         pending_wait: pendingWait,
       });
       if (status === "waiting") {
-        deps.workspaceStore.setTaskProgress({
+        deps.observationStore.setTaskProgress({
           status: "paused",
           current_task_id: sessionId,
           completed_steps: stepIndex,
