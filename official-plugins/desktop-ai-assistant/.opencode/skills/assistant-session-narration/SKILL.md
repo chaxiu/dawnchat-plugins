@@ -43,6 +43,20 @@ metadata:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.event.wait`
   - `dawnchat.ui.session.wait_for_end`
+- Standard `view.capability.invoke` step payload:
+
+```json
+{
+  "type": "view.capability.invoke",
+  "payload": {
+    "view_id": "tictactoe.main",
+    "capability_id": "game.place_mark",
+    "input": {
+      "index": 6
+    }
+  }
+}
+```
 - For page-first tasks:
   - call `dawnchat.ui.capabilities.list`
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
@@ -56,6 +70,7 @@ metadata:
   - use `guide.card.show`, `guide.tip.show`, or `guide.narrate` only for guide expression
   - when the next move depends on a runtime signal, prefer `dawnchat.ui.event.wait` over status polling
   - when the next move depends on the current session fully finishing, use `dawnchat.ui.session.wait_for_end`
+  - if both the runtime event and session completion matter, make the `event.wait` observation window overlap with the user's action window instead of serializing `session.wait_for_end -> event.wait`
 - When an error occurs:
   - read `error_code`
   - re-check `assistant.view.describe` if page state may have changed
@@ -72,6 +87,7 @@ metadata:
 
 - Every step has `action.type`.
 - `action.payload` remains an object and is treated as plugin-owned.
+- `view.capability.invoke` uses `capability_id` and wraps business parameters inside `input`.
 - If a step needs voice, voice fields are inside `action.payload` and executed by plugin runtime.
 - If the task depends on page structure, base the step plan on `assistant.view.describe` instead of guessing anchors or capability input.
 - Do not let stale continuation state override a new task plan.

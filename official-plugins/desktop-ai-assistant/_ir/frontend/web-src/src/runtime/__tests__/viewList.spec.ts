@@ -63,6 +63,19 @@ describe("assistant.view.list", () => {
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
+            capability_invoke_contract: expect.objectContaining({
+              action_type: "view.capability.invoke",
+              payload_example: expect.objectContaining({
+                view_id: "word.main",
+                capability_id: "<capability_id>",
+              }),
+            }),
+            capabilities: expect.arrayContaining([
+              expect.objectContaining({
+                capability_id: "append_etymology",
+                mode: "write",
+              }),
+            ]),
           }),
           expect.objectContaining({
             view_id: "tictactoe.main",

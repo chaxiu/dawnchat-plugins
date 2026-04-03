@@ -17,6 +17,7 @@ export interface GuideRuntimeDeps {
     options?: { dismissAfterMs?: number; dismissReason?: string }
   ) => number;
   scheduleDismissCurrentCard?: (delayMs: number, reason?: string) => void;
+  scheduleResetNarrationState?: (delayMs: number) => void;
   setActiveTip: (tip: GuideTipPayload | null) => void;
   setNarrationState: (state: GuideNarrationState) => void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
@@ -127,6 +128,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
       }
       if (context.isCancelled()) {
         deps.setNarrationState(buildNarrationState("cancelled", text));
+        deps.scheduleResetNarrationState?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS);
         emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_CANCELLED, context, {
           text,
           reason: "cancelled_before_start",
@@ -160,6 +162,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
           await hostVoiceStatus({ taskId });
         }
         deps.setNarrationState(buildNarrationState("cancelled", text));
+        deps.scheduleResetNarrationState?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS);
         emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_CANCELLED, context, {
           text,
         });
@@ -177,6 +180,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
       if (!result || result.ok !== true) {
         const errorMessage = String(result?.message || result?.error_code || "host voice speak failed");
         deps.setNarrationState(buildNarrationState("failed", text, errorMessage));
+        deps.scheduleResetNarrationState?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS);
         emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED, context, {
           text,
           error_message: errorMessage,
@@ -190,6 +194,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
       }
       deps.setNarrationState(buildNarrationState("completed", text));
       deps.scheduleDismissCurrentCard?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS, "narration_completed");
+      deps.scheduleResetNarrationState?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS);
       emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_COMPLETED, context, {
         text,
       });

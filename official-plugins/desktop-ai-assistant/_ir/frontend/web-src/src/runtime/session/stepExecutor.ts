@@ -39,6 +39,7 @@ interface ActiveStepExecution {
 export interface SessionStepExecutorDeps {
   setCurrentCard: (card: AssistantCardPayload, options?: GuideCardLifecycleOptions) => number;
   scheduleDismissCurrentCard?: (delayMs: number, reason?: string) => void;
+  scheduleResetNarrationState?: (delayMs: number) => void;
   setActiveTip: (tip: GuideTipPayload | null) => void;
   setNarrationState: (state: GuideNarrationState) => void;
   setActiveViewState: (state: SetActiveViewStateInput) => number;

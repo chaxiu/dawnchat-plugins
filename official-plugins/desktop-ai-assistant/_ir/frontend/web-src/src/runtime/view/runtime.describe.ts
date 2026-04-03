@@ -1,8 +1,7 @@
 import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
 import { listViewRegistrations } from "./registry";
+import type { ViewManifestSnapshot } from "./manifest";
 import {
-  cloneCapabilityDefinition,
-  cloneResource,
   type ViewRuntimeDeps,
   toRecord,
 } from "./runtime.shared";
@@ -24,6 +23,43 @@ function buildViewDescribeSchema(): Record<string, unknown> {
   };
 }
 
+function buildViewCapabilityInvokeContract(viewId: string) {
+  return {
+    action_type: "view.capability.invoke",
+    payload_example: {
+      view_id: viewId,
+      capability_id: "<capability_id>",
+      input: {},
+    },
+    note: "Use capabilities[].capability_id as the identifier and place business parameters inside payload.input.",
+  };
+}
+
+function externalizeCapabilityDefinition(
+  capability: ReturnType<typeof listViewRegistrations>[number]["capabilities"][number]
+) {
+  return {
+    capability_id: capability.id,
+    mode: capability.mode,
+    title: capability.title,
+    description: capability.description,
+    assistant_hint: capability.assistant_hint,
+    input_schema: capability.input_schema ? { ...capability.input_schema } : undefined,
+    affected_anchors: capability.affected_anchors ? [...capability.affected_anchors] : undefined,
+    error_codes: capability.error_codes ? [...capability.error_codes] : undefined,
+  };
+}
+
+function externalizeActiveManifest(activeManifest: ViewManifestSnapshot | null) {
+  if (!activeManifest) {
+    return null;
+  }
+  return {
+    ...activeManifest,
+    capabilities: activeManifest.capabilities.map(externalizeCapabilityDefinition),
+  };
+}
+
 function buildViewDescribeItem(registration: ReturnType<typeof listViewRegistrations>[number]) {
   return {
     view_id: registration.view_id,
@@ -33,7 +69,8 @@ function buildViewDescribeItem(registration: ReturnType<typeof listViewRegistrat
     route_path: registration.route.full_path,
     state_mode: registration.state_mode,
     anchors: registration.anchors.map((anchor) => ({ ...anchor })),
-    capabilities: registration.capabilities.map(cloneCapabilityDefinition),
+    capabilities: registration.capabilities.map(externalizeCapabilityDefinition),
+    capability_invoke_contract: buildViewCapabilityInvokeContract(registration.view_id),
     interaction_hints: cloneViewInteractionHints(registration.interaction_hints),
   };
 }
@@ -51,12 +88,8 @@ function buildViewCatalogItem(
     state_mode: registration.state_mode,
     description: interactionHints?.interaction_intent || registration.title,
     is_active: registration.view_id === activeViewId,
-    capabilities: registration.capabilities.map((capability) => ({
-      id: capability.id,
-      mode: capability.mode,
-      title: capability.title,
-      input_schema: capability.input_schema ? { ...capability.input_schema } : undefined,
-    })),
+    capabilities: registration.capabilities.map(externalizeCapabilityDefinition),
+    capability_invoke_contract: buildViewCapabilityInvokeContract(registration.view_id),
   };
   if (Array.isArray(interactionHints?.recommended_flow) && interactionHints.recommended_flow.length > 0) {
     item.recommended_flow = [...interactionHints.recommended_flow];
@@ -129,7 +162,7 @@ export function createViewDescribeCapabilityRegistration(
         active_anchor: currentSnapshot.active_anchor,
         current_resource: currentSnapshot.current_resource,
         current_resource_summary: currentSnapshot.active_manifest?.state_summary || {},
-        active_manifest: currentSnapshot.active_manifest,
+        active_manifest: externalizeActiveManifest(currentSnapshot.active_manifest),
         view_state_version: currentSnapshot.view_state_version,
         guide_state: guideState,
         task_progress: taskProgress,

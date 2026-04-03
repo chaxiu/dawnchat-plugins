@@ -34,6 +34,7 @@ export function composeAssistantRuntimeRegistrations() {
   const {
     setCurrentCard,
     scheduleDismissCurrentCard,
+    scheduleResetNarrationState,
     setActiveTip,
     setNarrationState,
     getGuideStateSnapshot,
@@ -61,6 +62,7 @@ export function composeAssistantRuntimeRegistrations() {
     ...createSessionStepCapabilityRegistrations({
       setCurrentCard,
       scheduleDismissCurrentCard,
+      scheduleResetNarrationState,
       setActiveTip,
       setNarrationState,
       setActiveViewState,

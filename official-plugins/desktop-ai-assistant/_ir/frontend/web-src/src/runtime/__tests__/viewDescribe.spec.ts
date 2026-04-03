@@ -73,12 +73,19 @@ describe("assistant.view.describe", () => {
         }),
         requested_view: expect.objectContaining({
           view_id: "word.main",
+          capability_invoke_contract: expect.objectContaining({
+            action_type: "view.capability.invoke",
+            payload_example: expect.objectContaining({
+              view_id: "word.main",
+              capability_id: "<capability_id>",
+            }),
+          }),
           interaction_hints: expect.objectContaining({
             interaction_intent: expect.any(String),
           }),
           capabilities: expect.arrayContaining([
             expect.objectContaining({
-              id: "append_etymology",
+              capability_id: "append_etymology",
               assistant_hint: expect.any(String),
             }),
           ]),

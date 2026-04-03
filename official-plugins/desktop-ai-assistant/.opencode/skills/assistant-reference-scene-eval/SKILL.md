@@ -45,9 +45,9 @@ metadata:
 - Step 3: success path checks
   - open `word.main`
   - focus `word.meaning`
-  - invoke `append_etymology`
+  - invoke `append_etymology` via `view.capability.invoke(payload.view_id + payload.capability_id + payload.input)`
   - focus `word.etymology`
-  - invoke `set_title`
+  - invoke `set_title` via `view.capability.invoke(payload.view_id + payload.capability_id + payload.input)`
   - run a guide expression step such as `guide.narrate` or `guide.card.show`
 - Step 4: continuation visibility checks
   - confirm `assistant.view.describe` exposes `task_progress`
@@ -65,8 +65,8 @@ metadata:
 - `assistant.view.describe` returns resource contract and capability contract for `word.main`.
 - `view.open` with a valid word resource succeeds.
 - `view.focus(word.meaning)` updates active anchor to `word.meaning`.
-- `view.capability.invoke(append_etymology)` updates the etymology list and active anchor.
-- `view.capability.invoke(set_title)` updates the page title.
+- `view.capability.invoke` with `payload.capability_id=append_etymology` updates the etymology list and active anchor.
+- `view.capability.invoke` with `payload.capability_id=set_title` updates the page title.
 - guide overlay can coexist with the page after `word.main` is active.
 - minimal runtime observation fields are discoverable without taking over the page.
 - `continuation` remains lightweight observation metadata, not an auto-restore instruction.

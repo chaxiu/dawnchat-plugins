@@ -11,6 +11,7 @@ import { createViewDescribeCapabilityRegistration } from "../view";
 const createDeps = (): SessionStepExecutorDeps => ({
   setCurrentCard: vi.fn(() => 1),
   scheduleDismissCurrentCard: vi.fn(),
+  scheduleResetNarrationState: vi.fn(),
   setActiveTip: vi.fn(),
   setNarrationState: vi.fn(),
   setActiveViewState: vi.fn(() => 1),
@@ -634,7 +635,7 @@ describe("session step executor", () => {
         type: "view.capability.invoke",
         payload: {
           view_id: "word.main",
-          capability: "append_etymology",
+          capability_id: "append_etymology",
           input: {
             items: ["ize"],
           },
@@ -657,7 +658,7 @@ describe("session step executor", () => {
       data: expect.objectContaining({
         status: "applied",
         view_id: "word.main",
-        capability: "append_etymology",
+        capability_id: "append_etymology",
         active_anchor: "word.etymology",
         appended_count: 1,
         appended_items: ["ize"],
@@ -676,7 +677,7 @@ describe("session step executor", () => {
         type: "view.capability.invoke",
         payload: {
           view_id: "word.main",
-          capability: "append_etymology",
+          capability_id: "append_etymology",
           input: {
             items: [],
           },
@@ -698,7 +699,7 @@ describe("session step executor", () => {
         type: "view.capability.invoke",
         payload: {
           view_id: "word.main",
-          capability: "set_title",
+          capability_id: "set_title",
           input: {
             title: "   ",
           },
@@ -709,6 +710,26 @@ describe("session step executor", () => {
       ok: false,
       error_code: "invalid_view_capability_input",
       message: "set_title requires input.title to be a non-empty string",
+    });
+  });
+
+  it("returns invalid_view_payload when business parameters are not wrapped in input", async () => {
+    const handler = createSessionStepHandler(createDeps());
+    const result = await handler({
+      session_id: sessionId,
+      action: {
+        type: "view.capability.invoke",
+        payload: {
+          view_id: "word.main",
+          capability_id: "set_title",
+          title: "Direct title",
+        },
+      },
+    }, {});
+    expect(result).toEqual({
+      ok: false,
+      error_code: "invalid_view_payload",
+      message: "view.capability.invoke requires business parameters inside payload.input",
     });
   });
 
@@ -739,7 +760,7 @@ describe("session step executor", () => {
         type: "view.capability.invoke",
         payload: {
           view_id: "word.main",
-          capability: "missing_capability",
+          capability_id: "missing_capability",
         },
       },
     }, {});
@@ -865,6 +886,7 @@ describe("session step executor", () => {
       })
     );
     expect(deps.scheduleDismissCurrentCard).toHaveBeenCalledWith(2200, "narration_completed");
+    expect(deps.scheduleResetNarrationState).toHaveBeenCalledWith(2200);
     expect(result).toEqual({
       ok: true,
       data: {
@@ -1229,9 +1251,12 @@ describe("session step executor", () => {
         requested_view: expect.objectContaining({
           view_id: "word.main",
           route_path: "/views/word/main",
+          capability_invoke_contract: expect.objectContaining({
+            action_type: "view.capability.invoke",
+          }),
           capabilities: expect.arrayContaining([
             expect.objectContaining({
-              id: "append_etymology",
+              capability_id: "append_etymology",
               mode: "write",
               input_schema: expect.any(Object),
               affected_anchors: ["word.etymology"],

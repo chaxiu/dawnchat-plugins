@@ -43,6 +43,7 @@ const narrationState = ref<GuideNarrationState>({
 });
 const guideStateVersion = ref(0);
 let cardDismissTimer: ReturnType<typeof setTimeout> | null = null;
+let narrationResetTimer: ReturnType<typeof setTimeout> | null = null;
 let cardDismissObserver: CardDismissObserver | null = null;
 
 function buildIdleNarrationState(): GuideNarrationState {
@@ -87,6 +88,13 @@ export function useGuideState() {
     if (cardDismissTimer) {
       clearTimeout(cardDismissTimer);
       cardDismissTimer = null;
+    }
+  };
+
+  const clearNarrationResetTimer = () => {
+    if (narrationResetTimer) {
+      clearTimeout(narrationResetTimer);
+      narrationResetTimer = null;
     }
   };
 
@@ -140,12 +148,26 @@ export function useGuideState() {
   };
 
   const setNarrationState = (nextState: GuideNarrationState) => {
+    clearNarrationResetTimer();
     narrationState.value = cloneNarrationState(nextState);
     guideStateVersion.value += 1;
   };
 
+  const scheduleResetNarrationState = (delayMs: number) => {
+    if (!Number.isFinite(delayMs) || delayMs < 0) {
+      setNarrationState(buildIdleNarrationState());
+      return;
+    }
+    clearNarrationResetTimer();
+    narrationResetTimer = setTimeout(() => {
+      narrationState.value = buildIdleNarrationState();
+      guideStateVersion.value += 1;
+    }, delayMs);
+  };
+
   const restoreGuideState = (snapshot: GuideStateSnapshot) => {
     clearCardDismissTimer();
+    clearNarrationResetTimer();
     currentCard.value = snapshot.current_card ? cloneCard(snapshot.current_card) : null;
     activeTip.value = snapshot.active_tip ? cloneTip(snapshot.active_tip) : null;
     narrationState.value = cloneNarrationState(snapshot.narration_state);
@@ -154,6 +176,7 @@ export function useGuideState() {
 
   const resetGuideState = () => {
     clearCardDismissTimer();
+    clearNarrationResetTimer();
     currentCard.value = null;
     activeTip.value = null;
     narrationState.value = buildIdleNarrationState();
@@ -182,6 +205,7 @@ export function useGuideState() {
     clearCurrentCard,
     dismissCurrentCard,
     scheduleDismissCurrentCard,
+    scheduleResetNarrationState,
     setCardDismissObserver,
     setActiveTip,
     setNarrationState,

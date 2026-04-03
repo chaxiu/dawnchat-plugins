@@ -24,6 +24,8 @@ metadata:
 - Treat `dawnchat.ui.capabilities.list` as the assistant feature-scene catalog, not as the raw runtime handler registry.
 - Do not treat `view.*`, `guide.*`, or internal `assistant.session_step_*` handlers as scene catalog entries.
 - When the task depends on page semantics, anchors, resource state, interaction hints, task progress, or continuation state, recommend `assistant.view.describe`.
+- Treat `capabilities[].capability_id` as the external identifier for `view.capability.invoke`.
+- Treat `capability_invoke_contract` as the lightweight packaging guide for `view_id + capability_id + input`.
 
 ## Output Contract
 
@@ -52,3 +54,4 @@ For a wait-aware guided task, the default follow-up sequence should usually be:
 5. `dawnchat.ui.session.wait_for_end`
 
 Short single-step tasks may stop earlier and use direct `view.*` capability invokes instead.
+When they do, prefer the exact `capability_id` returned by discovery/describe and keep business fields inside `payload.input`.

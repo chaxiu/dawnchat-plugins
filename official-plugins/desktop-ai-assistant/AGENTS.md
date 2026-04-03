@@ -117,6 +117,33 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
   - re-run capability listing to confirm discoverability
   - prefer backward-compatible payload changes when possible
 
+## Payload Cheatsheet
+
+- `view.capability.invoke` inside `session.start.steps[].action` uses:
+
+```json
+{
+  "type": "view.capability.invoke",
+  "payload": {
+    "view_id": "tictactoe.main",
+    "capability_id": "game.place_mark",
+    "input": {
+      "index": 6
+    }
+  }
+}
+```
+
+- Rules:
+  - use `capability_id`, not `capability`
+  - use the value returned by `assistant.view.describe` or `assistant.view.list`
+  - put business parameters inside `payload.input`, not at the top level
+
+- If a task depends on both a runtime event and session completion:
+  - do not block on `session.wait_for_end` first and only then start `event.wait`
+  - make the `event.wait` observation window overlap with the period in which the user may act
+  - use `session.wait_for_end` as a parallel or follow-up lifecycle observer, not as a replacement for `event.wait`
+
 ## Prompt and Rules Policy
 
 - This plugin relies on workspace-scoped `AGENTS.md` and `.opencode/skills`.

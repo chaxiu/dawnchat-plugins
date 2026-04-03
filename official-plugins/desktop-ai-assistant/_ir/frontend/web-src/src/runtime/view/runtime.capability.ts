@@ -13,13 +13,37 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
   return async (payload, context) => {
     const input = toRecord(payload);
     const viewId = typeof input.view_id === "string" ? input.view_id.trim() : "";
-    const capabilityId = typeof input.capability === "string" ? input.capability.trim() : "";
-    const capabilityInput = toRecord(input.input);
+    const capabilityId = typeof input.capability_id === "string"
+      ? input.capability_id.trim()
+      : typeof input.capability === "string"
+        ? input.capability.trim()
+        : "";
+    const rawCapabilityInput = input.input;
+    const capabilityInput = toRecord(rawCapabilityInput);
     if (!viewId || !capabilityId) {
       return {
         ok: false,
         error_code: "invalid_view_payload",
-        message: "view.capability.invoke requires payload.view_id and payload.capability",
+        message: "view.capability.invoke requires payload.view_id and payload.capability_id",
+      };
+    }
+    if (rawCapabilityInput !== undefined && (!rawCapabilityInput || typeof rawCapabilityInput !== "object" || Array.isArray(rawCapabilityInput))) {
+      return {
+        ok: false,
+        error_code: "invalid_view_payload",
+        message: "view.capability.invoke requires payload.input to be an object",
+      };
+    }
+    if (rawCapabilityInput === undefined) {
+      const hasTopLevelBusinessFields = Object.keys(input).some((key) =>
+        key !== "view_id" && key !== "capability_id" && key !== "capability"
+      );
+      if (hasTopLevelBusinessFields) {
+        return {
+          ok: false,
+          error_code: "invalid_view_payload",
+          message: "view.capability.invoke requires business parameters inside payload.input",
+        };
       };
     }
     const activeState = resolveActiveViewState(deps, viewId);
@@ -63,7 +87,7 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
       data: {
         status: "applied",
         view_id: viewId,
-        capability: capabilityId,
+        capability_id: capabilityId,
         active_anchor: nextAnchor,
         manifest,
         ...toRecord(capabilityResult.data),
