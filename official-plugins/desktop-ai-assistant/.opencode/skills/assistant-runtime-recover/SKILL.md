@@ -11,7 +11,7 @@ metadata:
 
 - Execute ordered recovery: info -> capabilities.list -> refresh -> verify -> restart -> verify.
 - Use `dawnchat.ui.runtime.restart` only when refresh cannot recover.
-- Re-check capabilities and one invoke after recovery.
+- Re-check the scene catalog and one invoke after recovery.
 - If recovery reveals stale UI state, inspect `assistant.view.describe` before deciding whether to continue, wait, or ignore prior runtime context.
 
 ## Mandatory Sequence

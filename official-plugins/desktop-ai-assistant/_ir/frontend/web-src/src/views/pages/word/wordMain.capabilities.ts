@@ -1,6 +1,6 @@
 import type { ViewCapabilityResult, ViewResourceBinding } from "../../../runtime/view";
-import { cloneWordResource } from "./wordMain.contract";
-import { buildOperationError, toStringArray } from "./wordMain.resource";
+import { buildOperationError, toStringArray } from "../../shared/viewUtils";
+import { cloneWordResource } from "./wordMain.view";
 
 export function invokeWordMainCapability(
   capabilityId: string,

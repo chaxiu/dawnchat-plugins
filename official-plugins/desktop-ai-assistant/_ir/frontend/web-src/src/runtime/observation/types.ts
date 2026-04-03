@@ -23,13 +23,11 @@ export interface SessionPendingWait {
   event_types: string[];
   match?: Record<string, unknown>;
   timeout_ms?: number;
-  event_cursor_seq: number;
   waiting_since_ms: number;
 }
 
 export interface SessionContinuation {
   last_completed_step_index?: number;
   last_completed_step_id?: string;
-  event_cursor_seq: number;
   pending_wait: SessionPendingWait | null;
 }

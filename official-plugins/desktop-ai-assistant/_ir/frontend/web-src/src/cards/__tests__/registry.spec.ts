@@ -19,7 +19,14 @@ describe("card registry", () => {
             card: { card_type: "unknown", title: "x", data: {} } as any,
           });
         },
-      })
+      }),
+      {
+        global: {
+          stubs: {
+            teleport: true,
+          },
+        },
+      }
     );
     expect(wrapper.text()).toContain("Unsupported card type");
   });

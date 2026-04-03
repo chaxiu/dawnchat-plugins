@@ -3,18 +3,21 @@ import { computed } from "vue";
 
 import { resolveCardComponent } from "../cards/registry";
 import {
+  ASSISTANT_UI_LAYER_GUIDE,
+  GUIDE_CARD_COMPLETION_DISMISS_DELAY_MS,
   GUIDE_STACK_BOTTOM,
   GUIDE_STACK_LEFT,
   GUIDE_STACK_MAX_WIDTH,
 } from "../runtime/assistantUiLayout";
 import type { AssistantCardPayload } from "../cards/types";
-import type { GuideNarrationState, GuideTipPayload } from "../runtime/guide/state";
+import { useGuideState, type GuideNarrationState, type GuideTipPayload } from "../runtime/guide/state";
 
 const props = defineProps<{
   card: AssistantCardPayload | null;
   tip?: GuideTipPayload | null;
   narration?: GuideNarrationState | null;
 }>();
+const { dismissCurrentCard, scheduleDismissCurrentCard } = useGuideState();
 
 const activeCanvasCard = computed(() => {
   if (!props.card) {
@@ -38,41 +41,63 @@ const hostStyle = computed(() => ({
   left: `${GUIDE_STACK_LEFT}px`,
   bottom: `${GUIDE_STACK_BOTTOM}px`,
   width: `min(${GUIDE_STACK_MAX_WIDTH}px, calc(100vw - 32px))`,
+  zIndex: ASSISTANT_UI_LAYER_GUIDE,
 }));
+
+function closeCard() {
+  dismissCurrentCard("user_closed");
+}
+
+function onCardCompleted(payload?: { reason?: string; dismiss_after_ms?: number }) {
+  const delayMs = typeof payload?.dismiss_after_ms === "number"
+    ? payload.dismiss_after_ms
+    : GUIDE_CARD_COMPLETION_DISMISS_DELAY_MS;
+  scheduleDismissCurrentCard(delayMs, payload?.reason || "card_completed");
+}
 </script>
 
 <template>
-  <section v-if="hasVisibleGuideUi" class="host" :style="hostStyle">
-    <aside
-      v-if="activeNarration"
-      class="narration-banner"
-      :data-status="activeNarration.status"
-    >
-      <strong>{{ activeNarration.status }}</strong>
-      <span>{{ activeNarration.text }}</span>
-      <small v-if="activeNarration.errorMessage">{{ activeNarration.errorMessage }}</small>
-    </aside>
-    <aside v-if="tip" class="tip-banner" :data-level="tip.level || 'info'">
-      <strong v-if="tip.title">{{ tip.title }}</strong>
-      <span>{{ tip.message }}</span>
-    </aside>
-    <article v-if="activeCanvasCard" class="card-item">
-      <component
-        :is="activeCanvasCard.component || 'div'"
-        v-bind="activeCanvasCard.component ? { title: activeCanvasCard.title, data: activeCanvasCard.data } : {}"
+  <Teleport to="body">
+    <section v-if="hasVisibleGuideUi" class="host" :style="hostStyle">
+      <aside
+        v-if="activeNarration"
+        class="narration-banner"
+        :data-status="activeNarration.status"
       >
-        <template v-if="!activeCanvasCard.component">
-          Unsupported card type: {{ activeCanvasCard.card_type }}
-        </template>
-      </component>
-    </article>
-  </section>
+        <strong>{{ activeNarration.status }}</strong>
+        <span>{{ activeNarration.text }}</span>
+        <small v-if="activeNarration.errorMessage">{{ activeNarration.errorMessage }}</small>
+      </aside>
+      <aside v-if="tip" class="tip-banner" :data-level="tip.level || 'info'">
+        <strong v-if="tip.title">{{ tip.title }}</strong>
+        <span>{{ tip.message }}</span>
+      </aside>
+      <article v-if="activeCanvasCard" class="card-item">
+        <header class="card-shell-head">
+          <span class="card-shell-label">Guide</span>
+          <button type="button" class="card-close-btn" aria-label="Close guide card" @click="closeCard">
+            ×
+          </button>
+        </header>
+        <div class="card-shell-body">
+          <component
+            :is="activeCanvasCard.component || 'div'"
+            v-bind="activeCanvasCard.component ? { title: activeCanvasCard.title, data: activeCanvasCard.data } : {}"
+            @completed="onCardCompleted"
+          >
+            <template v-if="!activeCanvasCard.component">
+              Unsupported card type: {{ activeCanvasCard.card_type }}
+            </template>
+          </component>
+        </div>
+      </article>
+    </section>
+  </Teleport>
 </template>
 
 <style scoped>
 .host {
   position: fixed;
-  z-index: 7;
   display: grid;
   gap: 10px;
   pointer-events: none;
@@ -144,7 +169,39 @@ const hostStyle = computed(() => ({
   border-color: rgba(103, 232, 249, 0.28);
   background: rgba(15, 23, 42, 0.86);
 }
+.card-shell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 0;
+}
+.card-shell-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(186, 230, 253, 0.9);
+}
+.card-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.75);
+  color: #e2e8f0;
+  line-height: 1;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+.card-close-btn:hover {
+  border-color: rgba(125, 211, 252, 0.55);
+  color: #f0f9ff;
+}
+.card-shell-body {
+  padding-top: 8px;
+}
 .card-item :deep(.card) {
   min-height: 0;
+  border: 0;
+  box-shadow: none;
 }
 </style>

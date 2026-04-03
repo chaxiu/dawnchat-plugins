@@ -29,7 +29,7 @@ metadata:
 - Return reason in one concise paragraph.
 - Return required next skill.
 - For session workflow, include whether interruption control is required (`session.stop` expected or not).
-- For recovery workflow, include whether the next move is `session.wait`, short continuation session, or fresh re-plan.
+- For recovery workflow, include whether the next move is `event.wait`, `session.wait_for_end`, short continuation session, or fresh re-plan.
 
 ## Checklist
 

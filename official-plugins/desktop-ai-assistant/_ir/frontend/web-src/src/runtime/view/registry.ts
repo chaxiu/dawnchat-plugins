@@ -1,10 +1,10 @@
-import { articleMainViewRegistration } from "../../views/pages/article/articleMainViewRegistration";
-import { wordMainViewRegistration } from "../../views/pages/word/wordMainViewRegistration";
+import { tictactoeMainView } from "../../views/pages/tictactoe/tictactoeMain.view";
+import { wordMainView } from "../../views/pages/word/wordMain.view";
 import type { ViewRegistration, ViewRouteDefinition } from "./manifest";
 
 const viewRegistry: Record<string, ViewRegistration> = {
-  [articleMainViewRegistration.manifest.view_id]: articleMainViewRegistration,
-  [wordMainViewRegistration.manifest.view_id]: wordMainViewRegistration,
+  [tictactoeMainView.view_id]: tictactoeMainView,
+  [wordMainView.view_id]: wordMainView,
 };
 
 export function getViewRegistration(viewId: string): ViewRegistration | null {

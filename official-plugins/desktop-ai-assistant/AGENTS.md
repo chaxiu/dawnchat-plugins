@@ -23,16 +23,18 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Invoke UI functions only via `dawnchat.ui.capability.invoke`.
 - Never assume function names or payload fields without listing current capabilities.
 - For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
-- Treat `dawnchat.ui.capabilities.list` as the source of top-level capability names only.
-- Treat `assistant.view.describe` as the source of registered view list, route entry, anchors, resource contract, current page snapshot, and minimal runtime observation fields.
+- Treat `dawnchat.ui.capabilities.list` as the assistant feature-scene catalog: use it to see which view-based scenes the current assistant can provide.
+- Treat `assistant.view.describe` as the detailed surface for a specific view contract, the active page snapshot, registered view metadata, and minimal runtime observation fields.
 - Treat `task_progress`, `active_resource_context`, and `continuation` as the only supported runtime observation fields.
-- Treat `continuation` as a planning hint for the next `dawnchat.ui.session.start` or `dawnchat.ui.session.wait`, not as an instruction to auto-replay old steps.
+- Treat stateful view persistence as an internal view/runtime concern; do not expose persistence payloads through `assistant.view.describe`.
+- Treat `continuation` as a planning hint for the next `dawnchat.ui.session.start`, `dawnchat.ui.event.wait`, or `dawnchat.ui.session.wait_for_end`, not as an instruction to auto-replay old steps.
 - Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
   - `dawnchat.ui.session.stop`
-  - `dawnchat.ui.session.wait`
+  - `dawnchat.ui.event.wait`
+  - `dawnchat.ui.session.wait_for_end`
 - In session steps, keep voice/narration data inside `steps[].action.payload` only.
 - Treat `steps[].action.payload` as opaque plugin payload and do not hardcode internal fields at host side.
 - `dawnchat.ui.session.start` no longer uses `idempotency_key`.
@@ -55,11 +57,13 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Capability names should be stable and namespaced.
 - Every capability must expose a clear `input_schema`.
 - Capability handlers must return structured result payloads with explicit success/failure.
-- Newly added capabilities must become discoverable through `capabilities.list` immediately after HMR.
-- `view.*` and `guide.*` are session step action namespaces, not top-level capability names returned by `capabilities.list`.
+- Newly added feature scenes must become discoverable through `capabilities.list` immediately after HMR.
+- `view.*`, `guide.*`, and internal `assistant.session_step_*` handlers are runtime execution details, not the main assistant-facing catalog returned by `capabilities.list`.
 - Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
 - Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
+- Prefer view-embedded interaction hints over adding a dedicated skill for every single view. Skills should stay cross-view and reusable.
 - Runtime observation must stay lightweight and must not automatically take over the current UI.
+- Stateful view persistence currently uses a Dexie-backed runtime adapter that stores stable metadata plus a JSON `payload` blob.
 - The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap/`.
 - The current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
 - The current reference view registration lives in `_ir/frontend/web-src/src/views/pages/word/wordMainViewRegistration.ts`.
@@ -78,8 +82,16 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 
 ## Execution Policy
 
+- Standard orchestration template for wait-aware tasks:
+  1. call `dawnchat.ui.capabilities.list`
+  2. call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` when scene choice, page state, or continuation matters
+  3. call `dawnchat.ui.session.start` when the task needs ordered `view.* + guide.*` execution
+  4. call `dawnchat.ui.event.wait` when the next move depends on a runtime signal
+  5. call `dawnchat.ui.session.wait_for_end` when the next move depends on the prior session becoming terminal
+  6. use `dawnchat.ui.session.status` or `dawnchat.ui.session.stop` only when explicit inspection or interruption control is needed
 - For Rich Display tasks:
   - first list capabilities
+  - use the returned scene catalog to choose the best view-level feature
   - then inspect page state with `assistant.view.describe` whenever the task depends on page semantics, anchors, or resource state
   - then prefer a single direct capability invoke when one step is enough
   - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
@@ -93,7 +105,8 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - For Continuation-Aware tasks:
   - inspect current state via `assistant.view.describe`
   - if `continuation.pending_wait` exists, prefer the dedicated `assistant-wait-continuation-handoff` skill instead of replaying the whole prior sequence
-  - when `continuation.pending_wait` exists and the next move depends on a runtime signal, prefer `dawnchat.ui.session.wait` with `wait_for=runtime_event` and `since_seq=continuation.event_cursor_seq`
+  - when `continuation.pending_wait` exists and the next move depends on a runtime signal, prefer `dawnchat.ui.event.wait` with explicit `event_types` and `match`
+  - when the caller needs to know whether the prior session has actually finished, use `dawnchat.ui.session.wait_for_end`
   - if `continuation.last_completed_step_index` exists, treat earlier steps as progress hints and avoid blindly re-sending obviously completed setup steps
   - do not let stale continuation override a clearer current-page intent
 - For Self-Evolving tasks:

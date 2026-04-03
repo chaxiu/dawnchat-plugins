@@ -20,6 +20,8 @@ metadata:
 - Use host tools for session orchestration:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
+  - `dawnchat.ui.event.wait`
+  - `dawnchat.ui.session.wait_for_end`
 - Before planning a view-aware session, inspect current page state with:
   - `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
 - If `assistant.view.describe` reports `continuation.pending_wait`, treat it as lightweight continuation metadata only.
@@ -35,6 +37,12 @@ metadata:
 
 ## Recommended Flow
 
+- Standard wait-aware template:
+  - `dawnchat.ui.capabilities.list`
+  - `assistant.view.describe`
+  - `dawnchat.ui.session.start`
+  - `dawnchat.ui.event.wait`
+  - `dawnchat.ui.session.wait_for_end`
 - For page-first tasks:
   - call `dawnchat.ui.capabilities.list`
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
@@ -46,6 +54,8 @@ metadata:
   - use `view.open` to enter the page
   - use `view.focus` or `view.capability.invoke` to manipulate the page
   - use `guide.card.show`, `guide.tip.show`, or `guide.narrate` only for guide expression
+  - when the next move depends on a runtime signal, prefer `dawnchat.ui.event.wait` over status polling
+  - when the next move depends on the current session fully finishing, use `dawnchat.ui.session.wait_for_end`
 - When an error occurs:
   - read `error_code`
   - re-check `assistant.view.describe` if page state may have changed
@@ -56,7 +66,7 @@ metadata:
 
 - Return a ready-to-send `session.start` JSON payload.
 - Return optional voice script summary in step order from `action.payload`.
-- Return the expected lifecycle strategy (`start -> status -> stop` when interruption is needed).
+- Return the expected lifecycle strategy (`start -> event.wait -> session.wait_for_end` when applicable, plus `status/stop` only when needed).
 
 ## Checklist
 
@@ -67,3 +77,4 @@ metadata:
 - Do not let stale continuation state override a new task plan.
 - If `continuation.pending_wait` exists, avoid replaying the entire earlier session and prefer a short continuation session around the pending wait.
 - If `continuation.last_completed_step_index` exists, treat it as a progress hint and avoid blindly re-sending obviously completed setup steps.
+- Do not reintroduce `tail_wait` or the removed `dawnchat.ui.session.wait` API in new plans.

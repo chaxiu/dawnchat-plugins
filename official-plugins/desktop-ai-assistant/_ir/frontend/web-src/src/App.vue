@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 
 import AssistantOrbLayer from "./components/AssistantOrbLayer.vue";
 import {
   installAssistantRuntimeCapabilities,
   uninstallAssistantRuntimeCapabilities,
 } from "./runtime/bootstrap";
+import { ASSISTANT_UI_LAYER_PAGE } from "./runtime/assistantUiLayout";
 
 let registeredCapabilityNames: string[] = [];
+const shellStageStyle = computed(() => ({
+  zIndex: ASSISTANT_UI_LAYER_PAGE,
+}));
 
 onMounted(() => {
   registeredCapabilityNames = installAssistantRuntimeCapabilities();
@@ -24,7 +28,7 @@ onUnmounted(() => {
     <div class="aurora aurora-a"></div>
     <div class="aurora aurora-b"></div>
     <AssistantOrbLayer />
-    <section class="shell-stage">
+    <section class="shell-stage" :style="shellStageStyle">
       <RouterView />
     </section>
   </main>
@@ -63,7 +67,6 @@ onUnmounted(() => {
 }
 .shell-stage {
   position: relative;
-  z-index: 1;
   min-height: 100vh;
   min-height: 100dvh;
 }

@@ -1,7 +1,7 @@
 import { createViewDescribeCapabilityRegistration } from "../view";
 
 describe("assistant.view.describe", () => {
-  it("returns minimal runtime observation fields and registered views", async () => {
+  it("returns minimal runtime observation fields and requested view details", async () => {
     const registration = createViewDescribeCapabilityRegistration({
       setActiveViewState: vi.fn(() => 1),
       getViewStateSnapshot: vi.fn(() => ({
@@ -45,7 +45,6 @@ describe("assistant.view.describe", () => {
         },
       })),
       getContinuationSnapshot: vi.fn(() => ({
-        event_cursor_seq: 0,
         pending_wait: null,
       })),
       navigateToView: vi.fn(),
@@ -70,19 +69,19 @@ describe("assistant.view.describe", () => {
           view_id: "word.main",
         }),
         continuation: expect.objectContaining({
-          event_cursor_seq: 0,
           pending_wait: null,
         }),
-        available_views: expect.arrayContaining([
-          expect.objectContaining({
-            view_id: "article.main",
-          }),
-          expect.objectContaining({
-            view_id: "word.main",
-          }),
-        ]),
         requested_view: expect.objectContaining({
           view_id: "word.main",
+          interaction_hints: expect.objectContaining({
+            interaction_intent: expect.any(String),
+          }),
+          capabilities: expect.arrayContaining([
+            expect.objectContaining({
+              id: "append_etymology",
+              assistant_hint: expect.any(String),
+            }),
+          ]),
         }),
       }),
     });

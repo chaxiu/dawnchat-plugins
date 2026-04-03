@@ -21,8 +21,8 @@ metadata:
 
 ## Required context
 
-- Top-level capability names come from `dawnchat.ui.capabilities.list`.
-- Registered views, route entry, anchors, capability contract, resource contract, and current page state come from `assistant.view.describe`.
+- Assistant scene discovery comes from `dawnchat.ui.capabilities.list`.
+- Registered view contract details, route entry, anchors, capability contract, resource contract, and current page state come from `assistant.view.describe`.
 - Current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
 - Current guide actions live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - Current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
@@ -32,11 +32,11 @@ metadata:
 - Step 1: runtime and discovery
   - call `dawnchat.ui.runtime.info`
   - call `dawnchat.ui.capabilities.list`
-  - confirm `assistant.view.describe` is available
+  - confirm the scene catalog includes the expected view
+  - confirm `assistant.view.describe` is available as the detail entrypoint
 - Step 2: inspect current page
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
   - read:
-    - `available_views`
     - `requested_view`
     - `active_view_id`
     - `active_anchor`
@@ -61,7 +61,7 @@ metadata:
 
 ## Expected checks
 
-- `assistant.view.describe` returns `word.main` in `available_views`.
+- `dawnchat.ui.capabilities.list` returns `word.main` in the scene catalog.
 - `assistant.view.describe` returns resource contract and capability contract for `word.main`.
 - `view.open` with a valid word resource succeeds.
 - `view.focus(word.meaning)` updates active anchor to `word.meaning`.

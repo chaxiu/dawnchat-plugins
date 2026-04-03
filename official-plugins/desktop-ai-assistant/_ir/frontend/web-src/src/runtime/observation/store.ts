@@ -17,7 +17,6 @@ const DEFAULT_TASK_PROGRESS: SessionTaskProgress = {
 };
 
 const DEFAULT_CONTINUATION: SessionContinuation = {
-  event_cursor_seq: 0,
   pending_wait: null,
 };
 
@@ -63,7 +62,6 @@ function clonePendingWait(nextPendingWait: SessionPendingWait | null): SessionPe
     event_types: [...nextPendingWait.event_types],
     match: nextPendingWait.match ? cloneJsonValue(nextPendingWait.match) : undefined,
     timeout_ms: nextPendingWait.timeout_ms,
-    event_cursor_seq: nextPendingWait.event_cursor_seq,
     waiting_since_ms: nextPendingWait.waiting_since_ms,
   };
 }
@@ -72,7 +70,6 @@ function cloneContinuation(nextContinuation: SessionContinuation): SessionContin
   return {
     last_completed_step_index: nextContinuation.last_completed_step_index,
     last_completed_step_id: nextContinuation.last_completed_step_id,
-    event_cursor_seq: nextContinuation.event_cursor_seq,
     pending_wait: clonePendingWait(nextContinuation.pending_wait),
   };
 }

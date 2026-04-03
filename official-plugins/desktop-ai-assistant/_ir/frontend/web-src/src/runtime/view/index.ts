@@ -1,11 +1,15 @@
 import { createViewCapabilityInvokeHandler } from "./runtime.capability";
-import { createViewDescribeCapabilityRegistration } from "./runtime.describe";
+import { createViewDescribeCapabilityRegistration, createViewListCapabilityRegistration } from "./runtime.describe";
 import { createViewFocusHandler } from "./runtime.focus";
 import { createViewOpenHandler } from "./runtime.open";
 import type { ViewRuntimeDeps, ViewRuntimeHandlers } from "./runtime.shared";
 
-export type { ViewRuntimeDeps, ViewRuntimeHandlers } from "./runtime.shared";
-export { createViewDescribeCapabilityRegistration } from "./runtime.describe";
+export {
+  createManifestSnapshot,
+  type ViewRuntimeDeps,
+  type ViewRuntimeHandlers,
+} from "./runtime.shared";
+export { createViewDescribeCapabilityRegistration, createViewListCapabilityRegistration } from "./runtime.describe";
 export { useViewState, type SetActiveViewStateInput, type ViewStateSnapshot } from "./state";
 export {
   getViewRegistration,
@@ -14,16 +18,22 @@ export {
 } from "./registry";
 export type {
   ViewCapabilityDefinition,
+  ViewCapabilityMode,
+  DefineViewInput,
+  ViewEventHint,
+  ViewInteractionHints,
   ViewCapabilityResult,
-  ViewManifest,
   ViewManifestSnapshot,
   ViewOpenSuccess,
   ViewOpenResult,
   ViewOperationFailure,
+  ViewPersistenceConfig,
+  ViewPersistenceStateSnapshot,
   ViewRegistration,
   ViewResourceBinding,
   ViewRouteDefinition,
 } from "./manifest";
+export { defineView, buildViewRouteDefinition } from "./manifest";
 
 export function createViewRuntime(deps: ViewRuntimeDeps): ViewRuntimeHandlers {
   return {

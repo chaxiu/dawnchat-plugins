@@ -29,14 +29,14 @@ describe("runtime bootstrap wiring", () => {
     };
 
     const names = installAssistantRuntimeCapabilities();
-    expect(listViewRegistrations().map((registration) => registration.manifest.view_id)).toEqual(
-      expect.arrayContaining(["word.main", "article.main"])
+    expect(listViewRegistrations().map((registration) => registration.view_id)).toEqual(
+      expect.arrayContaining(["word.main", "tictactoe.main"])
     );
     expect(names).toEqual(expect.arrayContaining([
       "assistant.session_step_execute",
       "assistant.session_step_cancel",
+      "assistant.view.list",
       "assistant.view.describe",
-      "assistant.runtime.event.peek",
     ]));
     expect(registered.size).toBe(names.length);
     expect(emitAssistantRuntimeEvent({

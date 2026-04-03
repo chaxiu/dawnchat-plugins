@@ -5,10 +5,13 @@ export const ASSISTANT_RUNTIME_EVENT_TYPES = {
   SESSION_STEP_CANCELLED: "assistant.session.step.cancelled",
   VIEW_STATE_APPLIED: "assistant.view.state.applied",
   VIEW_FORM_SUBMITTED: "assistant.view.form.submitted",
+  TICTACTOE_CELL_SELECTED: "assistant.game.tictactoe.cell_selected",
+  TICTACTOE_ROUND_FINISHED: "assistant.game.tictactoe.round_finished",
   GUIDE_NARRATE_PLAYING: "assistant.guide.narrate.playing",
   GUIDE_NARRATE_COMPLETED: "assistant.guide.narrate.completed",
   GUIDE_NARRATE_CANCELLED: "assistant.guide.narrate.cancelled",
   GUIDE_NARRATE_FAILED: "assistant.guide.narrate.failed",
+  GUIDE_CARD_DISMISSED: "assistant.guide.card.dismissed",
   GUIDE_QUIZ_SUBMITTED: "assistant.guide.quiz.submitted",
   GUIDE_CONFIRM_RESPONDED: "assistant.guide.confirm.responded",
   SESSION_TASK_PROGRESS_UPDATED: "assistant.session.task_progress.updated",
@@ -24,8 +27,6 @@ export type AssistantRuntimeEventSource =
   | "view";
 
 export interface AssistantRuntimeEventEnvelope {
-  event_id: string;
-  seq: number;
   type: AssistantRuntimeEventType;
   ts_ms: number;
   source: AssistantRuntimeEventSource;
@@ -49,7 +50,3 @@ export interface AssistantRuntimeEventMatchOptions {
   payload_match?: Record<string, unknown>;
 }
 
-export interface AssistantRuntimeEventQueryOptions extends AssistantRuntimeEventMatchOptions {
-  since_seq?: number;
-  limit?: number;
-}

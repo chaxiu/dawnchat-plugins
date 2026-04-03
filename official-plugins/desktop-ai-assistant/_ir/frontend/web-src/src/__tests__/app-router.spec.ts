@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import { defineComponent, nextTick } from "vue";
+import { nextTick } from "vue";
 
 import App from "../App.vue";
 import { useGuideState } from "../runtime/guide/state";
@@ -9,10 +9,7 @@ import { useViewState } from "../runtime/view";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
 import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 import WordMainView from "../views/pages/word/WordMainView.vue";
-
-const Playground = defineComponent({
-  template: "<div>Playground Page</div>",
-});
+import { ASSISTANT_UI_LAYER_ORB } from "../runtime/assistantUiLayout";
 
 describe("app router shell", () => {
   it("renders route navigation and switches pages", async () => {
@@ -66,7 +63,6 @@ describe("app router shell", () => {
             },
           ],
         },
-        { path: "/playground", component: Playground },
       ],
     });
     router.push("/");
@@ -80,12 +76,13 @@ describe("app router shell", () => {
 
     expect(wrapper.text()).toContain("Hello, I am your AI assistant");
     expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("hero");
+    expect(wrapper.find(".assistant-orb-layer").attributes("style")).toContain(`z-index: ${ASSISTANT_UI_LAYER_ORB};`);
 
-    await router.push("/playground");
+    await router.push("/views/word/main");
     await nextTick();
     expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("dock");
 
-    expect(wrapper.text()).toContain("Playground Page");
+    expect(wrapper.find('[data-view-id="word.main"]').exists()).toBe(true);
     expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("dock");
     vi.restoreAllMocks();
     (globalThis as any).Path2D = originalPath2D;

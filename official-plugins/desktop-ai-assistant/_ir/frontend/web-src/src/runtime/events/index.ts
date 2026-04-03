@@ -3,7 +3,6 @@ export {
   type AssistantRuntimeEventEnvelope,
   type AssistantRuntimeEventInput,
   type AssistantRuntimeEventMatchOptions,
-  type AssistantRuntimeEventQueryOptions,
   type AssistantRuntimeEventSource,
   type AssistantRuntimeEventType,
 } from "./assistantEventTypes";

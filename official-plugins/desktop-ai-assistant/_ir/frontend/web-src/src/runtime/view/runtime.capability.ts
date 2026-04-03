@@ -30,7 +30,7 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
         message: `View is not active: ${viewId}`,
       };
     }
-    if (!hasCapability(activeState.registration.manifest.capabilities, capabilityId)) {
+    if (!hasCapability(activeState.registration.capabilities, capabilityId)) {
       return {
         ok: false,
         error_code: "view_capability_not_found",

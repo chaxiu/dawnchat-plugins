@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useViewState } from "../../../runtime/view";
+import { useViewState } from "../../../runtime/view/state";
 
 const { activeViewId, activeAnchor, currentResource, activeManifest } = useViewState();
 
@@ -37,7 +37,7 @@ const isWordWorkspaceReady = computed(
       </header>
 
       <section
-        class="panel"
+        class="panel panel-meaning"
         :data-anchor="activeAnchor === 'word.meaning' ? 'active' : 'inactive'"
       >
         <div class="section-head">
@@ -48,7 +48,7 @@ const isWordWorkspaceReady = computed(
       </section>
 
       <section
-        class="panel"
+        class="panel panel-etymology"
         :data-anchor="activeAnchor === 'word.etymology' ? 'active' : 'inactive'"
       >
         <div class="section-head">
@@ -85,12 +85,21 @@ const isWordWorkspaceReady = computed(
 .view-root {
   width: 100%;
   min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 .workspace {
+  flex: 1;
+  min-height: 0;
   display: grid;
   gap: 16px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+  grid-template-areas:
+    "hero hero"
+    "meaning etymology"
+    "meaning capabilities";
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 .word-idle {
   flex: 1;
@@ -130,10 +139,24 @@ const isWordWorkspaceReady = computed(
   padding: 20px;
   background: rgba(15, 23, 42, 0.8);
   box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  min-height: 0;
 }
 .panel[data-anchor="active"] {
   border-color: rgba(94, 234, 212, 0.4);
   box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.14), inset 0 1px 0 rgba(148, 163, 184, 0.18);
+}
+.panel-header {
+  grid-area: hero;
+}
+.panel-meaning {
+  grid-area: meaning;
+  display: flex;
+  flex-direction: column;
+}
+.panel-etymology {
+  grid-area: etymology;
+  display: flex;
+  flex-direction: column;
 }
 .panel-header h2 {
   margin: 14px 0 8px;
@@ -176,6 +199,14 @@ const isWordWorkspaceReady = computed(
   line-height: 1.7;
   color: #cbd5e1;
 }
+.panel-meaning .body-text,
+.panel-etymology .etymology-list,
+.panel-etymology .body-text {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
 .etymology-list {
   margin: 0;
   padding-left: 18px;
@@ -184,12 +215,16 @@ const isWordWorkspaceReady = computed(
   gap: 8px;
 }
 .panel-footer {
+  grid-area: capabilities;
   gap: 12px;
+  display: flex;
+  flex-direction: column;
 }
 .capability-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-content: flex-start;
 }
 .capability-list span {
   display: inline-flex;
@@ -199,5 +234,16 @@ const isWordWorkspaceReady = computed(
   background: rgba(30, 41, 59, 0.84);
   color: #e2e8f0;
   font-size: 0.82rem;
+}
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "hero"
+      "meaning"
+      "etymology"
+      "capabilities";
+    grid-template-rows: auto;
+  }
 }
 </style>

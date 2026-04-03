@@ -8,5 +8,8 @@ export default defineConfig({
     outDir: resolve(__dirname, "../web"),
     emptyOutDir: true,
   },
+  test: {
+    setupFiles: [resolve(__dirname, "src/test/setup.ts")],
+  },
   plugins: [vue()],
 });

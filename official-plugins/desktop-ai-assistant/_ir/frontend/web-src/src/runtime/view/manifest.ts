@@ -13,54 +13,122 @@ export interface ViewResourceBinding {
   data: Record<string, unknown>;
 }
 
-export interface ViewResourceContract {
-  resource_schema: Record<string, unknown>;
-  open_payload_schema: Record<string, unknown>;
-  default_resource: ViewResourceBinding;
-  error_codes?: string[];
-}
+export type ViewCapabilityMode = "read" | "write";
 
 export interface ViewCapabilityDefinition {
   id: string;
-  title: string;
+  mode: ViewCapabilityMode;
+  title?: string;
   description?: string;
+  assistant_hint?: string;
   input_schema?: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
   affected_anchors?: string[];
   error_codes?: string[];
 }
 
-export interface ViewStateSummarySchema extends Record<string, unknown> {
-  type: "object";
-  properties: Record<string, unknown>;
-  required?: string[];
+export interface ViewEventHint {
+  type: string;
+  description: string;
+  match_fields?: string[];
+}
+
+export interface ViewInteractionHints {
+  interaction_intent: string;
+  recommended_flow?: string[];
+  key_events?: ViewEventHint[];
 }
 
 export type ViewStateMode = "stateful" | "lightweight";
 
-export function cloneViewStateSummarySchema(
-  schema: ViewStateSummarySchema
-): ViewStateSummarySchema {
-  return JSON.parse(JSON.stringify(schema)) as ViewStateSummarySchema;
+export interface ViewPersistenceStateSnapshot {
+  resource: ViewResourceBinding;
+  activeAnchor?: string;
 }
 
-export interface ViewManifest {
+export interface ViewPersistenceConfig {
+  version: number;
+  debounce_ms?: number;
+  getResourceKey: (resource: ViewResourceBinding) => string;
+  serialize: (snapshot: ViewPersistenceStateSnapshot) => Record<string, unknown>;
+  deserialize: (payload: Record<string, unknown>) => ViewPersistenceStateSnapshot;
+  migrate?: (raw: Record<string, unknown>, fromVersion: number) => Record<string, unknown>;
+}
+
+export function cloneViewInteractionHints(
+  hints?: ViewInteractionHints
+): ViewInteractionHints | undefined {
+  return hints ? JSON.parse(JSON.stringify(hints)) as ViewInteractionHints : undefined;
+}
+
+export interface ViewRouteDefinition {
+  path: string;
+  name: string;
+  full_path: string;
+}
+
+export interface DefineViewInput {
+  view_id: string;
+  resource_type: string;
+  title: string;
+  component: Component;
+  state_mode: ViewStateMode;
+  default_resource: ViewResourceBinding;
+  anchors?: ViewAnchorDefinition[];
+  capabilities?: ViewCapabilityDefinition[];
+  interaction_hints?: ViewInteractionHints;
+  persistence?: ViewPersistenceConfig;
+  normalizeResource?: (
+    payload: Record<string, unknown>
+  ) => Promise<ViewResourceBinding | ViewOperationFailure> | ViewResourceBinding | ViewOperationFailure;
+  open?: (payload: Record<string, unknown>) => Promise<ViewOpenResult> | ViewOpenResult;
+  invokeCapability?: (
+    capabilityId: string,
+    input: Record<string, unknown>,
+    resource: ViewResourceBinding
+  ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
+  getStateSummary: (
+    resource: ViewResourceBinding,
+    activeAnchor?: string
+  ) => Record<string, unknown>;
+}
+
+export interface ViewRegistration {
+  view_id: string;
+  resource_type: string;
+  title: string;
+  component: Component;
+  route: ViewRouteDefinition;
+  state_mode: ViewStateMode;
+  default_resource: ViewResourceBinding;
+  anchors: ViewAnchorDefinition[];
+  capabilities: ViewCapabilityDefinition[];
+  interaction_hints?: ViewInteractionHints;
+  persistence?: ViewPersistenceConfig;
+  normalizeResource?: (
+    payload: Record<string, unknown>
+  ) => Promise<ViewResourceBinding | ViewOperationFailure> | ViewResourceBinding | ViewOperationFailure;
+  open?: (payload: Record<string, unknown>) => Promise<ViewOpenResult> | ViewOpenResult;
+  invokeCapability?: (
+    capabilityId: string,
+    input: Record<string, unknown>,
+    resource: ViewResourceBinding
+  ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
+  getStateSummary: (
+    resource: ViewResourceBinding,
+    activeAnchor?: string
+  ) => Record<string, unknown>;
+}
+
+export interface ViewManifestSnapshot {
   view_id: string;
   resource_type: string;
   title: string;
   route_name: string;
   route_path: string;
-  // `stateful` views own their real state and persistence strategy.
-  // `lightweight` views are assistant-facing helper surfaces and should not
-  // assume automatic restore from runtime snapshots.
   state_mode: ViewStateMode;
   anchors: ViewAnchorDefinition[];
   capabilities: ViewCapabilityDefinition[];
-  resource_contract: ViewResourceContract;
-  state_summary_schema: ViewStateSummarySchema;
-}
-
-export interface ViewManifestSnapshot extends ViewManifest {
+  interaction_hints?: ViewInteractionHints;
   state_summary: Record<string, unknown>;
 }
 
@@ -89,24 +157,38 @@ export interface ViewCapabilitySuccess {
 
 export type ViewCapabilityResult = ViewCapabilitySuccess | ViewOperationFailure;
 
-export interface ViewRouteDefinition {
-  path: string;
-  name: string;
-  component: Component;
+export function buildViewRouteDefinition(
+  viewId: string
+): ViewRouteDefinition {
+  const normalized = viewId.trim();
+  const path = normalized.replace(/\./g, "/");
+  return {
+    path,
+    name: `view-${normalized.replace(/\./g, "-")}`,
+    full_path: `/views/${path}`,
+  };
 }
 
-export interface ViewRegistration {
-  manifest: ViewManifest;
-  route: ViewRouteDefinition;
-  createDefaultResource: () => ViewResourceBinding;
-  open?: (payload: Record<string, unknown>) => Promise<ViewOpenResult> | ViewOpenResult;
-  invokeCapability?: (
-    capabilityId: string,
-    input: Record<string, unknown>,
-    resource: ViewResourceBinding
-  ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
-  buildStateSummary: (
-    resource: ViewResourceBinding,
-    activeAnchor?: string
-  ) => Record<string, unknown>;
+export function defineView(
+  input: DefineViewInput
+): ViewRegistration {
+  return {
+    view_id: input.view_id,
+    resource_type: input.resource_type,
+    title: input.title,
+    component: input.component,
+    route: buildViewRouteDefinition(input.view_id),
+    state_mode: input.state_mode,
+    default_resource: JSON.parse(JSON.stringify(input.default_resource)) as ViewResourceBinding,
+    anchors: input.anchors ? JSON.parse(JSON.stringify(input.anchors)) as ViewAnchorDefinition[] : [],
+    capabilities: input.capabilities
+      ? JSON.parse(JSON.stringify(input.capabilities)) as ViewCapabilityDefinition[]
+      : [],
+    interaction_hints: cloneViewInteractionHints(input.interaction_hints),
+    persistence: input.persistence,
+    normalizeResource: input.normalizeResource,
+    open: input.open,
+    invokeCapability: input.invokeCapability,
+    getStateSummary: input.getStateSummary,
+  };
 }

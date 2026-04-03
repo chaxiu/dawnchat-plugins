@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-import { cloneViewStateSummarySchema } from "./manifest";
+import { cloneViewInteractionHints } from "./manifest";
 import type { ViewManifestSnapshot, ViewResourceBinding } from "./manifest";
 
 export interface ViewStateSnapshot {
@@ -53,17 +53,10 @@ function cloneManifest(manifest: ViewManifestSnapshot): ViewManifestSnapshot {
     capabilities: manifest.capabilities.map((capability) => ({
       ...capability,
       input_schema: capability.input_schema ? cloneRecord(capability.input_schema) : undefined,
-      output_schema: capability.output_schema ? cloneRecord(capability.output_schema) : undefined,
       affected_anchors: capability.affected_anchors ? [...capability.affected_anchors] : undefined,
       error_codes: capability.error_codes ? [...capability.error_codes] : undefined,
     })),
-    resource_contract: {
-      resource_schema: cloneRecord(manifest.resource_contract.resource_schema),
-      open_payload_schema: cloneRecord(manifest.resource_contract.open_payload_schema),
-      default_resource: cloneResource(manifest.resource_contract.default_resource),
-      error_codes: manifest.resource_contract.error_codes ? [...manifest.resource_contract.error_codes] : undefined,
-    },
-    state_summary_schema: cloneViewStateSummarySchema(manifest.state_summary_schema),
+    interaction_hints: cloneViewInteractionHints(manifest.interaction_hints),
     state_summary: cloneRecord(manifest.state_summary),
   };
 }

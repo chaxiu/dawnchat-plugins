@@ -10,13 +10,12 @@ import type {
   ViewRegistration,
   ViewResourceBinding,
 } from "./manifest";
-import { cloneViewStateSummarySchema } from "./manifest";
+import { cloneViewInteractionHints } from "./manifest";
 import type {
   ActiveResourceContext,
   SessionContinuation,
   SessionTaskProgress,
 } from "../observation/types";
-import { assertValidViewStateSummary } from "./stateSummaryValidation";
 
 export type ViewActionHandler = (
   payload: Record<string, unknown>,
@@ -60,7 +59,6 @@ export function cloneCapabilityDefinition(capability: ViewCapabilityDefinition):
   return {
     ...capability,
     input_schema: capability.input_schema ? cloneSchema(capability.input_schema) : undefined,
-    output_schema: capability.output_schema ? cloneSchema(capability.output_schema) : undefined,
     affected_anchors: capability.affected_anchors ? [...capability.affected_anchors] : undefined,
     error_codes: capability.error_codes ? [...capability.error_codes] : undefined,
   };
@@ -77,36 +75,23 @@ export function createManifestSnapshot(
   resource: ViewResourceBinding,
   activeAnchor?: string
 ): ViewManifestSnapshot {
-  const stateSummary = registration.buildStateSummary(resource, activeAnchor);
-  assertValidViewStateSummary(
-    registration.manifest.view_id,
-    registration.manifest.state_summary_schema,
-    stateSummary
-  );
+  const stateSummary = registration.getStateSummary(resource, activeAnchor);
   return {
-    view_id: registration.manifest.view_id,
-    resource_type: registration.manifest.resource_type,
-    title: registration.manifest.title,
-    route_name: registration.manifest.route_name,
-    route_path: registration.manifest.route_path,
-    state_mode: registration.manifest.state_mode,
-    anchors: registration.manifest.anchors.map((anchor) => ({ ...anchor })),
-    capabilities: registration.manifest.capabilities.map(cloneCapabilityDefinition),
-    resource_contract: {
-      resource_schema: cloneSchema(registration.manifest.resource_contract.resource_schema),
-      open_payload_schema: cloneSchema(registration.manifest.resource_contract.open_payload_schema),
-      default_resource: cloneResource(registration.manifest.resource_contract.default_resource),
-      error_codes: registration.manifest.resource_contract.error_codes
-        ? [...registration.manifest.resource_contract.error_codes]
-        : undefined,
-    },
-    state_summary_schema: cloneViewStateSummarySchema(registration.manifest.state_summary_schema),
+    view_id: registration.view_id,
+    resource_type: registration.resource_type,
+    title: registration.title,
+    route_name: registration.route.name,
+    route_path: registration.route.full_path,
+    state_mode: registration.state_mode,
+    anchors: registration.anchors.map((anchor) => ({ ...anchor })),
+    capabilities: registration.capabilities.map(cloneCapabilityDefinition),
+    interaction_hints: cloneViewInteractionHints(registration.interaction_hints),
     state_summary: stateSummary,
   };
 }
 
 export function hasAnchor(registration: ViewRegistration, anchorId: string): boolean {
-  return registration.manifest.anchors.some((anchor) => anchor.id === anchorId);
+  return registration.anchors.some((anchor) => anchor.id === anchorId);
 }
 
 export function hasCapability(
@@ -152,7 +137,7 @@ export function applyViewState(
 ): ViewManifestSnapshot {
   const manifest = createManifestSnapshot(registration, resource, activeAnchor);
   deps.setActiveViewState({
-    viewId: registration.manifest.view_id,
+    viewId: registration.view_id,
     activeAnchor,
     resource,
     manifest,
@@ -164,7 +149,7 @@ export function applyViewState(
     step_id: options?.context?.stepId,
     payload: {
       trigger: options?.trigger,
-      view_id: registration.manifest.view_id,
+      view_id: registration.view_id,
       active_anchor: activeAnchor || "",
       resource_type: resource.resource_type,
       resource_id: resource.resource_id,

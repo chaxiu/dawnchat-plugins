@@ -3,10 +3,20 @@ const props = defineProps<{
   title?: string;
   data: Record<string, unknown>;
 }>();
+const emit = defineEmits<{
+  completed: [{ reason?: string; dismiss_after_ms?: number }];
+}>();
 
 const mediaType = String(props.data.media_type || "image");
 const src = String(props.data.src || "");
 const caption = String(props.data.caption || "");
+
+function onPlaybackEnded() {
+  emit("completed", {
+    reason: "media_playback_completed",
+    dismiss_after_ms: 2400,
+  });
+}
 </script>
 
 <template>
@@ -16,25 +26,25 @@ const caption = String(props.data.caption || "");
       <h3>{{ title || "多媒体卡片" }}</h3>
     </header>
     <img v-if="mediaType === 'image' && src" :src="src" :alt="caption || 'image'" class="media" />
-    <video v-else-if="mediaType === 'video' && src" :src="src" controls class="media" />
-    <audio v-else-if="mediaType === 'audio' && src" :src="src" controls class="media" />
+    <video v-else-if="mediaType === 'video' && src" :src="src" controls class="media" @ended="onPlaybackEnded" />
+    <audio v-else-if="mediaType === 'audio' && src" :src="src" controls class="media" @ended="onPlaybackEnded" />
     <p v-if="caption" class="caption">{{ caption }}</p>
   </section>
 </template>
 
 <style scoped>
 .card {
-  border: 1px solid var(--line-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 18px;
-  padding: 18px;
-  background: var(--surface-card);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.7));
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.16);
 }
 .card-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .chip {
   font-size: 0.72rem;

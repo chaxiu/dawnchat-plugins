@@ -10,6 +10,7 @@ import { createViewDescribeCapabilityRegistration } from "../view";
 
 const createDeps = (): SessionStepExecutorDeps => ({
   setCurrentCard: vi.fn(() => 1),
+  scheduleDismissCurrentCard: vi.fn(),
   setActiveTip: vi.fn(),
   setNarrationState: vi.fn(),
   setActiveViewState: vi.fn(() => 1),
@@ -36,33 +37,28 @@ const createDeps = (): SessionStepExecutorDeps => ({
       route_path: "/views/word/main",
       state_mode: "lightweight" as const,
       anchors: [
-        { id: "word.header", title: "Header", description: "单词标题与概览区域" },
-        { id: "word.meaning", title: "Meaning", description: "单词释义与讲解重点区域" },
-        { id: "word.etymology", title: "Etymology", description: "词源与扩展信息区域" },
+        { id: "word.header", title: "Header", description: "Word title and overview area." },
+        { id: "word.meaning", title: "Meaning", description: "Primary meaning and explanation area." },
+        { id: "word.etymology", title: "Etymology", description: "Etymology and extension notes area." },
       ],
       capabilities: [
         {
           id: "highlight_meaning",
+          mode: "read" as const,
           title: "Highlight Meaning",
-          description: "将页面焦点切换到词义区域",
+          description: "Move the current page focus to the meaning section.",
           input_schema: {
             type: "object",
             properties: {},
-          },
-          output_schema: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              highlighted_anchor: { type: "string" },
-            },
           },
           affected_anchors: ["word.meaning"],
           error_codes: [],
         },
         {
           id: "append_etymology",
+          mode: "write" as const,
           title: "Append Etymology",
-          description: "向词源列表追加条目",
+          description: "Append new entries to the etymology list.",
           input_schema: {
             type: "object",
             properties: {
@@ -74,24 +70,14 @@ const createDeps = (): SessionStepExecutorDeps => ({
             },
             required: ["items"],
           },
-          output_schema: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              appended_count: { type: "number" },
-              appended_items: {
-                type: "array",
-                items: { type: "string" },
-              },
-            },
-          },
           affected_anchors: ["word.etymology"],
           error_codes: ["invalid_view_capability_input"],
         },
         {
           id: "set_title",
+          mode: "write" as const,
           title: "Set Title",
-          description: "更新当前单词页面标题",
+          description: "Update the current page title.",
           input_schema: {
             type: "object",
             properties: {
@@ -99,49 +85,10 @@ const createDeps = (): SessionStepExecutorDeps => ({
             },
             required: ["title"],
           },
-          output_schema: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              title: { type: "string" },
-            },
-          },
           affected_anchors: ["word.header"],
           error_codes: ["invalid_view_capability_input"],
         },
       ],
-      resource_contract: {
-        resource_schema: {
-          type: "object",
-          properties: {
-            resource_type: { type: "string", enum: ["word"] },
-          },
-        },
-        open_payload_schema: {
-          type: "object",
-          properties: {
-            view_id: { type: "string" },
-          },
-        },
-        default_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
-          title: "词汇讲解",
-          data: {
-            word: "Assistant",
-            meaning: "你的自进化智能助理",
-            etymology: ["支持富媒体呈现"],
-          },
-        },
-        error_codes: ["invalid_view_resource", "anchor_not_found"],
-      },
-      state_summary_schema: {
-        type: "object" as const,
-        properties: {
-          word: { type: "string" },
-          active_anchor: { type: "string" },
-        },
-      },
       state_summary: {
         word: "Assistant",
         active_anchor: "word.header",
@@ -199,6 +146,37 @@ describe("session step executor", () => {
     });
   });
 
+  it("passes card auto dismiss options from guide.card.show payload", async () => {
+    const deps = createDeps();
+    const handler = createSessionStepHandler(deps);
+    await handler({
+      session_id: sessionId,
+      step_id: "step-card-dismiss",
+      action: {
+        type: `guide.${GUIDE_ACTIONS.CARD_SHOW}`,
+        payload: {
+          card_type: "word",
+          title: "自动隐藏卡片",
+          data: {
+            word: "dismiss",
+          },
+          dismiss_after_ms: 1500,
+        },
+      },
+    }, {});
+
+    expect(deps.setCurrentCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        card_type: "word",
+        title: "自动隐藏卡片",
+      }),
+      expect.objectContaining({
+        dismissAfterMs: 1500,
+        dismissReason: "card_show_auto_dismiss",
+      })
+    );
+  });
+
   it("returns invalid_step when action.type is missing", async () => {
     const handler = createSessionStepHandler(createDeps());
     const result = await handler({
@@ -238,7 +216,7 @@ describe("session step executor", () => {
       action: {
         type: "route.goto",
         payload: {
-          path: "/playground",
+          path: "/removed-scene",
         },
       },
     }, {});
@@ -357,6 +335,92 @@ describe("session step executor", () => {
     });
   });
 
+  it("supports the tictactoe validation path across view.open then flow.wait", async () => {
+    const deps = createDeps();
+    const eventBus = createAssistantEventBus();
+    const handler = createSessionStepHandler({
+      ...deps,
+      eventBus,
+    });
+
+    const openResult = await handler({
+      session_id: sessionId,
+      step_id: "step-open-tictactoe",
+      action: {
+        type: "view.open",
+        payload: {
+          view_id: "tictactoe.main",
+          resource: {
+            resource_type: "tictactoe.game",
+            title: "Flow Wait Arena",
+            data: {
+              cells: Array.from({ length: 25 }, () => ""),
+              current_player: "X",
+              move_count: 0,
+              winner: "",
+              status: "playing",
+              last_move: null,
+              winning_cells: [],
+            },
+          },
+          initial_anchor: "tictactoe.board",
+        },
+      },
+    }, {});
+
+    expect(openResult).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        view_id: "tictactoe.main",
+        active_anchor: "tictactoe.board",
+        route_path: "/views/tictactoe/main",
+        session_id: sessionId,
+        step_id: "step-open-tictactoe",
+      }),
+    });
+
+    const waitPromise = handler({
+      session_id: sessionId,
+      step_id: "step-wait-tictactoe-move",
+      action: {
+        type: "flow.wait",
+        payload: {
+          event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.TICTACTOE_CELL_SELECTED],
+          match: {
+            move_index: 12,
+            player: "X",
+          },
+          timeout_ms: 200,
+        },
+      },
+    }, {});
+    await Promise.resolve();
+    const matchedEvent = eventBus.emit({
+      type: ASSISTANT_RUNTIME_EVENT_TYPES.TICTACTOE_CELL_SELECTED,
+      source: "view",
+      payload: {
+        view_id: "tictactoe.main",
+        move_index: 12,
+        row: 2,
+        col: 2,
+        player: "X",
+        move_count: 1,
+        game_status: "playing",
+      },
+    });
+
+    await expect(waitPromise).resolves.toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        status: "matched",
+        matched_event: matchedEvent,
+        session_id: sessionId,
+        step_id: "step-wait-tictactoe-move",
+        action_type: "flow.wait",
+      }),
+    });
+  });
+
   it("forwards step index metadata into flow.wait continuation updates", async () => {
     const onFlowWaitStateChanged = vi.fn();
     const eventBus = createAssistantEventBus();
@@ -415,9 +479,7 @@ describe("session step executor", () => {
       error_code: "flow_wait_timeout",
       message: "flow.wait timed out before matching any event",
       data: {
-        latest_seq: 2,
         waited_event_types: [ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_FAILED],
-        recent_events: [],
       },
     });
   });
@@ -493,56 +555,6 @@ describe("session step executor", () => {
       ok: false,
       error_code: "invalid_view_resource",
       message: "word.main requires resource.data.word to be a non-empty string",
-    });
-  });
-
-  it("opens article.main without changing runtime dispatcher semantics", async () => {
-    const deps = createDeps();
-    const handler = createSessionStepHandler(deps);
-    const result = await handler({
-      session_id: sessionId,
-      step_id: "step-article-open",
-      action: {
-        type: "view.open",
-        payload: {
-          view_id: "article.main",
-          resource: {
-            resource_type: "article",
-            title: "Phase 9 Validation",
-            data: {
-              summary: "用最小第二场景验证模板能力。",
-              sections: ["Contract hardening", "Workspace half-step"],
-              annotations: ["No runtime rewrite"],
-              tags: ["phase9", "validation"],
-            },
-          },
-          initial_anchor: "article.summary",
-        },
-      },
-    }, {});
-    expect(deps.setActiveViewState).toHaveBeenCalledWith(
-      expect.objectContaining({
-        viewId: "article.main",
-        activeAnchor: "article.summary",
-        resource: expect.objectContaining({
-          resource_type: "article",
-          title: "Phase 9 Validation",
-        }),
-      })
-    );
-    expect(deps.navigateToView).toHaveBeenCalledWith("article.main");
-    expect(result).toEqual({
-      ok: true,
-      data: expect.objectContaining({
-        status: "applied",
-        view_id: "article.main",
-        active_anchor: "article.summary",
-        route_path: "/views/article/main",
-        resource_type: "article",
-        session_id: sessionId,
-        step_id: "step-article-open",
-        action_type: "view.open",
-      }),
     });
   });
 
@@ -852,6 +864,7 @@ describe("session step executor", () => {
         text: "hello world",
       })
     );
+    expect(deps.scheduleDismissCurrentCard).toHaveBeenCalledWith(2200, "narration_completed");
     expect(result).toEqual({
       ok: true,
       data: {
@@ -1213,29 +1226,17 @@ describe("session step executor", () => {
             status: "completed",
           }),
         }),
-        available_views: expect.arrayContaining([
-          expect.objectContaining({
-            view_id: "article.main",
-            route_path: "/views/article/main",
-          }),
-          expect.objectContaining({
-            view_id: "word.main",
-            route_path: "/views/word/main",
-            resource_contract: expect.objectContaining({
-              resource_schema: expect.any(Object),
-            }),
-            capabilities: expect.arrayContaining([
-              expect.objectContaining({
-                id: "append_etymology",
-                input_schema: expect.any(Object),
-                affected_anchors: ["word.etymology"],
-              }),
-            ]),
-          }),
-        ]),
         requested_view: expect.objectContaining({
           view_id: "word.main",
           route_path: "/views/word/main",
+          capabilities: expect.arrayContaining([
+            expect.objectContaining({
+              id: "append_etymology",
+              mode: "write",
+              input_schema: expect.any(Object),
+              affected_anchors: ["word.etymology"],
+            }),
+          ]),
         }),
       }),
     });

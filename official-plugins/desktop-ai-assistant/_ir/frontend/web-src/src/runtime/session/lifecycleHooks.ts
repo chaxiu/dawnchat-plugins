@@ -6,7 +6,6 @@ interface SessionLifecycleObservationStore {
   patchContinuation: (partialContinuation: {
     last_completed_step_index?: number;
     last_completed_step_id?: string;
-    event_cursor_seq?: number;
     pending_wait?: FlowWaitStateChange["pendingWait"];
   }) => void;
 }
@@ -124,14 +123,11 @@ export function createSessionLifecycleHooks(deps: SessionLifecycleHooksDeps) {
     onFlowWaitStateChanged: ({
       status,
       sessionId,
-      stepId,
       stepIndex,
       totalSteps,
-      eventCursorSeq,
       pendingWait,
     }: FlowWaitStateChange) => {
       deps.observationStore.patchContinuation({
-        event_cursor_seq: eventCursorSeq,
         pending_wait: pendingWait,
       });
       if (status === "waiting") {

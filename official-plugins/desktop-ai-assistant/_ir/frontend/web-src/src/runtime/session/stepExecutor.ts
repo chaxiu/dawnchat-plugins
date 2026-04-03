@@ -7,7 +7,11 @@ import type {
 } from "../contracts/sessionStep";
 import { createFlowRuntime, type FlowWaitStateChange } from "../flowRuntime";
 import { createGuideRuntime } from "../guide/runtime";
-import type { GuideNarrationState, GuideTipPayload } from "../guide/state";
+import type {
+  GuideCardLifecycleOptions,
+  GuideNarrationState,
+  GuideTipPayload,
+} from "../guide/state";
 import { createViewRuntime } from "../view";
 import { ASSISTANT_RUNTIME_EVENT_TYPES, type AssistantEventBus, type AssistantRuntimeEventInput } from "../events";
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "../view";
@@ -33,7 +37,8 @@ interface ActiveStepExecution {
 }
 
 export interface SessionStepExecutorDeps {
-  setCurrentCard: (card: AssistantCardPayload) => number;
+  setCurrentCard: (card: AssistantCardPayload, options?: GuideCardLifecycleOptions) => number;
+  scheduleDismissCurrentCard?: (delayMs: number, reason?: string) => void;
   setActiveTip: (tip: GuideTipPayload | null) => void;
   setNarrationState: (state: GuideNarrationState) => void;
   setActiveViewState: (state: SetActiveViewStateInput) => number;

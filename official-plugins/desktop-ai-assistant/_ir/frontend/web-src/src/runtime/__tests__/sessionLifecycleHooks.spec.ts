@@ -47,7 +47,6 @@ describe("session lifecycle hooks", () => {
       stepId: "step-wait",
       stepIndex: 2,
       totalSteps: 5,
-      eventCursorSeq: 12,
       pendingWait: {
         action_type: "flow.wait",
         session_id: "sess-wait",
@@ -59,13 +58,11 @@ describe("session lifecycle hooks", () => {
           confirm_id: "confirm-delete",
         },
         timeout_ms: 30000,
-        event_cursor_seq: 12,
         waiting_since_ms: 100,
       },
     });
 
     expect(observationStore.patchContinuation).toHaveBeenCalledWith({
-      event_cursor_seq: 12,
       pending_wait: expect.objectContaining({
         event_types: ["assistant.guide.confirm.responded"],
       }),

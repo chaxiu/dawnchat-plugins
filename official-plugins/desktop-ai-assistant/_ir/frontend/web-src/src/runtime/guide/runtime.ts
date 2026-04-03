@@ -5,13 +5,18 @@ import { GUIDE_ACTIONS, type GuideActionName } from "./actions";
 import { hostVoiceSpeak, hostVoiceStatus, hostVoiceStop } from "../hostBridge";
 import type { AssistantCardPayload } from "../../cards/types";
 import type { GuideNarrationState, GuideTipPayload } from "./state";
+import { GUIDE_CARD_AUTO_DISMISS_DELAY_MS } from "../assistantUiLayout";
 type GuideActionHandler = (
   payload: Record<string, unknown>,
   context: SessionStepRuntimeContext
 ) => StepActionResult;
 
 export interface GuideRuntimeDeps {
-  setCurrentCard: (card: AssistantCardPayload) => number;
+  setCurrentCard: (
+    card: AssistantCardPayload,
+    options?: { dismissAfterMs?: number; dismissReason?: string }
+  ) => number;
+  scheduleDismissCurrentCard?: (delayMs: number, reason?: string) => void;
   setActiveTip: (tip: GuideTipPayload | null) => void;
   setNarrationState: (state: GuideNarrationState) => void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
@@ -60,6 +65,14 @@ function isCancelledVoiceResult(result: Record<string, unknown>, cancelRequested
   return status === "cancelled";
 }
 
+function resolveDismissAfterMs(payload: Record<string, unknown>): number | undefined {
+  const value = payload.dismiss_after_ms;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return undefined;
+  }
+  return value;
+}
+
 export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers {
   const emitNarrateEvent = (
     type:
@@ -81,6 +94,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
   return {
     [GUIDE_ACTIONS.CARD_SHOW]: (payload, context) => {
       const normalized = toAssistantCardPayload(payload);
+      const dismissAfterMs = resolveDismissAfterMs(payload);
       deps.setCurrentCard({
         ...normalized,
         data: {
@@ -88,6 +102,9 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
           session_id: context.sessionId,
           step_id: context.stepId,
         },
+      }, {
+        dismissAfterMs,
+        dismissReason: dismissAfterMs !== undefined ? "card_show_auto_dismiss" : undefined,
       });
       return {
         ok: true,
@@ -172,6 +189,7 @@ export function createGuideRuntime(deps: GuideRuntimeDeps): GuideRuntimeHandlers
         };
       }
       deps.setNarrationState(buildNarrationState("completed", text));
+      deps.scheduleDismissCurrentCard?.(GUIDE_CARD_AUTO_DISMISS_DELAY_MS, "narration_completed");
       emitNarrateEvent(ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_NARRATE_COMPLETED, context, {
         text,
       });

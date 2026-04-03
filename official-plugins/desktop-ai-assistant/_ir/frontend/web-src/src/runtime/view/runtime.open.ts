@@ -28,18 +28,31 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         message: `View not found: ${viewId}`,
       };
     }
-    const openResult = registration.open
-      ? await registration.open(input)
-      : { resource: registration.createDefaultResource() };
+    let openResult:
+      | Awaited<ReturnType<NonNullable<typeof registration.open>>>
+      | Awaited<ReturnType<NonNullable<typeof registration.normalizeResource>>>
+      | { resource: ReturnType<typeof cloneResource> };
+    if (registration.open) {
+      openResult = await registration.open(input);
+    } else if (registration.normalizeResource) {
+      const normalized = await registration.normalizeResource(toRecord(input.resource));
+      openResult = "resource_type" in normalized ? { resource: normalized } : normalized;
+    } else {
+      openResult = { resource: cloneResource(registration.default_resource) };
+    }
     if (isOpenFailure(openResult)) {
       return openResult;
     }
-    const resource = cloneResource(openResult.resource || registration.createDefaultResource());
+    const resource = cloneResource(
+      "resource" in openResult && openResult.resource
+        ? openResult.resource
+        : registration.default_resource
+    );
     const requestedAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
     const activeAnchor =
       requestedAnchor
-      || openResult.activeAnchor
-      || registration.manifest.anchors[0]?.id
+      || ("activeAnchor" in openResult ? openResult.activeAnchor : "")
+      || registration.anchors[0]?.id
       || "";
     if (activeAnchor && !hasAnchor(registration, activeAnchor)) {
       return {
@@ -59,10 +72,10 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         status: "applied",
         view_id: viewId,
         active_anchor: activeAnchor,
-        route_path: registration.manifest.route_path,
+        route_path: registration.route.full_path,
         resource_type: resource.resource_type,
         manifest,
-        ...toRecord(openResult.data),
+        ...("data" in openResult ? toRecord(openResult.data) : {}),
       },
     };
   };

@@ -3,11 +3,17 @@ import { listViewRegistrations } from "./registry";
 import {
   cloneCapabilityDefinition,
   cloneResource,
-  cloneSchema,
   type ViewRuntimeDeps,
   toRecord,
 } from "./runtime.shared";
-import { cloneViewStateSummarySchema } from "./manifest";
+import { cloneViewInteractionHints } from "./manifest";
+
+function buildViewListSchema(): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {},
+  };
+}
 
 function buildViewDescribeSchema(): Record<string, unknown> {
   return {
@@ -20,23 +26,81 @@ function buildViewDescribeSchema(): Record<string, unknown> {
 
 function buildViewDescribeItem(registration: ReturnType<typeof listViewRegistrations>[number]) {
   return {
-    view_id: registration.manifest.view_id,
-    resource_type: registration.manifest.resource_type,
-    title: registration.manifest.title,
-    route_name: registration.manifest.route_name,
-    route_path: registration.manifest.route_path,
-    state_mode: registration.manifest.state_mode,
-    anchors: registration.manifest.anchors.map((anchor) => ({ ...anchor })),
-    capabilities: registration.manifest.capabilities.map(cloneCapabilityDefinition),
-    resource_contract: {
-      resource_schema: cloneSchema(registration.manifest.resource_contract.resource_schema),
-      open_payload_schema: cloneSchema(registration.manifest.resource_contract.open_payload_schema),
-      default_resource: cloneResource(registration.manifest.resource_contract.default_resource),
-      error_codes: registration.manifest.resource_contract.error_codes
-        ? [...registration.manifest.resource_contract.error_codes]
-        : undefined,
+    view_id: registration.view_id,
+    resource_type: registration.resource_type,
+    title: registration.title,
+    route_name: registration.route.name,
+    route_path: registration.route.full_path,
+    state_mode: registration.state_mode,
+    anchors: registration.anchors.map((anchor) => ({ ...anchor })),
+    capabilities: registration.capabilities.map(cloneCapabilityDefinition),
+    interaction_hints: cloneViewInteractionHints(registration.interaction_hints),
+  };
+}
+
+function buildViewCatalogItem(
+  registration: ReturnType<typeof listViewRegistrations>[number],
+  activeViewId: string,
+  currentSummary: Record<string, unknown>
+) {
+  const interactionHints = cloneViewInteractionHints(registration.interaction_hints);
+  const item: Record<string, unknown> = {
+    view_id: registration.view_id,
+    title: registration.title,
+    resource_type: registration.resource_type,
+    state_mode: registration.state_mode,
+    description: interactionHints?.interaction_intent || registration.title,
+    is_active: registration.view_id === activeViewId,
+    capabilities: registration.capabilities.map((capability) => ({
+      id: capability.id,
+      mode: capability.mode,
+      title: capability.title,
+      input_schema: capability.input_schema ? { ...capability.input_schema } : undefined,
+    })),
+  };
+  if (Array.isArray(interactionHints?.recommended_flow) && interactionHints.recommended_flow.length > 0) {
+    item.recommended_flow = [...interactionHints.recommended_flow];
+  }
+  if (item.is_active && Object.keys(currentSummary).length > 0) {
+    item.current_state_summary = { ...currentSummary };
+  }
+  return item;
+}
+
+export function createViewListCapabilityRegistration(
+  deps: ViewRuntimeDeps
+): UiCapabilityRegistration {
+  const handler: UiCapabilityHandler = async () => {
+    const currentSnapshot = deps.getViewStateSnapshot();
+    const activeViewId = currentSnapshot.active_view_id;
+    const currentSummary = currentSnapshot.active_manifest?.state_summary || {};
+    const views = listViewRegistrations().map((registration) =>
+      buildViewCatalogItem(registration, activeViewId, currentSummary)
+    );
+
+    return {
+      ok: true,
+      data: {
+        views,
+        active_view_id: activeViewId,
+        functions: [
+          {
+            name: "assistant.view.describe",
+            description: "Inspect one specific view definition or the current active view state.",
+            input_schema: buildViewDescribeSchema(),
+          },
+        ],
+      },
+    };
+  };
+
+  return {
+    definition: {
+      name: "assistant.view.list",
+      description: "List all registered assistant view scenes as a feature catalog",
+      input_schema: buildViewListSchema(),
     },
-    state_summary_schema: cloneViewStateSummarySchema(registration.manifest.state_summary_schema),
+    handler,
   };
 }
 
@@ -46,15 +110,15 @@ export function createViewDescribeCapabilityRegistration(
   const handler: UiCapabilityHandler = async (rawPayload) => {
     const payload = toRecord(rawPayload);
     const requestedViewId = typeof payload.view_id === "string" ? payload.view_id.trim() : "";
-    const availableViews = listViewRegistrations().map(buildViewDescribeItem);
     const currentSnapshot = deps.getViewStateSnapshot();
     const guideState = deps.getGuideStateSnapshot?.() || null;
     const taskProgress = deps.getTaskProgressSnapshot?.() || null;
     const activeResourceContext = deps.getActiveResourceContextSnapshot?.() || null;
     const continuation = deps.getContinuationSnapshot?.() || null;
-    const requestedManifest = requestedViewId
-      ? availableViews.find((view) => view.view_id === requestedViewId) || null
+    const requestedRegistration = requestedViewId
+      ? listViewRegistrations().find((registration) => registration.view_id === requestedViewId)
       : null;
+    const requestedView = requestedRegistration ? buildViewDescribeItem(requestedRegistration) : null;
 
     return {
       ok: true,
@@ -71,8 +135,7 @@ export function createViewDescribeCapabilityRegistration(
         task_progress: taskProgress,
         active_resource_context: activeResourceContext,
         continuation,
-        available_views: availableViews,
-        requested_view: requestedManifest,
+        requested_view: requestedView,
       },
     };
   };
@@ -80,7 +143,7 @@ export function createViewDescribeCapabilityRegistration(
   return {
     definition: {
       name: "assistant.view.describe",
-      description: "Describe registered views and return the current assistant-facing runtime observation",
+      description: "Describe registered views and return the current assistant-facing runtime state",
       input_schema: buildViewDescribeSchema(),
     },
     handler,

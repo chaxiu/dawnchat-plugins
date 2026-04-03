@@ -35,6 +35,6 @@
 
 - Treat `assistant.view.describe` as the page and runtime observation entrypoint.
 - If continuation state is reported, inspect `continuation` first.
-- Use `continuation.pending_wait` and `continuation.event_cursor_seq` to decide whether a follow-up `dawnchat.ui.session.wait` is more appropriate than a fresh session.
+- Use `continuation.pending_wait` to decide whether a follow-up `dawnchat.ui.event.wait(...)` or `dawnchat.ui.session.wait_for_end(session_id)` is more appropriate than a fresh session.
 - If `continuation.pending_wait` exists, prefer `assistant-wait-continuation-handoff` and a short wait-aware continuation instead of replaying the whole prior sequence.
 - Do not let stale continuation state override the current task intent.

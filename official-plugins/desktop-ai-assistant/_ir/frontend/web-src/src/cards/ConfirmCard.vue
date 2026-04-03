@@ -8,6 +8,9 @@ const props = defineProps<{
   title?: string;
   data: Record<string, unknown>;
 }>();
+const emit = defineEmits<{
+  completed: [{ reason?: string; dismiss_after_ms?: number }];
+}>();
 
 const question = String(props.data.question || props.data.message || "");
 const confirmId = String(props.data.confirm_id || props.data.id || "confirm-card");
@@ -43,6 +46,10 @@ function respond(confirmed: boolean) {
       confirmed,
       response: responded.value,
     },
+  });
+  emit("completed", {
+    reason: "confirm_responded",
+    dismiss_after_ms: 1800,
   });
 }
 </script>
@@ -80,11 +87,11 @@ function respond(confirmed: boolean) {
 
 <style scoped>
 .card {
-  border: 1px solid var(--line-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 18px;
-  padding: 18px;
-  background: var(--surface-card);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.7));
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.16);
 }
 .card-head {
   display: flex;
@@ -107,7 +114,7 @@ h3 {
   color: #eff6ff;
 }
 .question {
-  margin: 12px 0 14px;
+  margin: 12px 0 12px;
   font-weight: 600;
   color: #e2e8f0;
   line-height: 1.5;
@@ -144,7 +151,7 @@ h3 {
 }
 .response-note {
   margin: 0;
-  color: #bfdbfe;
+  color: #c7d2fe;
   font-size: 0.92rem;
 }
 </style>

@@ -28,23 +28,6 @@ describe("runtime observation store", () => {
             { id: "word.meaning", title: "Meaning" },
           ],
           capabilities: [],
-          resource_contract: {
-            resource_schema: { type: "object" },
-            open_payload_schema: { type: "object" },
-            default_resource: {
-              resource_type: "word",
-              resource_id: "word:assistant",
-              title: "词汇讲解",
-              data: { word: "Assistant" },
-            },
-          },
-          state_summary_schema: {
-            type: "object" as const,
-            properties: {
-              word: { type: "string" },
-              active_anchor: { type: "string" },
-            },
-          },
           state_summary: {
             word: "Assistant",
             active_anchor: "word.header",
@@ -64,7 +47,6 @@ describe("runtime observation store", () => {
     store.setContinuation({
       last_completed_step_index: 1,
       last_completed_step_id: "step-2",
-      event_cursor_seq: 12,
       pending_wait: {
         action_type: "flow.wait",
         session_id: "sess-1",
@@ -76,7 +58,6 @@ describe("runtime observation store", () => {
           form_id: "paper-form",
         },
         timeout_ms: 30000,
-        event_cursor_seq: 12,
         waiting_since_ms: 200,
       },
     });
@@ -101,7 +82,6 @@ describe("runtime observation store", () => {
     expect(store.getContinuationSnapshot()).toEqual({
       last_completed_step_index: 1,
       last_completed_step_id: "step-2",
-      event_cursor_seq: 12,
       pending_wait: {
         action_type: "flow.wait",
         session_id: "sess-1",
@@ -113,7 +93,6 @@ describe("runtime observation store", () => {
           form_id: "paper-form",
         },
         timeout_ms: 30000,
-        event_cursor_seq: 12,
         waiting_since_ms: 200,
       },
     });
@@ -141,22 +120,6 @@ describe("runtime observation store", () => {
           state_mode: "lightweight",
           anchors: [],
           capabilities: [],
-          resource_contract: {
-            resource_schema: { type: "object" },
-            open_payload_schema: { type: "object" },
-            default_resource: {
-              resource_type: "word",
-              resource_id: "word:assistant",
-              title: "词汇讲解",
-              data: { word: "Assistant" },
-            },
-          },
-          state_summary_schema: {
-            type: "object" as const,
-            properties: {
-              word: { type: "string" },
-            },
-          },
           state_summary: {
             word: "Assistant",
           },
@@ -170,7 +133,12 @@ describe("runtime observation store", () => {
     if (activeResourceContext) {
       (activeResourceContext.state_summary as Record<string, unknown>).word = "mutated";
     }
-    continuationSnapshot.event_cursor_seq = 99;
+    continuationSnapshot.pending_wait = {
+      action_type: "flow.wait",
+      session_id: "sess-2",
+      event_types: ["assistant.view.form.submitted"],
+      waiting_since_ms: 1,
+    };
 
     const nextActiveResourceContext = store.getActiveResourceContextSnapshot();
     expect(nextActiveResourceContext).toEqual(expect.objectContaining({
@@ -178,7 +146,7 @@ describe("runtime observation store", () => {
         word: "Assistant",
       },
     }));
-    expect(store.getContinuationSnapshot().event_cursor_seq).toBe(0);
+    expect(store.getContinuationSnapshot().pending_wait).toBeNull();
   });
 
   it("keeps active_resource_context bound to current active resource only", () => {
@@ -204,22 +172,6 @@ describe("runtime observation store", () => {
           state_mode: "lightweight",
           anchors: [],
           capabilities: [],
-          resource_contract: {
-            resource_schema: { type: "object" },
-            open_payload_schema: { type: "object" },
-            default_resource: {
-              resource_type: "word",
-              resource_id: "word:assistant",
-              title: "词汇讲解",
-              data: { word: "Assistant" },
-            },
-          },
-          state_summary_schema: {
-            type: "object" as const,
-            properties: {
-              word: { type: "string" },
-            },
-          },
           state_summary: {
             word: currentResourceId,
           },

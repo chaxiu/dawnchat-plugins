@@ -64,6 +64,8 @@ metadata:
   - `active_resource_context` aggregation
   - `task_progress` observation
   - `continuation` observation
+- If the new view is `stateful`, keep persistence config on `ViewRegistration`, not inside the Agent-facing manifest.
+- Persist frequent state changes as a JSON payload through the runtime adapter instead of expanding them into database schema fields.
 - New views must expose stable `buildStateSummary()` output without depending on legacy recovery semantics.
 
 ## Recommended implementation order
@@ -84,7 +86,7 @@ metadata:
 - `view.focus` works for valid anchors.
 - `view.capability.invoke` succeeds for valid inputs.
 - Invalid capability input returns stable errors.
-- `assistant.view.describe` includes the new view in `available_views`.
+- `dawnchat.ui.capabilities.list` includes the new view in the scene catalog.
 - `assistant.view.describe` exposes the new view without introducing extra runtime observation fields.
 
 ## Output Contract

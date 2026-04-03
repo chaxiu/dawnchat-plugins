@@ -18,7 +18,6 @@ export interface FlowWaitStateChange {
   stepId?: string;
   stepIndex?: number;
   totalSteps?: number;
-  eventCursorSeq: number;
   pendingWait: {
     action_type: "flow.wait";
     session_id: string;
@@ -28,7 +27,6 @@ export interface FlowWaitStateChange {
     event_types: AssistantRuntimeEventType[];
     match?: Record<string, unknown>;
     timeout_ms?: number;
-    event_cursor_seq: number;
     waiting_since_ms: number;
   } | null;
 }
@@ -61,27 +59,6 @@ function resolveTimeoutMs(payload: Record<string, unknown>, context: SessionStep
     return context.timeoutMs;
   }
   return undefined;
-}
-
-function buildRecentEventsSummary(
-  eventBus: AssistantEventBus,
-  sessionId: string,
-  eventTypes: AssistantRuntimeEventType[],
-  stepId?: string
-) {
-  return eventBus.getRecentEvents({
-    session_id: sessionId,
-    step_id: stepId,
-    event_types: eventTypes,
-    limit: 10,
-  }).map((event) => ({
-    seq: event.seq,
-    type: event.type,
-    ts_ms: event.ts_ms,
-    source: event.source,
-    step_id: event.step_id,
-    payload: event.payload,
-  }));
 }
 
 function buildWaitMatchOptions(
@@ -124,32 +101,8 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
       context.onCancel(() => {
         abortController.abort();
       });
-      const eventCursorSeq = deps.eventBus.getLatestSeq();
       const payloadMatch = toRecord(input.match);
       const waitMatchOptions = buildWaitMatchOptions(input, payloadMatch);
-      const recentMatches = deps.eventBus.getRecentEvents({
-        ...waitMatchOptions,
-        limit: 1,
-      });
-      if (recentMatches.length > 0) {
-        const matchedEvent = recentMatches[recentMatches.length - 1];
-        await deps.onWaitStateChange?.({
-          status: "matched",
-          sessionId: context.sessionId,
-          stepId: context.stepId,
-          stepIndex: context.stepIndex,
-          totalSteps: context.totalSteps,
-          eventCursorSeq: matchedEvent.seq,
-          pendingWait: null,
-        });
-        return {
-          ok: true,
-          data: {
-            status: "matched",
-            matched_event: matchedEvent,
-          },
-        };
-      }
       const pendingWait = {
         action_type: "flow.wait" as const,
         session_id: context.sessionId,
@@ -159,7 +112,6 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
         event_types: eventTypes,
         match: Object.keys(payloadMatch).length > 0 ? payloadMatch : undefined,
         timeout_ms: resolveTimeoutMs(input, context),
-        event_cursor_seq: eventCursorSeq,
         waiting_since_ms: Date.now(),
       };
       void deps.onWaitStateChange?.({
@@ -168,7 +120,6 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
         stepId: context.stepId,
         stepIndex: context.stepIndex,
         totalSteps: context.totalSteps,
-        eventCursorSeq,
         pendingWait,
       });
       try {
@@ -183,7 +134,6 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
           stepId: context.stepId,
           stepIndex: context.stepIndex,
           totalSteps: context.totalSteps,
-          eventCursorSeq: matchedEvent.seq,
           pendingWait: null,
         });
         return {
@@ -202,23 +152,14 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
             stepId: context.stepId,
             stepIndex: context.stepIndex,
             totalSteps: context.totalSteps,
-            eventCursorSeq: deps.eventBus.getLatestSeq(),
             pendingWait: null,
           });
-          const recentEvents = buildRecentEventsSummary(
-            deps.eventBus,
-            context.sessionId,
-            eventTypes,
-            context.stepId
-          );
           return {
             ok: false,
             error_code: "flow_wait_timeout",
             message: "flow.wait timed out before matching any event",
             data: {
-              latest_seq: deps.eventBus.getLatestSeq(),
               waited_event_types: eventTypes,
-              recent_events: recentEvents,
             },
           };
         }
@@ -229,23 +170,14 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
             stepId: context.stepId,
             stepIndex: context.stepIndex,
             totalSteps: context.totalSteps,
-            eventCursorSeq: deps.eventBus.getLatestSeq(),
             pendingWait: null,
           });
-          const recentEvents = buildRecentEventsSummary(
-            deps.eventBus,
-            context.sessionId,
-            eventTypes,
-            context.stepId
-          );
           return {
             ok: false,
             error_code: "step_cancelled",
             message: "flow.wait cancelled",
             data: {
-              latest_seq: deps.eventBus.getLatestSeq(),
               waited_event_types: eventTypes,
-              recent_events: recentEvents,
             },
           };
         }
@@ -255,7 +187,6 @@ export function createFlowRuntime(deps: FlowRuntimeDeps): FlowRuntimeHandlers {
           stepId: context.stepId,
           stepIndex: context.stepIndex,
           totalSteps: context.totalSteps,
-          eventCursorSeq: deps.eventBus.getLatestSeq(),
           pendingWait: null,
         });
         return {

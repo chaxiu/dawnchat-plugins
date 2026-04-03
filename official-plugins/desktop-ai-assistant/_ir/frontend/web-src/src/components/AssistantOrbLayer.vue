@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import {
+  ASSISTANT_UI_LAYER_ORB,
   ORB_DOCK_BOTTOM,
   ORB_DOCK_LEFT,
   ORB_DOCK_SIZE,
@@ -22,6 +23,7 @@ const containerStyle = computed(() => {
       bottom: "0px",
       width: "100vw",
       height: "100vh",
+      zIndex: ASSISTANT_UI_LAYER_ORB,
     };
   }
   return {
@@ -29,6 +31,7 @@ const containerStyle = computed(() => {
     bottom: `${ORB_DOCK_BOTTOM}px`,
     width: `${ORB_DOCK_SIZE}px`,
     height: `${ORB_DOCK_SIZE}px`,
+    zIndex: ASSISTANT_UI_LAYER_ORB,
   };
 });
 
@@ -55,7 +58,6 @@ const coreMode = computed(() => {
 <style scoped>
 .assistant-orb-layer {
   position: fixed;
-  z-index: 6;
   pointer-events: none;
 }
 </style>

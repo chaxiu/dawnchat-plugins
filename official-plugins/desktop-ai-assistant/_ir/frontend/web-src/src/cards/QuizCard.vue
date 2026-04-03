@@ -8,6 +8,9 @@ const props = defineProps<{
   title?: string;
   data: Record<string, unknown>;
 }>();
+const emit = defineEmits<{
+  completed: [{ reason?: string; dismiss_after_ms?: number }];
+}>();
 
 const question = String(props.data.question || "");
 const options = Array.isArray(props.data.options) ? props.data.options.map((item) => String(item)) : [];
@@ -43,6 +46,10 @@ function submitAnswer() {
       question,
       selected_option: submittedOption.value,
     },
+  });
+  emit("completed", {
+    reason: "quiz_submitted",
+    dismiss_after_ms: 1800,
   });
 }
 </script>
@@ -85,11 +92,11 @@ function submitAnswer() {
 
 <style scoped>
 .card {
-  border: 1px solid var(--line-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 18px;
-  padding: 18px;
-  background: var(--surface-card);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.7));
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.16);
 }
 .card-head {
   display: flex;
@@ -112,7 +119,7 @@ h3 {
   color: #eff6ff;
 }
 .question {
-  margin: 12px 0 12px;
+  margin: 12px 0 10px;
   font-weight: 600;
   color: #e2e8f0;
 }
@@ -130,7 +137,7 @@ h3 {
   text-align: left;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.55);
   color: #cbd5e1;
   padding: 10px 12px;
   cursor: pointer;
@@ -153,7 +160,7 @@ h3 {
 .actions {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 .submit-btn {
   width: fit-content;
@@ -171,7 +178,7 @@ h3 {
 }
 .submitted-note {
   margin: 0;
-  color: #bfdbfe;
+  color: #c7d2fe;
   font-size: 0.92rem;
 }
 </style>

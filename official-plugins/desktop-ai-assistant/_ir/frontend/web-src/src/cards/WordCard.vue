@@ -27,11 +27,11 @@ const etymology = Array.isArray(props.data.etymology)
 
 <style scoped>
 .card {
-  border: 1px solid var(--line-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 18px;
-  padding: 18px;
-  background: var(--surface-card);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  padding: 14px 16px 16px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.7));
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.16);
 }
 .card-head {
   display: flex;
@@ -54,7 +54,7 @@ h3 {
   color: #eff6ff;
 }
 .primary {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin: 12px 0 4px;
   color: #f8fafc;
@@ -62,7 +62,7 @@ h3 {
 }
 .muted {
   color: var(--text-secondary);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   line-height: 1.6;
 }
 .list {
