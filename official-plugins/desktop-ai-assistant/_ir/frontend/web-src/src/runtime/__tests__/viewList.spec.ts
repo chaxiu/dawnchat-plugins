@@ -57,6 +57,21 @@ describe("assistant.view.list", () => {
         active_view_id: "tictactoe.main",
         views: expect.arrayContaining([
           expect.objectContaining({
+            view_id: "plane.main",
+            title: "Coordinate Lab",
+            resource_type: "plane.scene",
+            state_mode: "stateful",
+            description: expect.any(String),
+            is_active: false,
+            capabilities: expect.arrayContaining([
+              expect.objectContaining({
+                capability_id: "plane.set_viewport",
+                mode: "write",
+                title: "Set Viewport",
+              }),
+            ]),
+          }),
+          expect.objectContaining({
             view_id: "image.explainer",
             title: "AI Visual Explainer",
             resource_type: "image.deck",

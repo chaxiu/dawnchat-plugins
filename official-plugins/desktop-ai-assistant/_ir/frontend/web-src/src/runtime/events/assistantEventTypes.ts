@@ -11,6 +11,7 @@ export const ASSISTANT_RUNTIME_EVENT_TYPES = {
   MUSIC_SEQUENCE_STOPPED: "assistant.music.sequence_stopped",
   MUSIC_KEY_PRESSED: "assistant.music.key_pressed",
   MUSIC_LESSON_NOTE_MATCHED: "assistant.music.lesson_note_matched",
+  PLANE_ANIMATION_COMPLETED: "assistant.plane.animation_completed",
   TICTACTOE_CELL_SELECTED: "assistant.game.tictactoe.cell_selected",
   TICTACTOE_ROUND_FINISHED: "assistant.game.tictactoe.round_finished",
   GUIDE_NARRATE_PLAYING: "assistant.guide.narrate.playing",

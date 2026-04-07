@@ -98,6 +98,106 @@ describe("assistant.view.contract", () => {
       }),
     });
   });
+
+  it("exposes plane.main motion-oriented examples", async () => {
+    const registration = createViewContractCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "plane.main",
+        active_anchor: "plane.stage",
+        current_resource: null,
+        active_manifest: null,
+        view_state_version: 1,
+      })),
+      navigateToView: vi.fn(),
+    });
+
+    const result = await registration.handler({ view_id: "plane.main" }, {});
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        view_definition: expect.objectContaining({
+          view_id: "plane.main",
+          route_path: "/views/plane/main",
+          capabilities: expect.arrayContaining([
+            expect.objectContaining({
+              capability_id: "plane.add_circle",
+            }),
+            expect.objectContaining({
+              capability_id: "plane.set_label",
+            }),
+            expect.objectContaining({
+              capability_id: "plane.set_style",
+            }),
+            expect.objectContaining({
+              capability_id: "plane.add_angle_marker",
+            }),
+          ]),
+        }),
+        recommended_mode: "session_start",
+        decision_rule: expect.stringContaining("guide.narrate"),
+        key_events: expect.arrayContaining([
+          expect.objectContaining({
+            type: "assistant.plane.animation_completed",
+          }),
+        ]),
+        examples: expect.arrayContaining([
+          expect.objectContaining({
+            name: "session_draw_circle_and_radius",
+            call: expect.objectContaining({
+              payload: expect.objectContaining({
+                steps: expect.arrayContaining([
+                  expect.objectContaining({
+                    action: expect.objectContaining({
+                      type: "view.capability.invoke",
+                      payload: expect.objectContaining({
+                        capability_id: "plane.add_circle",
+                        input: expect.objectContaining({
+                          radius: 4,
+                        }),
+                      }),
+                    }),
+                  }),
+                expect.objectContaining({
+                  action: expect.objectContaining({
+                    type: "view.capability.invoke",
+                    payload: expect.objectContaining({
+                      capability_id: "plane.set_label",
+                    }),
+                  }),
+                }),
+                ]),
+              }),
+            }),
+          }),
+          expect.objectContaining({
+            name: "session_geometry_solution_steps_with_angle_marker",
+            call: expect.objectContaining({
+              payload: expect.objectContaining({
+                steps: expect.arrayContaining([
+                  expect.objectContaining({
+                    action: expect.objectContaining({
+                      type: "view.capability.invoke",
+                      payload: expect.objectContaining({
+                        capability_id: "plane.add_angle_marker",
+                        input: expect.objectContaining({
+                          marker_style: "right_angle_square",
+                        }),
+                      }),
+                    }),
+                  }),
+                ]),
+              }),
+            }),
+          }),
+          expect.objectContaining({
+            name: "session_emphasize_formula_with_style_and_label",
+          }),
+        ]),
+      }),
+    });
+  });
 });
 import {
   buildWordMainStateSummary,

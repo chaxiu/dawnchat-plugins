@@ -17,6 +17,8 @@ const shellStageStyle = computed(() => ({
 const isImmersiveRoute = computed(() =>
   route.name === "view-board-main"
   || route.path.includes("/views/board/main")
+  || route.name === "view-plane-main"
+  || route.path.includes("/views/plane/main")
   || route.name === "view-music-main"
   || route.path.includes("/views/music/main")
 );

@@ -13,6 +13,8 @@ const isAssistantWelcome = computed(() => route.name === "assistant-welcome");
 const isImmersiveView = computed(() =>
   route.name === "view-board-main"
   || route.path.includes("/views/board/main")
+  || route.name === "view-plane-main"
+  || route.path.includes("/views/plane/main")
   || route.name === "view-image-explainer"
   || route.path.includes("/views/image/explainer")
   || route.name === "view-music-main"
@@ -76,6 +78,7 @@ const isImmersiveView = computed(() =>
   height: 100%;
 }
 .view-stage :deep(.piano-scene),
+.view-stage :deep(.coordinate-plane-scene),
 .view-stage :deep(.image-explainer-scene),
 .view-stage :deep(.stage-root) {
   flex: 1;
