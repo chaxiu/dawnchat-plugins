@@ -65,7 +65,6 @@ function respond(confirmed: boolean) {
       <button
         type="button"
         class="confirm-btn confirm-btn--primary"
-        :disabled="Boolean(responded)"
         @click="respond(true)"
       >
         {{ confirmLabel }}
@@ -73,7 +72,6 @@ function respond(confirmed: boolean) {
       <button
         type="button"
         class="confirm-btn confirm-btn--secondary"
-        :disabled="Boolean(responded)"
         @click="respond(false)"
       >
         {{ cancelLabel }}

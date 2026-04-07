@@ -19,16 +19,19 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 ## Mandatory MCP Call Sequence
 
 - Always call `dawnchat.ui.runtime.info` before making runtime recovery decisions.
-- Always call `dawnchat.ui.capabilities.list` before invoking UI functions.
+- Always call `dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)` before scene selection or runtime planning.
+- Always call `dawnchat.ui.capability.invoke(function=assistant.view.list)` before choosing a view scene.
 - Invoke UI functions only via `dawnchat.ui.capability.invoke`.
 - Never assume function names or payload fields without listing current capabilities.
-- For view-first tasks, call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` after `capabilities.list` and before planning `view.*` or session actions.
-- Treat `dawnchat.ui.capabilities.list` as the assistant feature-scene catalog: use it to see which view-based scenes the current assistant can provide.
-- Treat `assistant.view.describe` as the detailed surface for a specific view contract, the active page snapshot, registered view metadata, and minimal runtime observation fields.
+- For view-first tasks, prefer `dawnchat.ui.capability.invoke(function=view.open)` for page entry, then call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` before planning page-local mutations or session actions.
+- Treat `assistant.runtime.bootstrap` as the global runtime guide: use it to learn startup order, wait/session rules, and global tool contracts.
+- Treat `assistant.view.list` as the assistant feature-scene catalog: use it to see which view-based scenes the current assistant can provide.
+- Treat `assistant.view.describe` as the lightweight active-scene state surface only.
+- Treat `assistant.view.contract` as the detailed source for one view's schema, events, examples, and scene-specific rules.
 - Treat `task_progress`, `active_resource_context`, and `continuation` as the only supported runtime observation fields.
 - Treat stateful view persistence as an internal view/runtime concern; do not expose persistence payloads through `assistant.view.describe`.
 - Treat `continuation` as a planning hint for the next `dawnchat.ui.session.start`, `dawnchat.ui.event.wait`, or `dawnchat.ui.session.wait_for_end`, not as an instruction to auto-replay old steps.
-- Prefer direct capability invoke for single-step page reads or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
+- Prefer direct capability invoke for single-step page entry, reads, or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
 - For guided narration flows, prefer host session tools:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
@@ -45,7 +48,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Runtime mode is usually HMR preview, not full production build mode.
 - If UI does not reflect recent code edits, execute this fixed sequence:
   1. call `dawnchat.ui.runtime.info`
-  2. call `dawnchat.ui.capabilities.list`
+  2. call `dawnchat.ui.capability.invoke(function=assistant.view.list)`
   3. call `dawnchat.ui.runtime.refresh`
   4. if still stale, call `dawnchat.ui.runtime.restart` (dev-session restart)
   5. verify `python_sidecar.state=running` in runtime info when Python MCP is required
@@ -57,8 +60,8 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Capability names should be stable and namespaced.
 - Every capability must expose a clear `input_schema`.
 - Capability handlers must return structured result payloads with explicit success/failure.
-- Newly added feature scenes must become discoverable through `capabilities.list` immediately after HMR.
-- `view.*`, `guide.*`, and internal `assistant.session_step_*` handlers are runtime execution details, not the main assistant-facing catalog returned by `capabilities.list`.
+- Newly added feature scenes must become discoverable through `assistant.view.list` immediately after HMR.
+- Keep `view.open` assistant-facing and discoverable as the stable top-level page entry capability. Treat `view.focus`, `guide.*`, and internal `assistant.session_step_*` handlers as runtime execution details rather than the main scene catalog.
 - Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
 - Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
 - Prefer view-embedded interaction hints over adding a dedicated skill for every single view. Skills should stay cross-view and reusable.
@@ -83,23 +86,30 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 ## Execution Policy
 
 - Standard orchestration template for wait-aware tasks:
-  1. call `dawnchat.ui.capabilities.list`
-  2. call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` when scene choice, page state, or continuation matters
-  3. call `dawnchat.ui.session.start` when the task needs ordered `view.* + guide.*` execution
-  4. call `dawnchat.ui.event.wait` when the next move depends on a runtime signal
-  5. call `dawnchat.ui.session.wait_for_end` when the next move depends on the prior session becoming terminal
-  6. use `dawnchat.ui.session.status` or `dawnchat.ui.session.stop` only when explicit inspection or interruption control is needed
+  1. call `dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)`
+  2. call `dawnchat.ui.capability.invoke(function=assistant.view.list)`
+  3. call `dawnchat.ui.capability.invoke(function=view.open)` when the task needs to enter a view scene
+  4. call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` when current page state or continuation matters
+  5. call `dawnchat.ui.capability.invoke(function=assistant.view.contract)` only when the task needs schema, examples, or scene-specific rules
+  6. call `dawnchat.ui.session.start` when the task needs ordered `view.* + guide.*` execution
+  7. call `dawnchat.ui.event.wait` when the next move depends on a runtime signal
+  8. call `dawnchat.ui.session.wait_for_end` when the next move depends on the prior session becoming terminal
+  9. use `dawnchat.ui.session.status` or `dawnchat.ui.session.stop` only when explicit inspection or interruption control is needed
 - For Rich Display tasks:
-  - first list capabilities
+  - first read runtime bootstrap
+  - then list views
   - use the returned scene catalog to choose the best view-level feature
+  - then enter the target page with `view.open`
   - then inspect page state with `assistant.view.describe` whenever the task depends on page semantics, anchors, or resource state
+  - only call `assistant.view.contract` when schema, examples, or scene-specific rules are needed
   - then prefer a single direct capability invoke when one step is enough
   - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
 - For View-First tasks:
+  - enter the target page via `view.open`
   - inspect current page via `assistant.view.describe`
+  - inspect scene schema or examples via `assistant.view.contract` only when needed
   - inspect `task_progress`, `active_resource_context`, and `continuation` only when they matter to the current task
-  - use `view.open` for page entry and resource binding
-  - use `view.focus` for anchor changes
+  - use `view.focus` for anchor changes inside session-driven runtime action sequences only
   - use `view.capability.invoke` for page-local mutations
   - use `guide.*` only for narration, tip, and overlay card expression
 - For Continuation-Aware tasks:
@@ -136,7 +146,7 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 
 - Rules:
   - use `capability_id`, not `capability`
-  - use the value returned by `assistant.view.describe` or `assistant.view.list`
+  - use the value returned by `assistant.view.contract` or `assistant.view.list`
   - put business parameters inside `payload.input`, not at the top level
 
 - If a task depends on both a runtime event and session completion:

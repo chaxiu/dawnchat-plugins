@@ -57,23 +57,32 @@ describe("assistant.view.list", () => {
         active_view_id: "tictactoe.main",
         views: expect.arrayContaining([
           expect.objectContaining({
+            view_id: "image.explainer",
+            title: "AI Visual Explainer",
+            resource_type: "image.deck",
+            state_mode: "stateful",
+            description: expect.any(String),
+            is_active: false,
+            capabilities: expect.arrayContaining([
+              expect.objectContaining({
+                capability_id: "image.set_pages",
+                mode: "write",
+                title: "Set Pages",
+              }),
+            ]),
+          }),
+          expect.objectContaining({
             view_id: "word.main",
             title: "Word Workspace",
             resource_type: "word",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
-            capability_invoke_contract: expect.objectContaining({
-              action_type: "view.capability.invoke",
-              payload_example: expect.objectContaining({
-                view_id: "word.main",
-                capability_id: "<capability_id>",
-              }),
-            }),
             capabilities: expect.arrayContaining([
               expect.objectContaining({
                 capability_id: "append_etymology",
                 mode: "write",
+                title: "Append Etymology",
               }),
             ]),
           }),
@@ -93,8 +102,33 @@ describe("assistant.view.list", () => {
         ]),
         functions: [
           {
+            name: "view.open",
+            description: "Open one registered assistant view and optionally bind its resource payload.",
+            input_schema: {
+              type: "object",
+              properties: {
+                view_id: { type: "string" },
+                resource: { type: "object" },
+                initial_anchor: { type: "string" },
+              },
+              required: ["view_id"],
+            },
+          },
+          {
             name: "assistant.view.describe",
-            description: "Inspect one specific view definition or the current active view state.",
+            description: "Inspect the current active view state with a lightweight assistant-facing summary.",
+            input_schema: {
+              type: "object",
+              properties: {
+                view_id: { type: "string" },
+                max_nodes: { type: "number", minimum: 1 },
+                max_edges: { type: "number", minimum: 1 },
+              },
+            },
+          },
+          {
+            name: "assistant.view.contract",
+            description: "Inspect one specific view definition, capability schemas, events, and examples.",
             input_schema: {
               type: "object",
               properties: {

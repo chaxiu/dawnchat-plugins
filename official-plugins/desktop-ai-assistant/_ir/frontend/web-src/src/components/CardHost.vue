@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+defineOptions({ inheritAttrs: false });
+
 import { resolveCardComponent } from "../cards/registry";
 import {
   ASSISTANT_UI_LAYER_GUIDE,

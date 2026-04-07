@@ -1,7 +1,12 @@
 import { createViewCapabilityInvokeHandler } from "./runtime.capability";
-import { createViewDescribeCapabilityRegistration, createViewListCapabilityRegistration } from "./runtime.describe";
+import {
+  createRuntimeBootstrapCapabilityRegistration,
+  createViewContractCapabilityRegistration,
+  createViewDescribeCapabilityRegistration,
+  createViewListCapabilityRegistration,
+} from "./runtime.describe";
 import { createViewFocusHandler } from "./runtime.focus";
-import { createViewOpenHandler } from "./runtime.open";
+import { createViewOpenCapabilityRegistration, createViewOpenHandler } from "./runtime.open";
 import type { ViewRuntimeDeps, ViewRuntimeHandlers } from "./runtime.shared";
 
 export {
@@ -9,7 +14,13 @@ export {
   type ViewRuntimeDeps,
   type ViewRuntimeHandlers,
 } from "./runtime.shared";
-export { createViewDescribeCapabilityRegistration, createViewListCapabilityRegistration } from "./runtime.describe";
+export {
+  createRuntimeBootstrapCapabilityRegistration,
+  createViewContractCapabilityRegistration,
+  createViewDescribeCapabilityRegistration,
+  createViewListCapabilityRegistration,
+} from "./runtime.describe";
+export { createViewOpenCapabilityRegistration } from "./runtime.open";
 export { useViewState, type SetActiveViewStateInput, type ViewStateSnapshot } from "./state";
 export {
   getViewRegistration,
@@ -20,6 +31,7 @@ export type {
   ViewCapabilityDefinition,
   ViewCapabilityMode,
   DefineViewInput,
+  ViewDescribeOptions,
   ViewEventHint,
   ViewInteractionHints,
   ViewCapabilityResult,

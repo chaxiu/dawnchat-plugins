@@ -1,4 +1,5 @@
 import { getViewRegistration } from "./registry";
+import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
 import {
   applyViewState,
   cloneResource,
@@ -8,6 +9,18 @@ import {
   type ViewActionHandler,
   type ViewRuntimeDeps,
 } from "./runtime.shared";
+
+function buildViewOpenSchema(): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {
+      view_id: { type: "string" },
+      resource: { type: "object" },
+      initial_anchor: { type: "string" },
+    },
+    required: ["view_id"],
+  };
+}
 
 export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler {
   return async (payload, context) => {
@@ -78,5 +91,26 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         ...("data" in openResult ? toRecord(openResult.data) : {}),
       },
     };
+  };
+}
+
+export function createViewOpenCapabilityRegistration(
+  deps: ViewRuntimeDeps
+): UiCapabilityRegistration {
+  const openHandler = createViewOpenHandler(deps);
+  const handler: UiCapabilityHandler = async (rawPayload) =>
+    openHandler(rawPayload, {
+      sessionId: "",
+      isCancelled: () => false,
+      onCancel: () => undefined,
+    });
+
+  return {
+    definition: {
+      name: "view.open",
+      description: "Open one registered assistant view and bind its resource payload.",
+      input_schema: buildViewOpenSchema(),
+    },
+    handler,
   };
 }

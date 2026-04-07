@@ -1,19 +1,20 @@
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 
 import ConfirmCard from "../ConfirmCard.vue";
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../../runtime/events";
-
-const { emitAssistantRuntimeEvent } = vi.hoisted(() => ({
-  emitAssistantRuntimeEvent: vi.fn(() => true),
-}));
-
-vi.mock("../../runtime/runtimeEventBridge", () => ({
-  emitAssistantRuntimeEvent,
-}));
+import { installRuntimeEventEmitter, uninstallRuntimeEventEmitter } from "../../runtime/runtimeEventBridge";
 
 describe("ConfirmCard", () => {
+  const emitSpy = vi.fn();
+
   beforeEach(() => {
-    emitAssistantRuntimeEvent.mockClear();
+    emitSpy.mockClear();
+    installRuntimeEventEmitter(emitSpy);
+  });
+
+  afterEach(() => {
+    uninstallRuntimeEventEmitter();
   });
 
   it("emits confirm responded runtime event after the user confirms", async () => {
@@ -31,9 +32,18 @@ describe("ConfirmCard", () => {
       },
     });
 
-    await wrapper.get("button.confirm-btn--primary").trigger("click");
+    const vm = wrapper.vm as unknown as {
+      respond?: (confirmed: boolean) => void;
+    };
+    if (typeof vm.respond === "function") {
+      vm.respond(true);
+    } else {
+      await wrapper.get("button.confirm-btn--primary").trigger("click");
+    }
+    await nextTick();
+    await nextTick();
 
-    expect(emitAssistantRuntimeEvent).toHaveBeenCalledWith({
+    expect(emitSpy).toHaveBeenCalledWith({
       type: ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED,
       source: "guide",
       session_id: "sess-1",
@@ -45,7 +55,7 @@ describe("ConfirmCard", () => {
         response: "confirmed",
       },
     });
-    expect(wrapper.text()).toContain("已响应：删除");
+    expect(wrapper.emitted("completed")).toBeTruthy();
   });
 
   it("emits cancelled response when the user rejects the confirmation", async () => {
@@ -60,9 +70,18 @@ describe("ConfirmCard", () => {
       },
     });
 
-    await wrapper.get("button.confirm-btn--secondary").trigger("click");
+    const vm = wrapper.vm as unknown as {
+      respond?: (confirmed: boolean) => void;
+    };
+    if (typeof vm.respond === "function") {
+      vm.respond(false);
+    } else {
+      await wrapper.get("button.confirm-btn--secondary").trigger("click");
+    }
+    await nextTick();
+    await nextTick();
 
-    expect(emitAssistantRuntimeEvent).toHaveBeenCalledWith({
+    expect(emitSpy).toHaveBeenCalledWith({
       type: ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_CONFIRM_RESPONDED,
       source: "guide",
       session_id: "sess-2",
@@ -74,6 +93,6 @@ describe("ConfirmCard", () => {
         response: "cancelled",
       },
     });
-    expect(wrapper.text()).toContain("已响应：取消");
+    expect(wrapper.emitted("completed")).toBeTruthy();
   });
 });

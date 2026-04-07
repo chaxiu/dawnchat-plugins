@@ -5,10 +5,14 @@ import { createSessionLifecycleHooks } from "../session/lifecycleHooks";
 import { createSessionStepCapabilityRegistrations } from "../session/stepExecutor";
 import { useSessionVisualState } from "../session/visualState";
 import { createViewPersistenceRuntime, DexieViewPersistenceAdapter } from "../persistence";
+import { getAssistantPersistenceScope } from "../persistence/scope";
 import { postAssistantRuntimeEventToHost } from "../runtimeEventBridge";
 import {
+  createRuntimeBootstrapCapabilityRegistration,
+  createViewContractCapabilityRegistration,
   createViewDescribeCapabilityRegistration,
   createViewListCapabilityRegistration,
+  createViewOpenCapabilityRegistration,
   getViewRegistration,
   useViewState,
 } from "../view";
@@ -53,7 +57,9 @@ export function composeAssistantRuntimeRegistrations() {
     getViewStateSnapshot,
     setActiveViewState,
     navigateToView,
-    adapter: new DexieViewPersistenceAdapter(),
+    adapter: new DexieViewPersistenceAdapter(
+      `dawnchat_assistant_view_persistence::${getAssistantPersistenceScope()}`
+    ),
   });
   const sessionLifecycleHooks = createSessionLifecycleHooks({
     observationStore,
@@ -74,6 +80,25 @@ export function composeAssistantRuntimeRegistrations() {
       ...sessionLifecycleHooks,
       onActiveSessionsChanged: setFromActiveSessions,
     }),
+    createViewOpenCapabilityRegistration({
+      setActiveViewState,
+      getViewStateSnapshot,
+      getGuideStateSnapshot,
+      getTaskProgressSnapshot: observationStore.getTaskProgressSnapshot,
+      getActiveResourceContextSnapshot: observationStore.getActiveResourceContextSnapshot,
+      getContinuationSnapshot: observationStore.getContinuationSnapshot,
+      navigateToView,
+      emitRuntimeEvent,
+    }),
+    createRuntimeBootstrapCapabilityRegistration({
+      setActiveViewState,
+      getViewStateSnapshot,
+      getGuideStateSnapshot,
+      getTaskProgressSnapshot: observationStore.getTaskProgressSnapshot,
+      getActiveResourceContextSnapshot: observationStore.getActiveResourceContextSnapshot,
+      getContinuationSnapshot: observationStore.getContinuationSnapshot,
+      navigateToView,
+    }),
     createViewListCapabilityRegistration({
       setActiveViewState,
       getViewStateSnapshot,
@@ -84,6 +109,15 @@ export function composeAssistantRuntimeRegistrations() {
       navigateToView,
     }),
     createViewDescribeCapabilityRegistration({
+      setActiveViewState,
+      getViewStateSnapshot,
+      getGuideStateSnapshot,
+      getTaskProgressSnapshot: observationStore.getTaskProgressSnapshot,
+      getActiveResourceContextSnapshot: observationStore.getActiveResourceContextSnapshot,
+      getContinuationSnapshot: observationStore.getContinuationSnapshot,
+      navigateToView,
+    }),
+    createViewContractCapabilityRegistration({
       setActiveViewState,
       getViewStateSnapshot,
       getGuideStateSnapshot,

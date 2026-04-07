@@ -250,10 +250,58 @@ export const wordMainView = defineView({
   ],
   interaction_hints: {
     interaction_intent: "Best for direct view-first reading and small structured updates. This is not the default scene for session-driven or wait-heavy orchestration.",
-    recommended_flow: [
-      "Start with capabilities.list, then use assistant.view.describe when scene choice, current page state, or continuation matters.",
-      "Use view.open(word.main) to bind the target word resource, and use view.focus when you need to move attention to word.meaning or word.etymology.",
-      "Prefer view.capability.invoke for local updates, then re-read assistant.view.describe. Only switch to session.start if the task truly requires ordered guide narration on top of the page mutation.",
+    recommended_mode: "direct_capability",
+    decision_rule: "Use direct capabilities for lightweight reads and writes. Only switch to session.start when guide narration must be serialized with page actions.",
+    examples: [
+      {
+        name: "open_then_describe",
+        mode: "entry",
+        call: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id>",
+            function: "view.open",
+            input: {
+              view_id: "word.main",
+              resource: {
+                resource_type: "word",
+                data: {
+                  word: "Assistant",
+                },
+              },
+              initial_anchor: "word.header",
+            },
+          },
+        },
+        then: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id>",
+            function: "assistant.view.describe",
+            input: {
+              view_id: "word.main",
+            },
+          },
+        },
+      },
+      {
+        name: "direct_append_etymology",
+        mode: "direct_capability",
+        call: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id>",
+            function: "view.capability.invoke",
+            input: {
+              view_id: "word.main",
+              capability_id: "append_etymology",
+              input: {
+                items: ["支持代码级进化"],
+              },
+            },
+          },
+        },
+      },
     ],
     key_events: [
       {

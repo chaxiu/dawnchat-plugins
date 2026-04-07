@@ -48,6 +48,7 @@ metadata:
 ## Required runtime integration
 
 - Register the new view in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
+- Ensure top-level `view.open` can reach the new view via the shared registry and open handler.
 - Ensure route metadata in registration matches the actual page route.
 - Keep `buildStateSummary` small, structured, and useful for `assistant.view.describe`.
 - Ensure the resource and capability contracts are visible through `assistant.view.describe`.
@@ -87,6 +88,7 @@ metadata:
 - `view.capability.invoke` succeeds for valid inputs.
 - Invalid capability input returns stable errors.
 - `dawnchat.ui.capabilities.list` includes the new view in the scene catalog.
+- `assistant.view.list` exposes `view.open` contract details for the new scene.
 - `assistant.view.describe` exposes the new view without introducing extra runtime observation fields.
 
 ## Output Contract

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from "vue";
+import { useRoute } from "vue-router";
 
 import AssistantOrbLayer from "./components/AssistantOrbLayer.vue";
 import {
@@ -9,9 +10,16 @@ import {
 import { ASSISTANT_UI_LAYER_PAGE } from "./runtime/assistantUiLayout";
 
 let registeredCapabilityNames: string[] = [];
+const route = useRoute();
 const shellStageStyle = computed(() => ({
   zIndex: ASSISTANT_UI_LAYER_PAGE,
 }));
+const isImmersiveRoute = computed(() =>
+  route.name === "view-board-main"
+  || route.path.includes("/views/board/main")
+  || route.name === "view-music-main"
+  || route.path.includes("/views/music/main")
+);
 
 onMounted(() => {
   registeredCapabilityNames = installAssistantRuntimeCapabilities();
@@ -24,9 +32,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="assistant-shell">
-    <div class="aurora aurora-a"></div>
-    <div class="aurora aurora-b"></div>
+  <main class="assistant-shell" :class="{ 'assistant-shell--immersive': isImmersiveRoute }">
+    <div v-if="!isImmersiveRoute" class="aurora aurora-a"></div>
+    <div v-if="!isImmersiveRoute" class="aurora aurora-b"></div>
     <AssistantOrbLayer />
     <section class="shell-stage" :style="shellStageStyle">
       <RouterView />
@@ -37,11 +45,17 @@ onUnmounted(() => {
 <style scoped>
 .assistant-shell {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   padding: 0;
   color: var(--text-primary);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.assistant-shell--immersive {
+  background: #0b0f14;
 }
 .aurora {
   position: absolute;
@@ -67,7 +81,10 @@ onUnmounted(() => {
 }
 .shell-stage {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  z-index: 10;
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

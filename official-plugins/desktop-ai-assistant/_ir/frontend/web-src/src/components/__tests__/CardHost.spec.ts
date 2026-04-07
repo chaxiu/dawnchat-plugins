@@ -10,17 +10,17 @@ import {
 import { useGuideState } from "../../runtime/guide/state";
 
 describe("CardHost", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
   beforeEach(() => {
     useGuideState().resetGuideState();
   });
 
   it("stays hidden when no guide ui payload exists", () => {
     const wrapper = mount(CardHost, {
-      global: {
-        stubs: {
-          teleport: true,
-        },
-      },
+      attachTo: document.body,
       props: {
         card: null,
         tip: null,
@@ -36,11 +36,7 @@ describe("CardHost", () => {
 
   it("renders in left-bottom bubble stack with narration content", () => {
     const wrapper = mount(CardHost, {
-      global: {
-        stubs: {
-          teleport: true,
-        },
-      },
+      attachTo: document.body,
       props: {
         card: null,
         tip: null,
@@ -51,12 +47,13 @@ describe("CardHost", () => {
         },
       },
     });
-    const host = wrapper.find(".host");
-    expect(host.exists()).toBe(true);
-    expect(host.attributes("style")).toContain(`left: ${GUIDE_STACK_LEFT}px;`);
-    expect(host.attributes("style")).toContain(`bottom: ${GUIDE_STACK_BOTTOM}px;`);
-    expect(host.attributes("style")).toContain(`z-index: ${ASSISTANT_UI_LAYER_GUIDE};`);
-    expect(wrapper.text()).toContain("正在讲解");
+    const host = document.body.querySelector(".host") as HTMLElement | null;
+    expect(host).not.toBeNull();
+    const hostStyle = host?.getAttribute("style") || "";
+    expect(hostStyle).toContain(`left: ${GUIDE_STACK_LEFT}px;`);
+    expect(hostStyle).toContain(`bottom: ${GUIDE_STACK_BOTTOM}px;`);
+    expect(hostStyle).toContain(`z-index: ${ASSISTANT_UI_LAYER_GUIDE};`);
+    expect(document.body.textContent || "").toContain("正在讲解");
   });
 
   it("supports user close for active guide card", async () => {
@@ -69,11 +66,7 @@ describe("CardHost", () => {
       },
     });
     const wrapper = mount(CardHost, {
-      global: {
-        stubs: {
-          teleport: true,
-        },
-      },
+      attachTo: document.body,
       props: {
         card: guideState.currentCard.value,
         tip: null,
@@ -84,7 +77,9 @@ describe("CardHost", () => {
         },
       },
     });
-    await wrapper.find(".card-close-btn").trigger("click");
+    const closeButton = document.body.querySelector(".card-close-btn") as HTMLButtonElement | null;
+    expect(closeButton).not.toBeNull();
+    closeButton?.click();
     await nextTick();
     expect(guideState.currentCard.value).toBeNull();
   });

@@ -5,6 +5,10 @@ import CardHost from "../../components/CardHost.vue";
 import { resolveCardComponent } from "../registry";
 
 describe("card registry", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
   it("resolves known card type", () => {
     expect(resolveCardComponent("word")).toBeTruthy();
     expect(resolveCardComponent("confirm")).toBeTruthy();
@@ -21,13 +25,10 @@ describe("card registry", () => {
         },
       }),
       {
-        global: {
-          stubs: {
-            teleport: true,
-          },
-        },
+        attachTo: document.body,
       }
     );
-    expect(wrapper.text()).toContain("Unsupported card type");
+    expect(document.body.textContent || "").toContain("Unsupported card type");
+    wrapper.unmount();
   });
 });

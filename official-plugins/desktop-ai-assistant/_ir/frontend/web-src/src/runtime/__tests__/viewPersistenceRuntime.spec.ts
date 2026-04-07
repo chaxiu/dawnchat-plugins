@@ -3,6 +3,10 @@ import "fake-indexeddb/auto";
 import { createViewPersistenceRuntime, DexieViewPersistenceAdapter } from "../persistence";
 import { createManifestSnapshot, getViewRegistration, useViewState } from "../view";
 import {
+  BOARD_DEFAULT_RESOURCE,
+  cloneBoardResource,
+} from "../../views/pages/board/boardMain.view";
+import {
   TICTACTOE_DEFAULT_RESOURCE,
   cloneTictactoeResource,
 } from "../../views/pages/tictactoe/tictactoeMain.view";
@@ -296,6 +300,140 @@ describe("view persistence runtime", () => {
         data: expect.objectContaining({
           current_player: "O",
           move_count: 1,
+        }),
+      }),
+    }));
+
+    runtime.dispose();
+    await adapter.clear();
+  });
+
+  it("hydrates the latest persisted board scene and restores pinned node state", async () => {
+    const adapter = createAdapter();
+    const viewState = useViewState();
+    const navigateToView = vi.fn();
+    await adapter.put({
+      storage_key: "board.main::board:holographic-clue-wall",
+      view_id: "board.main",
+      resource_key: "board:holographic-clue-wall",
+      version: 1,
+      updated_at_ms: Date.now(),
+      payload: {
+        active_anchor: "board.inspector",
+        resource: {
+          resource_type: "board.workspace",
+          resource_id: "board:holographic-clue-wall",
+          title: "Holographic Clue Wall",
+          data: {
+            board_id: "board:holographic-clue-wall",
+            description: "Hydrated board payload",
+            nodes: [
+              {
+                id: "node-case-brief",
+                title: "Case Brief",
+                description: "Hydrated clue",
+                media_type: "text",
+                semantic_type: "note",
+                tags: ["hydrated"],
+                position: { x: 144, y: 88 },
+                size: { width: 240, height: 148 },
+                pinned: true,
+                data: {},
+              },
+            ],
+            edges: [],
+            viewport: { x: 0, y: 0, zoom: 1 },
+            selection: {
+              selected_node_ids: ["node-case-brief"],
+              selected_edge_ids: [],
+              focused_node_id: "node-case-brief",
+            },
+            layout_mode: "mixed",
+          },
+        },
+      },
+    });
+
+    const runtime = createViewPersistenceRuntime({
+      getViewStateSnapshot: viewState.getViewStateSnapshot,
+      setActiveViewState: viewState.setActiveViewState,
+      navigateToView,
+      adapter,
+    });
+
+    await runtime.hydrate();
+
+    expect(viewState.getViewStateSnapshot()).toEqual(expect.objectContaining({
+      active_view_id: "board.main",
+      active_anchor: "board.inspector",
+      active_manifest: expect.objectContaining({
+        state_summary: expect.objectContaining({
+          node_count: 1,
+          pinned_node_count: 1,
+          focused_node_id: "node-case-brief",
+        }),
+      }),
+      current_resource: expect.objectContaining({
+        resource_type: "board.workspace",
+        data: expect.objectContaining({
+          layout_mode: "mixed",
+          description: "Hydrated board payload",
+        }),
+      }),
+    }));
+    expect(navigateToView).toHaveBeenCalledWith("board.main");
+
+    runtime.dispose();
+    await adapter.clear();
+  });
+
+  it("autosaves updated board scene through Dexie", async () => {
+    const adapter = createAdapter();
+    const viewState = useViewState();
+    const runtime = createViewPersistenceRuntime({
+      getViewStateSnapshot: viewState.getViewStateSnapshot,
+      setActiveViewState: viewState.setActiveViewState,
+      navigateToView: vi.fn(),
+      adapter,
+    });
+    const registration = getViewRegistration("board.main");
+    expect(registration).not.toBeNull();
+
+    runtime.start();
+    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    resource.data = {
+      ...(resource.data as Record<string, unknown>),
+      selection: {
+        selected_node_ids: ["node-web-report"],
+        selected_edge_ids: [],
+        focused_node_id: "node-web-report",
+      },
+      layout_mode: "mixed",
+    };
+    const manifest = createManifestSnapshot(registration!, resource, "board.inspector");
+    viewState.setActiveViewState({
+      viewId: "board.main",
+      activeAnchor: "board.inspector",
+      resource,
+      manifest,
+    });
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 240);
+    });
+
+    const latest = await adapter.getLatest();
+    expect(latest).toEqual(expect.objectContaining({
+      view_id: "board.main",
+      resource_key: "board:holographic-clue-wall",
+      version: 1,
+    }));
+    expect(latest?.payload).toEqual(expect.objectContaining({
+      active_anchor: "board.inspector",
+      resource: expect.objectContaining({
+        resource_type: "board.workspace",
+        data: expect.objectContaining({
+          layout_mode: "mixed",
         }),
       }),
     }));

@@ -30,13 +30,16 @@ describe("runtime bootstrap wiring", () => {
 
     const names = installAssistantRuntimeCapabilities();
     expect(listViewRegistrations().map((registration) => registration.view_id)).toEqual(
-      expect.arrayContaining(["word.main", "tictactoe.main"])
+      expect.arrayContaining(["word.main", "tictactoe.main", "board.main"])
     );
     expect(names).toEqual(expect.arrayContaining([
       "assistant.session_step_execute",
       "assistant.session_step_cancel",
+      "assistant.runtime.bootstrap",
+      "view.open",
       "assistant.view.list",
       "assistant.view.describe",
+      "assistant.view.contract",
     ]));
     expect(registered.size).toBe(names.length);
     expect(emitAssistantRuntimeEvent({

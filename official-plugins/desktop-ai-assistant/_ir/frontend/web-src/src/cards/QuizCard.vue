@@ -67,7 +67,6 @@ function submitAnswer() {
           type="button"
           class="option-btn"
           :class="{ 'option-btn--selected': selectedOption === option, 'option-btn--submitted': submittedOption === option }"
-          :disabled="Boolean(submittedOption)"
           @click="selectOption(option)"
         >
           {{ option }}

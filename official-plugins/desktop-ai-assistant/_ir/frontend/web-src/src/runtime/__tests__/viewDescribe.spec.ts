@@ -1,7 +1,7 @@
 import { createViewDescribeCapabilityRegistration } from "../view";
 
 describe("assistant.view.describe", () => {
-  it("returns minimal runtime observation fields and requested view details", async () => {
+  it("returns only the current active view state", async () => {
     const registration = createViewDescribeCapabilityRegistration({
       setActiveViewState: vi.fn(() => 1),
       getViewStateSnapshot: vi.fn(() => ({
@@ -17,18 +17,24 @@ describe("assistant.view.describe", () => {
             etymology: ["支持富媒体呈现"],
           },
         },
-        active_manifest: null,
-        view_state_version: 4,
-      })),
-      getGuideStateSnapshot: vi.fn(() => ({
-        current_card: null,
-        active_tip: null,
-        narration_state: {
-          status: "completed" as const,
-          text: "guide ready",
-          updatedAtMs: 99,
+        active_manifest: {
+          view_id: "word.main",
+          resource_type: "word",
+          title: "Word Workspace",
+          route_name: "view-word-main",
+          route_path: "/views/word/main",
+          state_mode: "stateful" as const,
+          anchors: [],
+          capabilities: [],
+          interaction_hints: {
+            interaction_intent: "Best for direct view-first reading and small structured updates.",
+          },
+          state_summary: {
+            word: "Assistant",
+            active_anchor: "word.meaning",
+          },
         },
-        guide_state_version: 5,
+        view_state_version: 4,
       })),
       getTaskProgressSnapshot: vi.fn(() => ({
         status: "running" as const,
@@ -59,6 +65,11 @@ describe("assistant.view.describe", () => {
       data: expect.objectContaining({
         active_view_id: "word.main",
         active_anchor: "word.meaning",
+        view_state_version: 4,
+        current_resource_summary: expect.objectContaining({
+          word: "Assistant",
+          active_anchor: "word.meaning",
+        }),
         task_progress: expect.objectContaining({
           status: "running",
           current_task_id: "task-1",
@@ -71,24 +82,190 @@ describe("assistant.view.describe", () => {
         continuation: expect.objectContaining({
           pending_wait: null,
         }),
-        requested_view: expect.objectContaining({
-          view_id: "word.main",
-          capability_invoke_contract: expect.objectContaining({
-            action_type: "view.capability.invoke",
-            payload_example: expect.objectContaining({
-              view_id: "word.main",
-              capability_id: "<capability_id>",
-            }),
-          }),
-          interaction_hints: expect.objectContaining({
-            interaction_intent: expect.any(String),
-          }),
-          capabilities: expect.arrayContaining([
+      }),
+    });
+    expect(result.data).not.toHaveProperty("runtime_contracts");
+    expect(result.data).not.toHaveProperty("view_definition");
+    expect(result.data).not.toHaveProperty("view_playbook");
+  });
+
+  it("still returns the active scene state when a non-active view_id is passed", async () => {
+    const registration = createViewDescribeCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "tictactoe.main",
+        active_anchor: "tictactoe.board",
+        current_resource: null,
+        active_manifest: {
+          view_id: "tictactoe.main",
+          resource_type: "tictactoe.game",
+          title: "TicTacToe Arena",
+          route_name: "view-tictactoe-main",
+          route_path: "/views/tictactoe/main",
+          state_mode: "stateful" as const,
+          anchors: [],
+          capabilities: [],
+          interaction_hints: {
+            interaction_intent: "Best for validating the default wait-aware orchestration path.",
+          },
+          state_summary: {
+            status: "playing",
+            current_player: "X",
+          },
+        },
+        view_state_version: 7,
+      })),
+      getTaskProgressSnapshot: vi.fn(() => ({
+        status: "idle" as const,
+      })),
+      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getContinuationSnapshot: vi.fn(() => ({
+        pending_wait: null,
+      })),
+      navigateToView: vi.fn(),
+    });
+
+    const result = await registration.handler({
+      view_id: "music.main",
+    }, {});
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        active_view_id: "tictactoe.main",
+        active_anchor: "tictactoe.board",
+        current_resource_summary: {
+          status: "playing",
+          current_player: "X",
+        },
+      }),
+    });
+    expect(result.data).not.toHaveProperty("view_definition");
+  });
+
+  it("supports board-specific lightweight summary limits", async () => {
+    const registration = createViewDescribeCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
+        current_resource: {
+          resource_type: "board.workspace",
+          resource_id: "board:test",
+          title: "Test Board",
+          data: {
+            board_id: "board:test",
+            description: "board",
+            nodes: [
+              {
+                id: "node-1",
+                title: "Node 1",
+                description: "",
+                media_type: "text",
+                semantic_type: "note",
+                tags: [],
+                position: { x: 0, y: 0 },
+                size: { width: 240, height: 148 },
+                pinned: false,
+                data: {},
+              },
+              {
+                id: "node-2",
+                title: "Node 2",
+                description: "",
+                media_type: "text",
+                semantic_type: "note",
+                tags: [],
+                position: { x: 10, y: 10 },
+                size: { width: 240, height: 148 },
+                pinned: false,
+                data: {},
+              },
+            ],
+            edges: [
+              {
+                id: "edge-1",
+                source: "node-1",
+                target: "node-2",
+                ports_mode: "auto",
+                directed: true,
+                label: "relates_to",
+              },
+            ],
+            viewport: { x: 0, y: 0, zoom: 1 },
+            selection: {
+              selected_node_ids: ["node-1"],
+              selected_edge_ids: [],
+              focused_node_id: "node-1",
+            },
+            layout_mode: "auto",
+            style_settings: {
+              layout_algorithm: "stress",
+              layout_direction: "LR",
+              edge_style: "bezier",
+              edge_curvature: 0.5,
+              handles_mode: "eight-points",
+              auto_layout_on_add: true,
+              avoid_overlap_strength: "medium",
+            },
+          },
+        },
+        active_manifest: {
+          view_id: "board.main",
+          resource_type: "board.workspace",
+          title: "Holographic Clue Wall",
+          route_name: "view-board-main",
+          route_path: "/views/board/main",
+          state_mode: "stateful" as const,
+          anchors: [],
+          capabilities: [],
+          interaction_hints: {
+            interaction_intent: "Best for arranging notes into a graph.",
+          },
+          state_summary: {
+            node_count: 2,
+          },
+        },
+        view_state_version: 9,
+      })),
+      getTaskProgressSnapshot: vi.fn(() => ({
+        status: "idle" as const,
+      })),
+      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getContinuationSnapshot: vi.fn(() => ({
+        pending_wait: null,
+      })),
+      navigateToView: vi.fn(),
+    });
+
+    const boardResult = await registration.handler({ max_nodes: 1, max_edges: 1 }, {});
+
+    expect(boardResult).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        active_view_id: "board.main",
+        current_resource_summary: expect.objectContaining({
+          node_count: 2,
+          edge_count: 1,
+          nodes_brief: [
             expect.objectContaining({
-              capability_id: "append_etymology",
-              assistant_hint: expect.any(String),
+              id: "node-1",
+              title: "Node 1",
             }),
-          ]),
+          ],
+          edges_brief: [
+            expect.objectContaining({
+              id: "edge-1",
+              source: "node-1",
+              target: "node-2",
+            }),
+          ],
+          summary_limits: expect.objectContaining({
+            applied_max_nodes: 1,
+            applied_max_edges: 1,
+            has_more_nodes: true,
+            has_more_edges: false,
+          }),
         }),
       }),
     });

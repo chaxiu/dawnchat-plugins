@@ -1235,35 +1235,14 @@ describe("session step executor", () => {
       ok: true,
       data: expect.objectContaining({
         active_view_id: "word.main",
-        active_route_path: "/views/word/main",
         active_anchor: "word.header",
         current_resource_summary: expect.objectContaining({
           word: "Assistant",
         }),
-        guide_state: expect.objectContaining({
-          current_card: expect.objectContaining({
-            card_type: "word",
-          }),
-          narration_state: expect.objectContaining({
-            status: "completed",
-          }),
-        }),
-        requested_view: expect.objectContaining({
-          view_id: "word.main",
-          route_path: "/views/word/main",
-          capability_invoke_contract: expect.objectContaining({
-            action_type: "view.capability.invoke",
-          }),
-          capabilities: expect.arrayContaining([
-            expect.objectContaining({
-              capability_id: "append_etymology",
-              mode: "write",
-              input_schema: expect.any(Object),
-              affected_anchors: ["word.etymology"],
-            }),
-          ]),
-        }),
       }),
     });
+    expect(result.data).not.toHaveProperty("runtime_contracts");
+    expect(result.data).not.toHaveProperty("view_definition");
+    expect(result.data).not.toHaveProperty("view_playbook");
   });
 });

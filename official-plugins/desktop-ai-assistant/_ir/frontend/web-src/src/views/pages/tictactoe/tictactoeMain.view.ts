@@ -254,10 +254,105 @@ export const tictactoeMainView = defineView({
   ],
   interaction_hints: {
     interaction_intent: "Best for validating the default wait-aware orchestration path across view.open, session.start, runtime events, event.wait, and session.wait_for_end.",
-    recommended_flow: [
-      "Start with capabilities.list, then use assistant.view.describe to confirm the current round state, available hints, and any continuation metadata.",
-      "Use view.open(tictactoe.main) to bind the round resource, and use session.start when the task needs ordered guide steps such as guide.narrate before or after a move.",
-      "When the round depends on player input, use event.wait for assistant.game.tictactoe.cell_selected, then inspect assistant.view.describe.current_resource_summary to decide whether to wait again, invoke a local mutation, or call session.wait_for_end.",
+    recommended_mode: "session_start",
+    decision_rule: "This is a wait-heavy scene. Default to session.start plus event.wait for round progression instead of relying on direct mutations.",
+    wait_strategy: {
+      preferred_tools: [
+        "dawnchat.ui.event.wait",
+        "dawnchat.ui.session.wait_for_end",
+      ],
+      rule: "Start event.wait while the user may act. Use session.wait_for_end as a follow-up lifecycle observer, not as a replacement for runtime event waiting.",
+    },
+    examples: [
+      {
+        name: "open_then_describe",
+        mode: "entry",
+        call: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id>",
+            function: "view.open",
+            input: {
+              view_id: "tictactoe.main",
+              resource: {},
+              initial_anchor: "tictactoe.board",
+            },
+          },
+        },
+        then: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id>",
+            function: "assistant.view.describe",
+            input: {
+              view_id: "tictactoe.main",
+            },
+          },
+        },
+      },
+      {
+        name: "session_narrate_then_wait_for_move",
+        mode: "session_start",
+        call: {
+          tool: "dawnchat.ui.session.start",
+          payload: {
+            plugin_id: "<plugin_id>",
+            steps: [
+              {
+                id: "narrate-turn",
+                action: {
+                  type: "guide.narrate",
+                  payload: {
+                    text: "请先点击你想落子的格子。",
+                  },
+                },
+              },
+            ],
+          },
+        },
+        then: {
+          tool: "dawnchat.ui.event.wait",
+          payload: {
+            plugin_id: "<plugin_id>",
+            event_types: ["assistant.game.tictactoe.cell_selected"],
+            match: {
+              resource_id: "<resource_id>",
+            },
+          },
+        },
+      },
+      {
+        name: "session_place_mark_then_wait_for_end",
+        mode: "session_start",
+        call: {
+          tool: "dawnchat.ui.session.start",
+          payload: {
+            plugin_id: "<plugin_id>",
+            steps: [
+              {
+                id: "place-mark",
+                action: {
+                  type: "view.capability.invoke",
+                  payload: {
+                    view_id: "tictactoe.main",
+                    capability_id: "game.place_mark",
+                    input: {
+                      index: 6,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        then: {
+          tool: "dawnchat.ui.session.wait_for_end",
+          payload: {
+            plugin_id: "<plugin_id>",
+            session_id: "<session_id>",
+          },
+        },
+      },
     ],
     key_events: [
       {

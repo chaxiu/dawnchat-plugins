@@ -33,8 +33,10 @@ metadata:
   - call `dawnchat.ui.runtime.info`
   - call `dawnchat.ui.capabilities.list`
   - confirm the scene catalog includes the expected view
+  - confirm `view.open` is available as a top-level page entry capability
   - confirm `assistant.view.describe` is available as the detail entrypoint
 - Step 2: inspect current page
+  - call `dawnchat.ui.capability.invoke(function=view.open)` for the target scene
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
   - read:
     - `requested_view`
@@ -62,8 +64,9 @@ metadata:
 ## Expected checks
 
 - `dawnchat.ui.capabilities.list` returns `word.main` in the scene catalog.
+- `dawnchat.ui.capabilities.list` exposes `view.open` as the page entry capability.
 - `assistant.view.describe` returns resource contract and capability contract for `word.main`.
-- `view.open` with a valid word resource succeeds.
+- top-level `view.open` with a valid word resource succeeds.
 - `view.focus(word.meaning)` updates active anchor to `word.meaning`.
 - `view.capability.invoke` with `payload.capability_id=append_etymology` updates the etymology list and active anchor.
 - `view.capability.invoke` with `payload.capability_id=set_title` updates the page title.

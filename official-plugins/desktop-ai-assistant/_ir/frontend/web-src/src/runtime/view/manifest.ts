@@ -32,10 +32,37 @@ export interface ViewEventHint {
   match_fields?: string[];
 }
 
+export type ViewRecommendedMode = "direct_capability" | "session_start" | "hybrid";
+
+export interface ViewPlaybookExampleCall {
+  tool: string;
+  payload: Record<string, unknown>;
+}
+
+export interface ViewPlaybookExample {
+  name: string;
+  mode: string;
+  call: ViewPlaybookExampleCall;
+  then?: ViewPlaybookExampleCall;
+}
+
+export interface ViewWaitStrategy {
+  preferred_tools?: string[];
+  rule: string;
+}
+
 export interface ViewInteractionHints {
   interaction_intent: string;
-  recommended_flow?: string[];
   key_events?: ViewEventHint[];
+  recommended_mode?: ViewRecommendedMode;
+  decision_rule?: string;
+  wait_strategy?: ViewWaitStrategy;
+  examples?: ViewPlaybookExample[];
+}
+
+export interface ViewDescribeOptions {
+  max_nodes?: number;
+  max_edges?: number;
 }
 
 export type ViewStateMode = "stateful" | "lightweight";
@@ -86,6 +113,11 @@ export interface DefineViewInput {
     input: Record<string, unknown>,
     resource: ViewResourceBinding
   ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
+  describeState?: (
+    resource: ViewResourceBinding,
+    activeAnchor: string | undefined,
+    options: ViewDescribeOptions
+  ) => Record<string, unknown>;
   getStateSummary: (
     resource: ViewResourceBinding,
     activeAnchor?: string
@@ -113,6 +145,11 @@ export interface ViewRegistration {
     input: Record<string, unknown>,
     resource: ViewResourceBinding
   ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
+  describeState?: (
+    resource: ViewResourceBinding,
+    activeAnchor: string | undefined,
+    options: ViewDescribeOptions
+  ) => Record<string, unknown>;
   getStateSummary: (
     resource: ViewResourceBinding,
     activeAnchor?: string
@@ -189,6 +226,7 @@ export function defineView(
     normalizeResource: input.normalizeResource,
     open: input.open,
     invokeCapability: input.invokeCapability,
+    describeState: input.describeState,
     getStateSummary: input.getStateSummary,
   };
 }

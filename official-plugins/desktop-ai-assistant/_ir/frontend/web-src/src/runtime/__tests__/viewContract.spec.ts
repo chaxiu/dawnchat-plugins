@@ -1,3 +1,104 @@
+import { createViewContractCapabilityRegistration } from "../view";
+
+describe("assistant.view.contract", () => {
+  it("returns one view definition with scene-specific hints and examples", async () => {
+    const registration = createViewContractCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "word.main",
+        active_anchor: "word.header",
+        current_resource: null,
+        active_manifest: null,
+        view_state_version: 1,
+      })),
+      navigateToView: vi.fn(),
+    });
+
+    const result = await registration.handler({ view_id: "board.main" }, {});
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        view_definition: expect.objectContaining({
+          view_id: "board.main",
+          route_path: "/views/board/main",
+          capabilities: expect.arrayContaining([
+            expect.objectContaining({
+              capability_id: "board.add_node",
+              input_schema: expect.any(Object),
+            }),
+          ]),
+        }),
+        recommended_mode: "hybrid",
+        decision_rule: expect.stringContaining("node_id"),
+        key_events: expect.arrayContaining([
+          expect.objectContaining({
+            type: "assistant.board.node_selected",
+          }),
+        ]),
+        examples: expect.arrayContaining([
+          expect.objectContaining({
+            name: "open_then_describe",
+          }),
+          expect.objectContaining({
+            name: "describe_then_connect_by_confirmed_ids",
+          }),
+        ]),
+      }),
+    });
+    expect(result.data).not.toHaveProperty("runtime_contracts");
+    expect(result.data).not.toHaveProperty("current_resource_summary");
+  });
+
+  it("exposes image.explainer narration-oriented examples", async () => {
+    const registration = createViewContractCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "image.explainer",
+        active_anchor: "image.stage",
+        current_resource: null,
+        active_manifest: null,
+        view_state_version: 1,
+      })),
+      navigateToView: vi.fn(),
+    });
+
+    const result = await registration.handler({ view_id: "image.explainer" }, {});
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        view_definition: expect.objectContaining({
+          view_id: "image.explainer",
+          route_path: "/views/image/explainer",
+          capabilities: expect.arrayContaining([
+            expect.objectContaining({
+              capability_id: "image.set_pages",
+            }),
+          ]),
+        }),
+        recommended_mode: "session_start",
+        decision_rule: expect.stringContaining("guide.narrate"),
+        examples: expect.arrayContaining([
+          expect.objectContaining({
+            name: "session_narrate_show_page_highlight",
+            call: expect.objectContaining({
+              payload: expect.objectContaining({
+                steps: expect.arrayContaining([
+                  expect.objectContaining({
+                    action: expect.objectContaining({
+                      type: "guide.narrate",
+                    }),
+                  }),
+                ]),
+              }),
+            }),
+          }),
+        ]),
+      }),
+    });
+  });
+});
 import {
   buildWordMainStateSummary,
   invokeWordMainCapability,
@@ -335,4 +436,5 @@ describe("scene definitions", () => {
       active_anchor: "tictactoe.board",
     });
   });
+
 });

@@ -30,7 +30,8 @@ metadata:
 - Do not require host/runtime layers to parse `steps[].action.payload` internals.
 - When a running session exists for the same plugin, treat `session_busy` as expected and query `session.status` or call `session.stop`.
 - If action details evolve, update plugin capability handlers only.
-- Treat `view.*` and `guide.*` as step action namespaces, not top-level capability names.
+- Treat `view.open` as a top-level capability for page entry.
+- Treat `view.focus` and `guide.*` as step action namespaces, not top-level capability names.
 - Get the registered view list, anchors, route entry, resource contract, and view capability contract from `assistant.view.describe`.
 - The current guide action implementations live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
@@ -39,6 +40,7 @@ metadata:
 
 - Standard wait-aware template:
   - `dawnchat.ui.capabilities.list`
+  - `view.open`
   - `assistant.view.describe`
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.event.wait`
@@ -59,13 +61,14 @@ metadata:
 ```
 - For page-first tasks:
   - call `dawnchat.ui.capabilities.list`
+  - call `dawnchat.ui.capability.invoke(function=view.open)`
   - call `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
   - if the response contains `continuation.pending_wait`, decide whether the current task should continue from that wait boundary or ignore it
   - if `continuation.pending_wait` exists, hand off to `assistant-wait-continuation-handoff`
   - otherwise use `continuation` to decide whether to continue from a wait boundary or plan a fresh sequence
-  - decide whether the task needs direct `view.*` actions or a host-managed `session.start`
+  - decide whether the task needs direct `view.capability.invoke` calls or a host-managed `session.start`
 - For narrated walkthroughs:
-  - use `view.open` to enter the page
+  - use top-level `view.open` to enter the page
   - use `view.focus` or `view.capability.invoke` to manipulate the page
   - use `guide.card.show`, `guide.tip.show`, or `guide.narrate` only for guide expression
   - when the next move depends on a runtime signal, prefer `dawnchat.ui.event.wait` over status polling

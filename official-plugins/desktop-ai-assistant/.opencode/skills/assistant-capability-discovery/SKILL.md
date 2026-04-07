@@ -22,7 +22,8 @@ metadata:
 - Never infer payload fields that are absent from schema.
 - Keep a deterministic capability summary for downstream skills.
 - Treat `dawnchat.ui.capabilities.list` as the assistant feature-scene catalog, not as the raw runtime handler registry.
-- Do not treat `view.*`, `guide.*`, or internal `assistant.session_step_*` handlers as scene catalog entries.
+- Treat top-level `view.open` as the stable page entry capability returned by the current assistant contract.
+- Do not treat `view.focus`, `guide.*`, or internal `assistant.session_step_*` handlers as scene catalog entries.
 - When the task depends on page semantics, anchors, resource state, interaction hints, task progress, or continuation state, recommend `assistant.view.describe`.
 - Treat `capabilities[].capability_id` as the external identifier for `view.capability.invoke`.
 - Treat `capability_invoke_contract` as the lightweight packaging guide for `view_id + capability_id + input`.
@@ -48,10 +49,11 @@ metadata:
 For a wait-aware guided task, the default follow-up sequence should usually be:
 
 1. `dawnchat.ui.capabilities.list`
-2. `assistant.view.describe`
-3. `dawnchat.ui.session.start`
-4. `dawnchat.ui.event.wait`
-5. `dawnchat.ui.session.wait_for_end`
+2. `view.open`
+3. `assistant.view.describe`
+4. `dawnchat.ui.session.start`
+5. `dawnchat.ui.event.wait`
+6. `dawnchat.ui.session.wait_for_end`
 
-Short single-step tasks may stop earlier and use direct `view.*` capability invokes instead.
+Short single-step tasks may stop earlier after `view.open` and use direct `view.capability.invoke` calls instead of `session.start`.
 When they do, prefer the exact `capability_id` returned by discovery/describe and keep business fields inside `payload.input`.
