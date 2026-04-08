@@ -1,29 +1,39 @@
-import { boardMainView } from "../../views/pages/board/boardMain.view";
-import { coordinatePlaneMainView } from "../../views/pages/coordinate-plane/coordinatePlaneMain.view";
-import { imageExplainerMainView } from "../../views/pages/image-explainer/imageExplainerMain.view";
+import {
+  getDefaultCoreViewRegistration,
+  getDefaultCoreViewRouteDefinition,
+  listDefaultCoreViewRegistrations,
+  type ViewRegistryProvider,
+  type ViewRegistration,
+  type ViewRouteDefinition,
+} from "@dawnchat/assistant-core/runtime/view/index";
 import { musicMainView } from "../../views/pages/music/musicMain.view";
-import { tictactoeMainView } from "../../views/pages/tictactoe/tictactoeMain.view";
 import { wordMainView } from "../../views/pages/word/wordMain.view";
-import type { ViewRegistration, ViewRouteDefinition } from "./manifest";
 
-const viewRegistry: Record<string, ViewRegistration> = {
-  [boardMainView.view_id]: boardMainView,
-  [coordinatePlaneMainView.view_id]: coordinatePlaneMainView,
-  [imageExplainerMainView.view_id]: imageExplainerMainView,
+const desktopOnlyRegistry: Record<string, ViewRegistration> = {
   [musicMainView.view_id]: musicMainView,
-  [tictactoeMainView.view_id]: tictactoeMainView,
   [wordMainView.view_id]: wordMainView,
 };
 
 export function getViewRegistration(viewId: string): ViewRegistration | null {
-  return viewRegistry[viewId] || null;
+  return desktopOnlyRegistry[viewId] || getDefaultCoreViewRegistration(viewId);
 }
 
 export function listViewRegistrations(): ViewRegistration[] {
-  return Object.values(viewRegistry);
+  return [
+    ...listDefaultCoreViewRegistrations(),
+    ...Object.values(desktopOnlyRegistry),
+  ];
 }
 
 export function getViewRouteDefinition(viewId: string): ViewRouteDefinition | null {
-  const registration = getViewRegistration(viewId);
-  return registration ? registration.route : null;
+  const registration = desktopOnlyRegistry[viewId];
+  return registration?.route || getDefaultCoreViewRouteDefinition(viewId);
+}
+
+export function createDesktopViewRegistryProvider(): ViewRegistryProvider {
+  return {
+    getViewRegistration,
+    listViewRegistrations,
+    getViewRouteDefinition,
+  };
 }

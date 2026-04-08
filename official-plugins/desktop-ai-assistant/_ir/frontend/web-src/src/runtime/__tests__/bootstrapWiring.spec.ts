@@ -10,15 +10,26 @@ import {
 describe("runtime bootstrap wiring", () => {
   const originalRegister = window.__DAWNCHAT_UI_REGISTER_CAPABILITY__;
   const originalUnregister = window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__;
+  const originalParent = window.parent;
 
   afterEach(() => {
     window.__DAWNCHAT_UI_REGISTER_CAPABILITY__ = originalRegister;
     window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__ = originalUnregister;
+    Object.defineProperty(window, "parent", {
+      value: originalParent,
+      configurable: true,
+    });
   });
 
   it("registers key capabilities and uninstalls cleanly", () => {
     const registered = new Set<string>();
     const unregistered = new Set<string>();
+    Object.defineProperty(window, "parent", {
+      value: {
+        postMessage: vi.fn(),
+      },
+      configurable: true,
+    });
     window.__DAWNCHAT_UI_REGISTER_CAPABILITY__ = (definition) => {
       registered.add(definition.name);
       return true;
@@ -101,6 +112,12 @@ describe("runtime bootstrap wiring", () => {
   });
 
   it("starts from clean in-memory state after reinstall", () => {
+    Object.defineProperty(window, "parent", {
+      value: {
+        postMessage: vi.fn(),
+      },
+      configurable: true,
+    });
     window.__DAWNCHAT_UI_REGISTER_CAPABILITY__ = () => true;
     window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__ = () => true;
 

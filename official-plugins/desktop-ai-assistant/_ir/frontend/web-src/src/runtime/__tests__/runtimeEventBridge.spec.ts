@@ -2,7 +2,7 @@ import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../events";
 import {
   emitAssistantRuntimeEvent,
   installRuntimeEventEmitter,
-  postAssistantRuntimeEventToHost,
+  postDesktopRuntimeEventToHost,
   uninstallRuntimeEventEmitter,
 } from "../runtimeEventBridge";
 
@@ -55,7 +55,7 @@ describe("runtime event bridge", () => {
       configurable: true,
     });
 
-    expect(postAssistantRuntimeEventToHost({
+    expect(postDesktopRuntimeEventToHost({
       type: ASSISTANT_RUNTIME_EVENT_TYPES.GUIDE_QUIZ_SUBMITTED,
       ts_ms: 123,
       source: "guide",

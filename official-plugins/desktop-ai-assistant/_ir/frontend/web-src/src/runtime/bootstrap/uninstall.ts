@@ -1,7 +1,8 @@
 import { unregisterCapabilities } from "../capabilities";
-import { useGuideState } from "../guide/state";
+import { uninstallAssistantRuntimeEnvironment } from "@dawnchat/assistant-core";
+import { useGuideState } from "@dawnchat/assistant-core/runtime/guide/state";
 import { uninstallRuntimeEventEmitter } from "../runtimeEventBridge";
-import { useSessionVisualState } from "../session/visualState";
+import { useSessionVisualState } from "@dawnchat/assistant-core/runtime/session/visualState";
 import { useViewState } from "../view";
 import { getPersistenceRuntimeHandle, setPersistenceRuntimeHandle } from "./runtimeHandles";
 
@@ -13,6 +14,7 @@ export function uninstallAssistantRuntimeCapabilities(names: string[]) {
   useSessionVisualState().setSessionIdle();
   useGuideState().setCardDismissObserver(null);
   useGuideState().resetGuideState();
+  uninstallAssistantRuntimeEnvironment();
   useViewState().clearViewState();
   uninstallRuntimeEventEmitter();
   unregisterCapabilities(names);
