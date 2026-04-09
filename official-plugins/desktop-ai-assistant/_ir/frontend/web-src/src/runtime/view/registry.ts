@@ -5,7 +5,7 @@ import {
   type ViewRegistryProvider,
   type ViewRegistration,
   type ViewRouteDefinition,
-} from "@dawnchat/assistant-core/runtime/view/index";
+} from "@dawnchat/assistant-core/view";
 import { musicMainView } from "../../views/pages/music/musicMain.view";
 import { wordMainView } from "../../views/pages/word/wordMain.view";
 

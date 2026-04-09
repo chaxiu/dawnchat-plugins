@@ -1,5 +1,4 @@
 import MusicMainView from "./MusicMainView.vue";
-import { invokeMusicMainCapability } from "./capabilities";
 import { MUSIC_NOTE_RANGE, MUSIC_SUPPORTED_NOTES } from "./model/notes";
 import {
   cloneMusicResource,
@@ -369,7 +368,10 @@ export const musicMainView = defineView({
   persistence: musicMainPersistence,
   open: openMusicMainView,
   normalizeResource: validateMusicResource,
-  invokeCapability: invokeMusicMainCapability,
+  invokeCapability: async (capabilityId, input, resource) => {
+    const { invokeMusicMainCapability } = await import("./capabilities");
+    return invokeMusicMainCapability(capabilityId, input, resource);
+  },
   getStateSummary: buildMusicMainStateSummary,
 });
 

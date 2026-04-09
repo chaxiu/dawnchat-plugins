@@ -3,17 +3,64 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./assistant-client": {
+      "types": "./dist/assistant-client.d.ts",
+      "import": "./dist/assistant-client.js"
+    },
+    "./event-wait": {
+      "types": "./dist/event-wait.d.ts",
+      "import": "./dist/event-wait.js"
+    },
+    "./session-core": {
+      "types": "./dist/session-core.d.ts",
+      "import": "./dist/session-core.js"
+    },
+    "./transport": {
+      "types": "./dist/transport.d.ts",
+      "import": "./dist/transport.js"
+    },
+    "./tool-router": {
+      "types": "./dist/tool-router.d.ts",
+      "import": "./dist/tool-router.js"
+    },
+    "./agent-loop": {
+      "types": "./dist/agent-loop.d.ts",
+      "import": "./dist/agent-loop.js"
+    },
+    "./vercel-ai": {
+      "types": "./dist/vercel-ai.d.ts",
+      "import": "./dist/vercel-ai.js"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "import": "./dist/env.js"
+    }
   },
   "scripts": {
+    "build": "rm -rf dist && vite build",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "^24.6.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.1.4"
+  },
+  "dependencies": {
+    "ai": "^6.0.154"
   }
 }

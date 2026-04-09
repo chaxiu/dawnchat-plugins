@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/view/runtime.open";
+export * from "@dawnchat/assistant-core/view";

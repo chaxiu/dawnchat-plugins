@@ -3,7 +3,7 @@ import {
   emitAssistantRuntimeEvent,
   installRuntimeEventEmitter,
   uninstallRuntimeEventEmitter,
-} from "@dawnchat/assistant-core/runtime/runtimeEventBridge";
+} from "@dawnchat/assistant-core/runtime";
 import type { AssistantRuntimeEventEnvelope } from "@dawnchat/assistant-core";
 
 export {

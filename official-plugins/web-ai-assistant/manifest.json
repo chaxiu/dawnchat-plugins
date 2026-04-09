@@ -1,0 +1,36 @@
+{
+  "id": "com.dawnchat.web-ai-assistant",
+  "name": "Web AI Assistant",
+  "version": "0.1.0",
+  "app_type": "web",
+  "description": "Assistant-first web template powered by Vue, assistant-core, and host-orchestration-sdk",
+  "author": "DawnChat Team",
+  "min_host_version": "1.0.0",
+  "permissions": [],
+  "capabilities": {
+    "tools": []
+  },
+  "ui": {
+    "type": "web",
+    "entry": "/",
+    "framework": "vue"
+  },
+  "preview": {
+    "frontend_dir": "web-src",
+    "workbench_layout": "agent_preview"
+  },
+  "distribution": {
+    "packages": [
+      "dist",
+      "node_modules"
+    ]
+  },
+  "icon": "🧠",
+  "tags": [
+    "template",
+    "ai-assistant",
+    "web",
+    "vue",
+    "vite"
+  ]
+}

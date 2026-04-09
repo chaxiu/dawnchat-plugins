@@ -1,8 +1,13 @@
+import { getHostOrchestrationLogger } from "./env";
+
 export const logger = {
-  info(_event: string, _payload?: Record<string, unknown>) {
+  info(event: string, payload?: Record<string, unknown>) {
+    getHostOrchestrationLogger().info(event, payload);
   },
-  warn(_event: string, _payload?: Record<string, unknown>) {
+  warn(event: string, payload?: Record<string, unknown>) {
+    getHostOrchestrationLogger().warn(event, payload);
   },
-  error(_event: string, _payload?: Record<string, unknown>) {
+  error(event: string, payload?: Record<string, unknown>) {
+    getHostOrchestrationLogger().error(event, payload);
   },
 };

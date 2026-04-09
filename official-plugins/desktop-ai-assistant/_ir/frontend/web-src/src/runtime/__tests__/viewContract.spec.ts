@@ -1,4 +1,4 @@
-import { createViewContractCapabilityRegistration } from "../view";
+import { createViewContractCapabilityRegistration, getViewRegistration } from "../view";
 
 describe("assistant.view.contract", () => {
   it("returns one view definition with scene-specific hints and examples", async () => {
@@ -209,19 +209,16 @@ import {
   WORD_DEFAULT_RESOURCE,
   wordMainView,
 } from "../../views/pages/word/wordMain.view";
-import {
-  buildTictactoeMainStateSummary,
-  invokeTictactoeMainCapability,
-} from "../../views/pages/tictactoe/tictactoeMain.capabilities";
-import {
-  openTictactoeMainView,
-  TICTACTOE_DEFAULT_RESOURCE,
-  tictactoeMainView,
-  validateTictactoeResource,
-} from "../../views/pages/tictactoe/tictactoeMain.view";
+
+function getTictactoeMainRegistration() {
+  const registration = getViewRegistration("tictactoe.main");
+  expect(registration).not.toBeNull();
+  return registration!;
+}
 
 describe("scene definitions", () => {
   it("exposes compact view definitions for registered scenes", () => {
+    const tictactoeMainView = getTictactoeMainRegistration();
     expect(wordMainView.route.full_path).toBe("/views/word/main");
     expect(tictactoeMainView.route.full_path).toBe("/views/tictactoe/main");
     expect(wordMainView.capabilities.map((item) => [item.id, item.mode])).toEqual([
@@ -342,7 +339,8 @@ describe("scene definitions", () => {
   });
 
   it("opens tictactoe.main with normalized board payload", () => {
-    const result = openTictactoeMainView({
+    const tictactoeMainView = getTictactoeMainRegistration();
+    const result = tictactoeMainView.open!({
       resource: {
         resource_type: "tictactoe.game",
         title: "Flow Wait Arena",
@@ -406,7 +404,8 @@ describe("scene definitions", () => {
   });
 
   it("rejects invalid tictactoe resource payload", () => {
-    const result = validateTictactoeResource({
+    const tictactoeMainView = getTictactoeMainRegistration();
+    const result = tictactoeMainView.normalizeResource!({
       resource_type: "wrong.type",
       data: {},
     });
@@ -420,10 +419,12 @@ describe("scene definitions", () => {
   });
 
   it("places a mark, resolves 4-line wins, and supports reset", () => {
+    const tictactoeMainView = getTictactoeMainRegistration();
+    const defaultResource = JSON.parse(JSON.stringify(tictactoeMainView.default_resource)) as typeof tictactoeMainView.default_resource;
     const midgame = {
-      ...TICTACTOE_DEFAULT_RESOURCE,
+      ...defaultResource,
       data: {
-        ...TICTACTOE_DEFAULT_RESOURCE.data,
+        ...defaultResource.data,
         cells: [
           "X", "X", "X", "", "",
           "O", "O", "", "", "",
@@ -435,7 +436,7 @@ describe("scene definitions", () => {
         move_count: 5,
       },
     };
-    const placeResult = invokeTictactoeMainCapability("game.place_mark", {
+    const placeResult = tictactoeMainView.invokeCapability!("game.place_mark", {
       index: 3,
     }, midgame);
 
@@ -482,7 +483,7 @@ describe("scene definitions", () => {
       },
     });
 
-    const resetResult = invokeTictactoeMainCapability("game.reset", {}, midgame);
+    const resetResult = tictactoeMainView.invokeCapability!("game.reset", {}, midgame);
     expect(resetResult).toEqual({
       resource: expect.objectContaining({
         resource_type: "tictactoe.game",
@@ -504,7 +505,8 @@ describe("scene definitions", () => {
   });
 
   it("builds tictactoe state summary from current resource", () => {
-    const summary = buildTictactoeMainStateSummary({
+    const tictactoeMainView = getTictactoeMainRegistration();
+    const summary = tictactoeMainView.getStateSummary({
       resource_type: "tictactoe.game",
       resource_id: "tictactoe:demo",
       title: "Realtime Arena",

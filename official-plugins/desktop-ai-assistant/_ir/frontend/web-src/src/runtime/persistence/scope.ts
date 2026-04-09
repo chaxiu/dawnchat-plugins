@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/persistence/scope";
+export * from "@dawnchat/assistant-core/browser";

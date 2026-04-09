@@ -2,18 +2,14 @@ import "fake-indexeddb/auto";
 
 import { createViewPersistenceRuntime, DexieViewPersistenceAdapter } from "../persistence";
 import { createManifestSnapshot, getViewRegistration, useViewState } from "../view";
-import {
-  BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
-} from "../../views/pages/board/boardMain.view";
-import {
-  TICTACTOE_DEFAULT_RESOURCE,
-  cloneTictactoeResource,
-} from "../../views/pages/tictactoe/tictactoeMain.view";
 import { cloneWordResource, WORD_DEFAULT_RESOURCE } from "../../views/pages/word/wordMain.view";
 
 function createAdapter() {
   return new DexieViewPersistenceAdapter(`assistant-persistence-test-${crypto.randomUUID()}`);
+}
+
+function cloneResource<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 describe("view persistence runtime", () => {
@@ -256,7 +252,7 @@ describe("view persistence runtime", () => {
     expect(registration).not.toBeNull();
 
     runtime.start();
-    const resource = cloneTictactoeResource(TICTACTOE_DEFAULT_RESOURCE);
+    const resource = cloneResource(registration!.default_resource);
     resource.data = {
       ...resource.data,
       cells: [
@@ -400,7 +396,7 @@ describe("view persistence runtime", () => {
     expect(registration).not.toBeNull();
 
     runtime.start();
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneResource(registration!.default_resource);
     resource.data = {
       ...(resource.data as Record<string, unknown>),
       selection: {

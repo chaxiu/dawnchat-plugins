@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/session/visualState";
+export * from "@dawnchat/assistant-core/session";

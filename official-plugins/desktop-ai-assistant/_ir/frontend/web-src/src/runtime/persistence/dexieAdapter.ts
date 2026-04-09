@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/persistence/dexieAdapter";
+export * from "@dawnchat/assistant-core/browser";

@@ -1,4 +1,5 @@
 import type { AssistantSessionRuntimeEvent } from './assistantRuntimeEventTypes'
+import { getHostOrchestrationTimer, type HostOrchestrationTimerHandle } from '../env'
 import { logger } from '../logger'
 
 export interface AssistantRuntimeEventWaitRequest {
@@ -13,7 +14,7 @@ interface RuntimeEventWaiter {
   eventTypes: string[]
   match: Record<string, unknown>
   settled: boolean
-  timer: number
+  timer: HostOrchestrationTimerHandle
   resolve: (event: AssistantSessionRuntimeEvent) => void
   reject: (error: Error) => void
 }
@@ -33,9 +34,10 @@ function matchesRuntimeEvent(
 
 export function createAssistantRuntimeEventWaitRegistry() {
   const waiters = new Set<RuntimeEventWaiter>()
+  const timer = getHostOrchestrationTimer()
 
   const cleanupWaiter = (waiter: RuntimeEventWaiter) => {
-    window.clearTimeout(waiter.timer)
+    timer.clearTimeout(waiter.timer)
     waiters.delete(waiter)
   }
 
@@ -70,7 +72,7 @@ export function createAssistantRuntimeEventWaitRegistry() {
         eventTypes: request.eventTypes,
         match: request.match,
         settled: false,
-        timer: window.setTimeout(() => {
+        timer: timer.setTimeout(() => {
           settleWaiter(waiter, 'reject', new Error('wait_timeout'))
         }, request.timeoutMs),
         resolve,

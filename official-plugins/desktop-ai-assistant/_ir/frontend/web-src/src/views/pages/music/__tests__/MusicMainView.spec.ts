@@ -3,6 +3,10 @@ import { nextTick } from "vue";
 
 import { createManifestSnapshot } from "../../../../runtime/view";
 import { useViewState } from "../../../../runtime/view/state";
+import {
+  installRuntimeEventEmitter,
+  uninstallRuntimeEventEmitter,
+} from "../../../../runtime/runtimeEventBridge";
 import MusicMainView from "../MusicMainView.vue";
 import {
   cloneMusicResource,
@@ -11,7 +15,7 @@ import {
 } from "../musicMain.view";
 
 const {
-  emitAssistantRuntimeEvent,
+  emitSpy,
   subscribeMock,
   ensureRunningMock,
   playNoteMock,
@@ -20,7 +24,7 @@ const {
 } = vi.hoisted(() => {
   const snapshot = { state: "suspended", activeNotes: [] as string[] };
   return {
-    emitAssistantRuntimeEvent: vi.fn(() => true),
+    emitSpy: vi.fn(),
     subscribeMock: vi.fn((listener: (snapshot: { state: "running" | "suspended" | "closed" | "uninitialized"; activeNotes: string[] }) => void) => {
       listener(snapshot as { state: "running" | "suspended" | "closed" | "uninitialized"; activeNotes: string[] });
       return () => {};
@@ -31,10 +35,6 @@ const {
     snapshotState: snapshot,
   };
 });
-
-vi.mock("../../../../runtime/runtimeEventBridge", () => ({
-  emitAssistantRuntimeEvent,
-}));
 
 vi.mock("../audio/pianoEngine", () => ({
   getPianoEngine: () => ({
@@ -60,8 +60,13 @@ function activateView(resource = cloneMusicResource(MUSIC_DEFAULT_RESOURCE)) {
 }
 
 describe("MusicMainView", () => {
+  beforeEach(() => {
+    emitSpy.mockClear();
+    installRuntimeEventEmitter(emitSpy);
+  });
+
   afterEach(() => {
-    emitAssistantRuntimeEvent.mockClear();
+    uninstallRuntimeEventEmitter();
     subscribeMock.mockClear();
     ensureRunningMock.mockClear();
     playNoteMock.mockClear();
@@ -87,7 +92,7 @@ describe("MusicMainView", () => {
 
     await wrapper.find(".piano-key.white-key").trigger("click");
 
-    expect(emitAssistantRuntimeEvent).toHaveBeenCalledWith(expect.objectContaining({
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({
       type: "assistant.music.key_pressed",
       payload: expect.objectContaining({
         note: expect.any(String),
@@ -114,7 +119,7 @@ describe("MusicMainView", () => {
     await Promise.resolve();
     await nextTick();
 
-    expect(emitAssistantRuntimeEvent).toHaveBeenCalledWith(expect.objectContaining({
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({
       type: "assistant.music.lesson_note_matched",
       payload: expect.objectContaining({
         note: "C3",

@@ -1,4 +1,4 @@
-export * from "@dawnchat/assistant-core/runtime/view/index";
+export * from "@dawnchat/assistant-core/view";
 export {
   getViewRegistration,
   getViewRouteDefinition,

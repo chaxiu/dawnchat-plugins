@@ -1,3 +1,5 @@
+import { getHostOrchestrationBase64Codec } from "../env";
+
 const TOKEN_PREFIX = '[[dc_ctx:'
 const TOKEN_SUFFIX = ']]'
 const TOKEN_RE = /\[\[dc_ctx:([A-Za-z0-9+/=_-]+):([A-Za-z0-9+/=_-]+)\]\]/g
@@ -9,15 +11,11 @@ export interface ContextTokenData {
 }
 
 function encodeBase64(input: string): string {
-  return btoa(unescape(encodeURIComponent(input)))
+  return getHostOrchestrationBase64Codec().encode(input)
 }
 
 function decodeBase64(input: string): string {
-  try {
-    return decodeURIComponent(escape(atob(input)))
-  } catch {
-    return ''
-  }
+  return getHostOrchestrationBase64Codec().decode(input)
 }
 
 export function encodeContextToken(preview: string, fullText: string): string {

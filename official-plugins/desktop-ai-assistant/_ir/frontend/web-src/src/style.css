@@ -1,3 +1,5 @@
+@import "@dawnchat/assistant-core/style.css";
+/* assistant-core exposes component styles, but the host still owns Vue Flow vendor CSS. */
 @import "@vue-flow/core/dist/style.css";
 @import "@vue-flow/core/dist/theme-default.css";
 @import "@vue-flow/minimap/dist/style.css";

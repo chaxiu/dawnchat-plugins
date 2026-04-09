@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/view/manifest";
+export * from "@dawnchat/assistant-core/view";

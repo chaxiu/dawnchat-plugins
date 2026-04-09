@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/guide/state";
+export * from "@dawnchat/assistant-core/guide";

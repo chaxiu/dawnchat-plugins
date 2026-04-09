@@ -9,10 +9,12 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "vitest run",
-    "verify": "pnpm run typecheck && pnpm run test:unit && pnpm run build"
+    "verify": "bun run typecheck && bun run test:unit && bun run build"
   },
+  "// assistant-sdk dependency policy": "Source templates keep assistant SDK on workspace:* and are resolved by dawnchat-plugins/assistant-workspace. DawnChat scaffolder/runtime still rewrites them before user-plugin install or preview.",
   "dependencies": {
     "@dawnchat/assistant-core": "workspace:*",
+    "@vue/runtime-dom": "^3.5.22",
     "@vue-flow/background": "^1.3.2",
     "@vue-flow/controls": "^1.1.3",
     "@vue-flow/core": "^1.48.2",

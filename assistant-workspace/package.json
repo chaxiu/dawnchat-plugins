@@ -1,0 +1,18 @@
+{
+  "name": "@dawnchat/assistant-workspace",
+  "private": true,
+  "packageManager": "bun@1.3.10",
+  "// workspace purpose": "Assistant source workspace for SDK packages and assistant templates. Runtime plugin installs still happen after backend rewrite in user plugin directories.",
+  "workspaces": [
+    "../assistant-sdk/*",
+    "../official-plugins/desktop-ai-assistant/_ir/frontend/web-src",
+    "../official-plugins/web-ai-assistant/web-src"
+  ],
+  "scripts": {
+    "build:sdk": "bun run --filter @dawnchat/assistant-core build && bun run --filter @dawnchat/host-orchestration-sdk build",
+    "verify:sdk": "bun run --filter @dawnchat/assistant-core typecheck && bun run --filter @dawnchat/assistant-core build && bun run --filter @dawnchat/host-orchestration-sdk typecheck && bun run --filter @dawnchat/host-orchestration-sdk test && bun run --filter @dawnchat/host-orchestration-sdk build",
+    "build:templates": "bun run --cwd ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src build && bun run --cwd ../official-plugins/web-ai-assistant/web-src build",
+    "verify:templates": "bun run verify:sdk && bun run --cwd ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src verify && bun run --cwd ../official-plugins/web-ai-assistant/web-src verify",
+    "verify": "bun run verify:templates"
+  }
+}

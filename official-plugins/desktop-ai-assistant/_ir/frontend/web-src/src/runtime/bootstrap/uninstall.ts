@@ -1,8 +1,8 @@
 import { unregisterCapabilities } from "../capabilities";
 import { uninstallAssistantRuntimeEnvironment } from "@dawnchat/assistant-core";
-import { useGuideState } from "@dawnchat/assistant-core/runtime/guide/state";
+import { useGuideState } from "@dawnchat/assistant-core/guide";
 import { uninstallRuntimeEventEmitter } from "../runtimeEventBridge";
-import { useSessionVisualState } from "@dawnchat/assistant-core/runtime/session/visualState";
+import { useSessionVisualState } from "@dawnchat/assistant-core/session";
 import { useViewState } from "../view";
 import { getPersistenceRuntimeHandle, setPersistenceRuntimeHandle } from "./runtimeHandles";
 

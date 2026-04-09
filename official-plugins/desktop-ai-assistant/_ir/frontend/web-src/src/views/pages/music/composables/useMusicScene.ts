@@ -5,7 +5,6 @@ import { emitAssistantRuntimeEvent } from "../../../../runtime/runtimeEventBridg
 import { useViewState } from "../../../../runtime/view/state";
 import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view/manifest";
 import { getPianoEngine } from "../audio/pianoEngine";
-import { invokeMusicMainCapability } from "../capabilities";
 import { mutateLessonMatched, mutateTransportState } from "../capabilities/mutations";
 import { cloneMusicResource, readMusicResourceData } from "../model/resource";
 import { buildMusicMainStateSummary } from "../model/summary";
@@ -129,6 +128,7 @@ export function useMusicScene() {
       if (!baseResource) {
         return;
       }
+      const { invokeMusicMainCapability } = await import("../capabilities");
       const result = await invokeMusicMainCapability(capabilityId, input, baseResource);
       const applied = applyCapabilityResult(capabilityId, result, baseResource);
       if ("ok" in applied && applied.ok === false) {

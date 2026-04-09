@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/persistence/index";
+export * from "@dawnchat/assistant-core/persistence";

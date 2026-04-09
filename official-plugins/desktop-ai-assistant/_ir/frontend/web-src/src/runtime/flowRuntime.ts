@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/flowRuntime";
+export * from "@dawnchat/assistant-core/session";

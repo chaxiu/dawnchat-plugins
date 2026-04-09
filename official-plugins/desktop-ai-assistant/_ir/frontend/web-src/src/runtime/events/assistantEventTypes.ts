@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/events/assistantEventTypes";
+export * from "@dawnchat/assistant-core/events";

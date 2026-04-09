@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/contracts/sessionStep";
+export * from "@dawnchat/assistant-core/session";

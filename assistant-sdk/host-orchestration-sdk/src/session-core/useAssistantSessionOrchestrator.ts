@@ -2,6 +2,7 @@ import type {
   CapabilityInvokeExecutionContext,
   CapabilityInvokeRequest,
 } from '../assistant-client/types'
+import { getHostOrchestrationTimer } from '../env'
 import type { AssistantRuntimeEventPayload } from '../assistant-client/messageProtocol'
 import { logger } from '../logger'
 import { createAssistantRuntimeEventWaitRegistry } from '../event-wait/assistantRuntimeEventWaitRegistry'
@@ -83,7 +84,7 @@ function toSessionStep(raw: unknown, index: number): SessionStep | null {
 }
 
 function buildSessionStatus(state: SessionState): Record<string, unknown> {
-  const now = Date.now()
+  const now = getHostOrchestrationTimer().now()
   const effectiveEndAtMs = typeof state.endedAtMs === 'number' ? state.endedAtMs : undefined
   const elapsedMs = Math.max(0, (effectiveEndAtMs ?? now) - state.startedAtMs)
   const progressPercent =
@@ -123,6 +124,7 @@ function toStringArray(raw: unknown): string[] {
 }
 
 export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrchestratorOptions) {
+  const timer = getHostOrchestrationTimer()
   const configuredPluginId = String(options.pluginId.value || '').trim()
   const sessionById = new Map<string, SessionState>()
   const sessionExecutionById = new Map<string, Promise<void>>()
@@ -138,7 +140,7 @@ export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrch
   }
 
   const updateSessionTimestamp = (state: SessionState): void => {
-    state.updatedAtMs = Date.now()
+    state.updatedAtMs = timer.now()
   }
 
   const notifyTerminalWaiters = (state: SessionState): void => {
@@ -159,7 +161,7 @@ export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrch
     errorMessage?: string
   ): void => {
     state.status = status
-    state.endedAtMs = Date.now()
+    state.endedAtMs = timer.now()
     state.updatedAtMs = state.endedAtMs
     if (errorCode) {
       state.lastErrorCode = errorCode
@@ -395,7 +397,7 @@ export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrch
     return await new Promise<Record<string, unknown>>((resolve) => {
       let settled = false
       let clearTerminalWaiter = () => {}
-      const timer = window.setTimeout(() => {
+      const timeoutHandle = timer.setTimeout(() => {
         if (settled) {
           return
         }
@@ -422,7 +424,7 @@ export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrch
           return
         }
         settled = true
-        window.clearTimeout(timer)
+        timer.clearTimeout(timeoutHandle)
         clearTerminalWaiter()
         resolve({
           ok: true,
@@ -497,8 +499,8 @@ export function useAssistantSessionOrchestrator(options: UseAssistantSessionOrch
       }
     }
     seq += 1
-    const sessionId = `sess_${Date.now()}_${seq}`
-    const now = Date.now()
+    const sessionId = `sess_${timer.now()}_${seq}`
+    const now = timer.now()
     const state: SessionState = {
       sessionId,
       pluginId,

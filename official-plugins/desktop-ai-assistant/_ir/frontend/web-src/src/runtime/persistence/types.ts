@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/persistence/types";
+export * from "@dawnchat/assistant-core/persistence";

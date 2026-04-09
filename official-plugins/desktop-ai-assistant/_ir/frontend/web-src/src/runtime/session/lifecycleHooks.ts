@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/session/lifecycleHooks";
+export * from "@dawnchat/assistant-core/session";

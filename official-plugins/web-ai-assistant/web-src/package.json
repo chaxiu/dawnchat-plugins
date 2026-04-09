@@ -1,0 +1,36 @@
+{
+  "name": "web-ai-assistant-vue-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "test:unit": "vitest run",
+    "verify": "bun run typecheck && bun run test:unit && bun run build"
+  },
+  "// assistant-sdk dependency policy": "Source templates keep assistant SDK on workspace:* and are resolved by dawnchat-plugins/assistant-workspace. DawnChat scaffolder/runtime still rewrites them before user-plugin install or preview.",
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.60",
+    "@ai-sdk/openai": "^3.0.52",
+    "@dawnchat/assistant-core": "workspace:*",
+    "@dawnchat/host-orchestration-sdk": "workspace:*",
+    "@vue/runtime-dom": "^3.5.22",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/json-schema": "^7.0.15",
+    "@types/node": "^25.5.2",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7",
+    "vite-plugin-vue-inspector": "5.3.2",
+    "vitest": "^4.1.4",
+    "vue-tsc": "^3.2.6"
+  }
+}

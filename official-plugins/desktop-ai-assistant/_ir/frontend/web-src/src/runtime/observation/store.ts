@@ -1,1 +1,1 @@
-export * from "@dawnchat/assistant-core/runtime/observation/store";
+export * from "@dawnchat/assistant-core/observation";
