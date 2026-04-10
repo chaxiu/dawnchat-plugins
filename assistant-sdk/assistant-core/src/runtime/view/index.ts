@@ -33,6 +33,8 @@ export {
   uninstallViewRegistryProvider,
 } from "./registry";
 export type { ViewRegistryProvider } from "./registry";
+export { default as RegisteredViewRoute } from "./RegisteredViewRoute.vue";
+export { default as ViewHost } from "./ViewHost.vue";
 export type {
   ViewAnchorDefinition,
   ViewCapabilityDefinition,
@@ -51,6 +53,7 @@ export type {
   ViewOperationFailure,
   ViewPersistenceConfig,
   ViewPersistenceStateSnapshot,
+  ViewRenderMode,
   ViewRecommendedMode,
   ViewRegistration,
   ViewResourceBinding,

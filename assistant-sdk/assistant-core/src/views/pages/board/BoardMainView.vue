@@ -3,6 +3,9 @@ import { ref, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { Background } from "@vue-flow/background";
 import { MiniMap } from "@vue-flow/minimap";
 import { VueFlow } from "@vue-flow/core";
+import "@vue-flow/core/dist/style.css";
+import "@vue-flow/core/dist/theme-default.css";
+import "@vue-flow/minimap/dist/style.css";
 
 import BoardInspector from "./components/BoardInspector.vue";
 import BoardToolbar from "./components/BoardToolbar.vue";

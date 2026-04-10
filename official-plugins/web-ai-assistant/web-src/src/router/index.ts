@@ -1,13 +1,26 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { listViewRegistrations } from "@dawnchat/assistant-core/view";
+import { RegisteredViewRoute, listViewRegistrations } from "@dawnchat/assistant-core/view";
 
-import AssistantChatPage from "../views/chat/AssistantChatPage.vue";
+import WebAssistantShell from "../layouts/WebAssistantShell.vue";
+import {
+  getDefaultWebAssistantViewPath,
+  installWebAssistantViewRegistry,
+} from "../runtime/viewRegistry";
 import ViewsShell from "../views/ViewsShell.vue";
+
+installWebAssistantViewRegistry();
 
 const viewRoutes = listViewRegistrations().map((registration) => ({
   path: registration.route.path,
   name: registration.route.name,
-  component: registration.component,
+  component: RegisteredViewRoute,
+  props: {
+    viewId: registration.view_id,
+  },
+  meta: {
+    title: registration.title,
+    viewId: registration.view_id,
+  },
 }));
 
 export const router = createRouter({
@@ -15,17 +28,18 @@ export const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/chat",
-    },
-    {
-      path: "/chat",
-      name: "assistant-chat",
-      component: AssistantChatPage,
-    },
-    {
-      path: "/views",
-      component: ViewsShell,
-      children: viewRoutes,
+      component: WebAssistantShell,
+      children: [
+        {
+          path: "",
+          redirect: getDefaultWebAssistantViewPath(),
+        },
+        {
+          path: "views",
+          component: ViewsShell,
+          children: viewRoutes,
+        },
+      ],
     },
   ],
 });

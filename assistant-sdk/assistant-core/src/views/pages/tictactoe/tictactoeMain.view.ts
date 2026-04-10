@@ -1,4 +1,5 @@
 import TictactoeMainView from "./TictactoeMainView.vue";
+import tictactoeMainCssText from "./tictactoeMain.css?inline";
 import {
   defineView,
   type ViewOpenSuccess,
@@ -211,6 +212,8 @@ export const tictactoeMainView = defineView({
   resource_type: "tictactoe.game",
   title: "TicTacToe Arena",
   component: TictactoeMainView,
+  render_mode: "shadow-dom",
+  style_texts: [tictactoeMainCssText],
   state_mode: "stateful",
   default_resource: TICTACTOE_DEFAULT_RESOURCE,
   anchors: [

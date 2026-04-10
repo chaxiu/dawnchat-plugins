@@ -32,6 +32,7 @@ export const coordinatePlaneMainView = defineView({
   resource_type: "plane.scene",
   title: "Coordinate Lab",
   component: CoordinatePlaneMainView,
+  render_mode: "shadow-dom",
   state_mode: "stateful",
   default_resource: COORDINATE_PLANE_DEFAULT_RESOURCE,
   anchors: [

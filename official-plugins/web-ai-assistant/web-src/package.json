@@ -15,6 +15,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.60",
     "@ai-sdk/openai": "^3.0.52",
+    "@dawnchat/assistant-chat-ui": "workspace:*",
     "@dawnchat/assistant-core": "workspace:*",
     "@dawnchat/host-orchestration-sdk": "workspace:*",
     "@vue/runtime-dom": "^3.5.22",

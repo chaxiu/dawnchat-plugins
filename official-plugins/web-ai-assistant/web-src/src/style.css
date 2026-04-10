@@ -1,14 +1,87 @@
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --bg-overlay: rgba(255, 255, 255, 0.82);
+  --bg-elevated: rgba(255, 255, 255, 0.92);
+  --bg-hover: rgba(15, 23, 42, 0.06);
+
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --danger: #dc2626;
+
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --surface-blur: 16px;
+  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+
+:root.dark {
+  --bg-primary: #111827;
+  --bg-secondary: #0f172a;
+  --bg-overlay: rgba(15, 23, 42, 0.84);
+  --bg-elevated: rgba(17, 24, 39, 0.92);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+
+  --border: #374151;
+  --border-strong: #4b5563;
+
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --shadow-lg: 0 24px 64px rgba(2, 6, 23, 0.34);
+}
+
 html,
-body,
+body {
+  height: 100%;
+}
+
 #app {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 只负责在 #app 的 flex 列里占满高度；不要写 display:flex，否则会覆盖页面根上的 grid 等布局（#app > * 优先级高于 scoped .assistant-shell） */
+#app > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #08111d;
-  color: #e5eef9;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -18,6 +91,27 @@ textarea {
   font: inherit;
 }
 
-code {
+button,
+input,
+select,
+textarea {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 70%, white);
+  outline-offset: 2px;
+}
+
+code,
+pre {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+a {
+  color: inherit;
 }

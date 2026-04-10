@@ -10,6 +10,7 @@ export interface AgentLoopToolCall {
   id: string;
   name: string;
   input: HostProtocolPayload;
+  thought_signature?: string;
 }
 
 export interface AgentLoopAssistantMessage {
@@ -17,6 +18,7 @@ export interface AgentLoopAssistantMessage {
   content: string | HostProtocolPayload;
   toolCalls?: AgentLoopToolCall[];
   name?: string;
+  raw_model_message?: HostProtocolPayload;
 }
 
 export interface AgentLoopToolMessage {
@@ -54,6 +56,7 @@ export interface AgentLoopTurnInput {
   messages: AgentLoopMessage[];
   tools?: AgentLoopToolDefinition[];
   maxIterations?: number;
+  onEvent?: AgentLoopStreamEventHandler;
 }
 
 export interface AgentLoopTurnResult {
@@ -63,8 +66,57 @@ export interface AgentLoopTurnResult {
   stopReason: string;
 }
 
+export type AgentLoopStreamEvent =
+  | {
+      type: "assistant_text_started";
+      message: AgentLoopAssistantMessage;
+      iteration?: number;
+    }
+  | {
+      type: "assistant_text_delta";
+      delta: string;
+      snapshot: string;
+      message: AgentLoopAssistantMessage;
+      iteration?: number;
+    }
+  | {
+      type: "tool_call_started";
+      call: AgentLoopToolCall;
+      message: AgentLoopAssistantMessage;
+      iteration?: number;
+    }
+  | {
+      type: "tool_result_received";
+      call: AgentLoopToolCall;
+      result: HostProtocolResult;
+      iteration?: number;
+    }
+  | {
+      type: "assistant_message_completed";
+      message: AgentLoopAssistantMessage;
+      iteration?: number;
+    }
+  | {
+      type: "run_failed";
+      output: HostProtocolResult;
+      iterations: number;
+      stopReason: string;
+    }
+  | {
+      type: "run_completed";
+      result: AgentLoopTurnResult;
+    };
+
+export type AgentLoopStreamEventHandler = (
+  event: AgentLoopStreamEvent
+) => void | Promise<void>;
+
 export interface AgentLoopModelAdapter {
   runTurn(input: AgentLoopTurnInput): Promise<AgentLoopModelTurnResult>;
+  runTurnStream?(
+    input: AgentLoopTurnInput,
+    onEvent: AgentLoopStreamEventHandler
+  ): Promise<AgentLoopModelTurnResult>;
 }
 
 export interface AgentLoopRunner {
@@ -108,6 +160,16 @@ function toAssistantMessageWithToolCalls(
   };
 }
 
+async function emitStreamEvent(
+  handler: AgentLoopStreamEventHandler | undefined,
+  event: AgentLoopStreamEvent
+) {
+  if (!handler) {
+    return;
+  }
+  await handler(event);
+}
+
 export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): AgentLoopRunner {
   const executionMode = options.executionMode ?? "local_loop";
   const maxIterations = options.maxIterations ?? 6;
@@ -147,16 +209,50 @@ export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): Ag
 
       while (iterations < limit) {
         iterations += 1;
-        const turn = await options.model.runTurn({
+        const emitForIteration = async (event: AgentLoopStreamEvent) => {
+          if (event.type === "run_completed" || event.type === "run_failed") {
+            await emitStreamEvent(input.onEvent, event);
+            return;
+          }
+          await emitStreamEvent(input.onEvent, {
+            ...event,
+            iteration: iterations,
+          });
+        };
+        const useStreamingTurn = Boolean(input.onEvent && options.model.runTurnStream);
+        const turn = useStreamingTurn && options.model.runTurnStream
+          ? await options.model.runTurnStream({
+            messages: transcript,
+            tools: input.tools,
+            maxIterations: limit,
+          }, emitForIteration)
+          : await options.model.runTurn({
           messages: transcript,
           tools: input.tools,
           maxIterations: limit,
         });
         const assistantMessage = toAssistantMessageWithToolCalls(turn.assistantMessage, turn.toolCalls);
         transcript.push(assistantMessage);
+        if (!useStreamingTurn) {
+          await emitForIteration({
+            type: "assistant_text_started",
+            message: assistantMessage,
+          });
+          for (const call of turn.toolCalls || []) {
+            await emitForIteration({
+              type: "tool_call_started",
+              call,
+              message: assistantMessage,
+            });
+          }
+        }
+        await emitForIteration({
+          type: "assistant_message_completed",
+          message: assistantMessage,
+        });
 
         if (!turn.toolCalls || turn.toolCalls.length === 0) {
-          return {
+          const result = {
             transcript,
             output: turn.output || {
               ok: true,
@@ -165,10 +261,24 @@ export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): Ag
             iterations,
             stopReason: turn.stopReason || "assistant_response",
           };
+          if (typeof result.output === "object" && result.output && result.output.ok === false) {
+            await emitStreamEvent(input.onEvent, {
+              type: "run_failed",
+              output: result.output,
+              iterations,
+              stopReason: result.stopReason,
+            });
+          } else {
+            await emitStreamEvent(input.onEvent, {
+              type: "run_completed",
+              result,
+            });
+          }
+          return result;
         }
 
         if (!options.toolRouter) {
-          return {
+          const result = {
             transcript,
             output: createHostProtocolError(
               "agent_loop_tool_router_missing",
@@ -177,6 +287,13 @@ export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): Ag
             iterations,
             stopReason: "tool_router_missing",
           };
+          await emitStreamEvent(input.onEvent, {
+            type: "run_failed",
+            output: result.output,
+            iterations,
+            stopReason: result.stopReason,
+          });
+          return result;
         }
 
         for (const call of turn.toolCalls) {
@@ -186,10 +303,15 @@ export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): Ag
           };
           const result = await options.toolRouter.invoke(request);
           transcript.push(toToolResultMessage(call, result));
+          await emitForIteration({
+            type: "tool_result_received",
+            call,
+            result,
+          });
         }
       }
 
-      return {
+      const result = {
         transcript,
         output: createHostProtocolError(
           "agent_loop_iteration_limit",
@@ -198,6 +320,13 @@ export function createAgentLoopRunner(options: CreateAgentLoopRunnerOptions): Ag
         iterations,
         stopReason: "max_iterations",
       };
+      await emitStreamEvent(input.onEvent, {
+        type: "run_failed",
+        output: result.output,
+        iterations,
+        stopReason: result.stopReason,
+      });
+      return result;
     },
   };
 }

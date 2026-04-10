@@ -30,6 +30,7 @@ export const boardMainView = defineView({
   resource_type: "board.workspace",
   title: "Holographic Clue Wall",
   component: BoardMainView,
+  render_mode: "shadow-dom",
   state_mode: "stateful",
   default_resource: BOARD_DEFAULT_RESOURCE,
   anchors: [

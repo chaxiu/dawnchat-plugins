@@ -29,6 +29,7 @@ export const imageExplainerMainView = defineView({
   resource_type: "image.deck",
   title: "AI Visual Explainer",
   component: ImageExplainerMainView,
+  render_mode: "shadow-dom",
   state_mode: "stateful",
   default_resource: IMAGE_EXPLAINER_DEFAULT_RESOURCE,
   anchors: [

@@ -93,11 +93,16 @@ export interface ViewRouteDefinition {
   full_path: string;
 }
 
+export type ViewRenderMode = "light-dom" | "shadow-dom";
+
 export interface DefineViewInput {
   view_id: string;
   resource_type: string;
   title: string;
   component: Component;
+  render_mode?: ViewRenderMode;
+  style_texts?: string[];
+  theme_vars?: string[];
   state_mode: ViewStateMode;
   default_resource: ViewResourceBinding;
   anchors?: ViewAnchorDefinition[];
@@ -129,6 +134,9 @@ export interface ViewRegistration {
   resource_type: string;
   title: string;
   component: Component;
+  render_mode: ViewRenderMode;
+  style_texts: string[];
+  theme_vars: string[];
   route: ViewRouteDefinition;
   state_mode: ViewStateMode;
   default_resource: ViewResourceBinding;
@@ -214,6 +222,9 @@ export function defineView(
     resource_type: input.resource_type,
     title: input.title,
     component: input.component,
+    render_mode: input.render_mode || "light-dom",
+    style_texts: input.style_texts ? [...input.style_texts] : [],
+    theme_vars: input.theme_vars ? [...input.theme_vars] : [],
     route: buildViewRouteDefinition(input.view_id),
     state_mode: input.state_mode,
     default_resource: JSON.parse(JSON.stringify(input.default_resource)) as ViewResourceBinding,
