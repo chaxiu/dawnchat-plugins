@@ -19,7 +19,7 @@ const {
       handler: vi.fn(async () => ({
         ok: true,
         data: {
-          views: [{ view_id: "web.assistant.home" }],
+          views: [{ view_id: "tictactoe.main" }],
         },
       })),
     },
@@ -103,7 +103,7 @@ describe("createWebAssistantHostToolRouter", () => {
     expect(viewListResult).toEqual(expect.objectContaining({
       ok: true,
       data: {
-        views: [{ view_id: "web.assistant.home" }],
+        views: [{ view_id: "tictactoe.main" }],
       },
     }));
   });
@@ -153,7 +153,7 @@ describe("createWebAssistantHostToolRouter", () => {
             action: {
               type: "view.open",
               payload: {
-                view_id: "web.assistant.home",
+                view_id: "tictactoe.main",
               },
             },
           },

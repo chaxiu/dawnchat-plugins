@@ -2,7 +2,6 @@
 import { computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 
-import AssistantOrbLayer from "./components/AssistantOrbLayer.vue";
 import {
   installAssistantRuntimeCapabilities,
   uninstallAssistantRuntimeCapabilities,
@@ -37,7 +36,6 @@ onUnmounted(() => {
   <main class="assistant-shell" :class="{ 'assistant-shell--immersive': isImmersiveRoute }">
     <div v-if="!isImmersiveRoute" class="aurora aurora-a"></div>
     <div v-if="!isImmersiveRoute" class="aurora aurora-b"></div>
-    <AssistantOrbLayer />
     <section class="shell-stage" :style="shellStageStyle">
       <RouterView />
     </section>

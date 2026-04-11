@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { router } from "../index";
-import { getDefaultWebAssistantViewPath } from "../../runtime/viewRegistry";
+import { ROUTE_PATHS } from "../routes";
 
 describe("web assistant router", () => {
   afterEach(async () => {
-    await router.push(getDefaultWebAssistantViewPath());
+    await router.push(ROUTE_PATHS.welcome);
   });
 
-  it("redirects the root route to the default assistant home view", async () => {
+  it("redirects the root route to the welcome page", async () => {
     await router.push("/");
     await router.isReady();
 
-    expect(router.currentRoute.value.fullPath).toBe(getDefaultWebAssistantViewPath());
+    expect(router.currentRoute.value.fullPath).toBe(ROUTE_PATHS.welcome);
   });
 });

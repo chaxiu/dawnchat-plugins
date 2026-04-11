@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    include: ["src/**/*.spec.ts"],
+    // Keep specs under __tests__ only so feature/runtime code dirs stay free of *.spec.ts noise.
+    include: ["src/**/__tests__/**/*.spec.ts"],
   },
 });

@@ -1,3 +1,8 @@
 :root {
   --chat-message-max-width: 760px;
+  /**
+   * Height of the peek strip when the mobile bottom sheet is collapsed.
+   * Must match `.mobile-dock` min-height in AssistantChatChrome and shell `translateY(...)`.
+   */
+  --assistant-chat-dock-peek-height: 120px;
 }

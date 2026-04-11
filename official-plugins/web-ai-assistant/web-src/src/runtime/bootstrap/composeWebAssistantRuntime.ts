@@ -3,9 +3,15 @@ import { composeAssistantCoreRuntime, type AssistantHostAdapter } from "@dawncha
 import { router } from "../../router";
 import { getWebAssistantIdentity } from "../assistantIdentity";
 import { postWebRuntimeEventToHost } from "../runtimeEventBridge";
+import { webAssistantViewRegistryProvider } from "../viewRegistry";
 
 function isInternalAssistantRoute(routePath: string): boolean {
-  return routePath === "/" || routePath === "/views" || routePath.startsWith("/views/");
+  return (
+    routePath === "/" ||
+    routePath === "/welcome" ||
+    routePath === "/views" ||
+    routePath.startsWith("/views/")
+  );
 }
 
 export function composeWebAssistantRuntime() {
@@ -25,6 +31,7 @@ export function composeWebAssistantRuntime() {
       persistenceScope: identity.persistenceScope,
       environment: {
         hostAdapter,
+        viewRegistryProvider: webAssistantViewRegistryProvider,
       },
     }),
     identity,

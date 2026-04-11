@@ -3,11 +3,12 @@ import { computed } from "vue";
 import { listViewRegistrations } from "@dawnchat/assistant-core/view";
 
 import { loadProviderConfig } from "../../features/provider/providerStorage";
-import { getWebAssistantIdentity } from "../../runtime/assistantIdentity";
-import { WEB_ASSISTANT_HOME_VIEW_ID } from "./webAssistantHome.view";
+import { getMobileAssistantIdentity } from "../../runtime/assistantIdentity";
+import { ROUTE_PATHS } from "../../router/routes";
+import { MOBILE_ASSISTANT_HOME_VIEW_ID } from "./mobileAssistantHome.view";
 
 const providerConfig = loadProviderConfig();
-const identity = getWebAssistantIdentity();
+const identity = getMobileAssistantIdentity();
 
 const configuredProviderLabel = computed(() => {
   if (!providerConfig.apiKey.trim()) {
@@ -17,7 +18,7 @@ const configuredProviderLabel = computed(() => {
 });
 
 const sampleViews = computed(() =>
-  listViewRegistrations().filter((registration) => registration.view_id !== WEB_ASSISTANT_HOME_VIEW_ID)
+  listViewRegistrations().filter((registration) => registration.view_id !== MOBILE_ASSISTANT_HOME_VIEW_ID)
 );
 </script>
 
@@ -25,8 +26,8 @@ const sampleViews = computed(() =>
   <section class="home">
     <div class="home-scroll">
       <p class="home-lead">
-        Use the chat to drive views on the right. Runtime tools include listing views, opening a scene,
-        and describing state — no nested iframes.
+        Chat lives in the shell panel (side column on wide screens, bottom sheet on narrow). Runtime tools can
+        list views, open scenes, and describe state.
       </p>
 
       <dl class="home-meta">
@@ -47,12 +48,18 @@ const sampleViews = computed(() =>
       <h2 class="home-h2">Quick tips</h2>
       <ul class="home-list">
         <li><code>assistant.view.list</code> — catalog of scenes</li>
-        <li><code>view.open</code> — switch the right pane</li>
+        <li><code>view.open</code> — navigate the stack to a view</li>
         <li><code>assistant.view.describe</code> — inspect active state</li>
       </ul>
 
-      <h2 class="home-h2">Other views</h2>
+      <h2 class="home-h2">Navigation</h2>
       <ul class="home-links">
+        <li>
+          <RouterLink class="home-link" :to="ROUTE_PATHS.welcome">
+            <span class="home-link__title">Idle — orb welcome</span>
+            <span class="home-link__id">{{ ROUTE_PATHS.welcome }}</span>
+          </RouterLink>
+        </li>
         <li v-for="registration in sampleViews" :key="registration.view_id">
           <RouterLink class="home-link" :to="registration.route.full_path">
             <span class="home-link__title">{{ registration.title }}</span>

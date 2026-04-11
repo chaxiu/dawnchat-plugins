@@ -24,38 +24,23 @@ function closeMobileChat() {
     />
 
     <aside class="chat-column" :data-open="isMobileChatOpen">
-      <div class="chat-column__body">
-        <AssistantChatPage />
-      </div>
-
-      <!-- 折叠时露在屏幕底部的是 aside 的「最后」一段：把手必须放在 DOM 末尾，点击即可展开 -->
-      <div class="chat-mobile-sheet-edge" aria-hidden="true">
-        <span class="chat-mobile-sheet-edge__pill" />
-      </div>
-
-      <div class="chat-mobile-handle">
-        <template v-if="!isMobileChatOpen">
-          <button
-            type="button"
-            class="chat-mobile-handle__expand"
-            aria-label="展开聊天面板"
-            @click="openMobileChat"
-          >
-            <span class="chat-mobile-handle__title">Chat</span>
-            <span class="chat-mobile-handle__hint">点按展开</span>
-          </button>
-        </template>
-        <template v-else>
-          <div class="chat-mobile-handle__bar">
-            <div class="chat-mobile-handle__bar-text">
-              <p class="shell-kicker">Assistant</p>
-              <strong>Conversation</strong>
-            </div>
-            <button type="button" class="ghost-button" @click="closeMobileChat">
-              Close
-            </button>
+      <div v-if="isMobileChatOpen" class="chat-mobile-handle">
+        <div class="chat-mobile-handle__bar">
+          <div class="chat-mobile-handle__bar-text">
+            <p class="shell-kicker">Assistant</p>
+            <strong>Conversation</strong>
           </div>
-        </template>
+          <button type="button" class="ghost-button" @click="closeMobileChat">
+            Close
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-column__body">
+        <AssistantChatPage
+          :mobile-sheet-expanded="isMobileChatOpen"
+          @expand-mobile-sheet="openMobileChat"
+        />
       </div>
     </aside>
 
@@ -82,6 +67,14 @@ function closeMobileChat() {
     var(--bg-secondary);
 }
 
+.shell-kicker {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .chat-column {
   min-width: 0;
   min-height: 0;
@@ -90,6 +83,9 @@ function closeMobileChat() {
   overflow: hidden;
   border-right: 1px solid var(--border);
   background: var(--bg-primary);
+  position: relative;
+  z-index: 0;
+  contain: paint;
 }
 
 .chat-column__body {
@@ -100,7 +96,6 @@ function closeMobileChat() {
   flex-direction: column;
 }
 
-.chat-mobile-sheet-edge,
 .chat-mobile-handle {
   display: none;
 }
@@ -111,16 +106,19 @@ function closeMobileChat() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: transparent;
+  background: var(--bg-secondary);
+  isolation: isolate;
 }
 
 .workspace-body {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: var(--bg-secondary);
+  isolation: isolate;
 }
 
 .ghost-button {
@@ -153,14 +151,14 @@ function closeMobileChat() {
     right: 0;
     bottom: 0;
     z-index: 20;
-    max-height: min(78vh, 720px);
+    max-height: min(80vh, 800px);
     border-right: none;
     border-top: 1px solid var(--border);
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
     background: var(--bg-primary);
     box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.12);
-    transform: translateY(calc(100% - 72px));
+    transform: translateY(calc(100% - var(--assistant-chat-dock-peek-height, 120px)));
     transition: transform 180ms ease;
   }
 
@@ -168,72 +166,11 @@ function closeMobileChat() {
     transform: translateY(0);
   }
 
-  /* 折叠：底部露出的条 = 把手（order 最大，排在 DOM 最后） */
-  .chat-mobile-sheet-edge {
-    display: flex;
-    justify-content: center;
-    padding: 8px 0 4px;
-    flex-shrink: 0;
-    order: 2;
-  }
-
-  .chat-mobile-sheet-edge__pill {
-    width: 40px;
-    height: 5px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--text-muted) 45%, var(--border));
-  }
-
   .chat-mobile-handle {
     display: block;
     flex-shrink: 0;
-    order: 3;
-    border-top: 1px solid var(--border);
-    background: var(--bg-primary);
-  }
-
-  .chat-column__body {
-    order: 1;
-    min-height: 0;
-  }
-
-  /* 展开：把手条移到顶部，便于关闭 */
-  .assistant-shell[data-mobile-chat-open="true"] .chat-column__body {
-    order: 2;
-  }
-
-  .assistant-shell[data-mobile-chat-open="true"] .chat-mobile-sheet-edge {
-    display: none;
-  }
-
-  .assistant-shell[data-mobile-chat-open="true"] .chat-mobile-handle {
-    order: 0;
-    border-top: none;
     border-bottom: 1px solid var(--border);
-  }
-
-  .chat-mobile-handle__expand {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px 14px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: var(--text-primary);
-    text-align: left;
-  }
-
-  .chat-mobile-handle__title {
-    font-weight: 700;
-    font-size: 1rem;
-  }
-
-  .chat-mobile-handle__hint {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+    background: var(--bg-primary);
   }
 
   .chat-mobile-handle__bar {

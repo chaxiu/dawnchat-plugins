@@ -13,6 +13,7 @@
   },
   "// assistant-sdk dependency policy": "Source templates keep assistant SDK on workspace:* and are resolved by dawnchat-plugins/assistant-workspace. DawnChat scaffolder/runtime still rewrites them before user-plugin install or preview.",
   "dependencies": {
+    "@dawnchat/assistant-chat-ui": "workspace:*",
     "@dawnchat/assistant-core": "workspace:*",
     "@vue/runtime-dom": "^3.5.22",
     "@vue-flow/background": "^1.3.2",

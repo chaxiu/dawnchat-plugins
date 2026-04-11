@@ -1,0 +1,40 @@
+{
+  "name": "mobile-ai-assistant-ionic-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "verify": "bun run typecheck && bun run build"
+  },
+  "// assistant-sdk dependency policy": "Source templates keep assistant SDK on workspace:* and are resolved by dawnchat-plugins/assistant-workspace. DawnChat scaffolder/runtime still rewrites them before user-plugin install or preview.",
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.60",
+    "@ai-sdk/openai": "^3.0.52",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/haptics": "^8.0.1",
+    "@capgo/capacitor-flash": "^8.0.21",
+    "@dawnchat/assistant-app-sdk": "workspace:*",
+    "@dawnchat/assistant-chat-ui": "workspace:*",
+    "@dawnchat/assistant-core": "workspace:*",
+    "@dawnchat/host-orchestration-sdk": "workspace:*",
+    "@ionic/vue": "^8.8.1",
+    "@ionic/vue-router": "^8.8.1",
+    "@vue/runtime-dom": "^3.5.30",
+    "vue": "^3.5.30",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/json-schema": "^7.0.15",
+    "@types/node": "^24.12.0",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/tsconfig": "^0.9.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.0",
+    "vite-plugin-vue-inspector": "5.3.2",
+    "vue-tsc": "^3.2.5"
+  }
+}

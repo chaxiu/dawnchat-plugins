@@ -94,7 +94,7 @@ describe("AssistantChatPage", () => {
     expect(submitPromptMock).toHaveBeenCalledWith(savedConfigRef.value);
   });
 
-  it("renders assistant messages and tool results in chat layout", () => {
+  it("renders assistant messages and tool items in chat layout", () => {
     transcriptRef.value = [
       {
         role: "user",
@@ -123,6 +123,6 @@ describe("AssistantChatPage", () => {
 
     expect(wrapper.text()).toContain("Calling the calculator.");
     expect(wrapper.text()).toContain("math.add");
-    expect(wrapper.text()).toContain("579");
+    expect(wrapper.text()).toContain("Add two numbers together and return a numeric result.");
   });
 });

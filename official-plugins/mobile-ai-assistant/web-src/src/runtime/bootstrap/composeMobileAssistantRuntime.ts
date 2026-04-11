@@ -1,0 +1,70 @@
+import { composeAssistantCoreRuntime, type AssistantHostAdapter } from "@dawnchat/assistant-core";
+import { listViewRegistrations } from "@dawnchat/assistant-core/view";
+
+import { router } from "../../router";
+import { ROUTE_PATHS } from "../../router/routes";
+import { getMobileAssistantIdentity } from "../assistantIdentity";
+import { postMobileRuntimeEventToHost } from "../runtimeEventBridge";
+import { mobileAssistantViewRegistryProvider } from "../viewRegistry";
+
+function stripQueryAndHash(path: string): string {
+  let segment = path.trim();
+  const hashIdx = segment.indexOf("#");
+  if (hashIdx !== -1) {
+    segment = segment.slice(hashIdx + 1);
+  }
+  const q = segment.indexOf("?");
+  return q === -1 ? segment : segment.slice(0, q);
+}
+
+function normalizeNavPath(path: string): string {
+  const trimmed = stripQueryAndHash(path);
+  if (trimmed.length > 1 && trimmed.endsWith("/")) {
+    return trimmed.slice(0, -1);
+  }
+  return trimmed;
+}
+
+let cachedAllowedNavPaths: Set<string> | null = null;
+
+function getAllowedNavPathSet(): Set<string> {
+  if (cachedAllowedNavPaths) {
+    return cachedAllowedNavPaths;
+  }
+  const allowed = new Set<string>();
+  allowed.add(normalizeNavPath(ROUTE_PATHS.welcome));
+  for (const registration of listViewRegistrations()) {
+    allowed.add(normalizeNavPath(registration.route.full_path));
+  }
+  cachedAllowedNavPaths = allowed;
+  return allowed;
+}
+
+function isAllowedMobileAssistantNavPath(routePath: string): boolean {
+  return getAllowedNavPathSet().has(normalizeNavPath(routePath));
+}
+
+export function composeMobileAssistantRuntime() {
+  const identity = getMobileAssistantIdentity();
+  const hostAdapter: AssistantHostAdapter = {
+    navigateToRoute: async (routePath) => {
+      if (!isAllowedMobileAssistantNavPath(routePath)) {
+        return;
+      }
+      const target = normalizeNavPath(routePath);
+      await router.replace(target);
+    },
+    postRuntimeEventToHost: postMobileRuntimeEventToHost,
+  };
+
+  return {
+    ...composeAssistantCoreRuntime({
+      persistenceScope: identity.persistenceScope,
+      environment: {
+        hostAdapter,
+        viewRegistryProvider: mobileAssistantViewRegistryProvider,
+      },
+    }),
+    identity,
+  };
+}

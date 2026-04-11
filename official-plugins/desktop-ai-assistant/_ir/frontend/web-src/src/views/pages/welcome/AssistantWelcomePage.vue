@@ -1,21 +1,34 @@
+<script setup lang="ts">
+import { AssistantAiOrb } from "@dawnchat/assistant-chat-ui";
+
+import { useSessionVisualState } from "../../../runtime/session/visualState";
+
+const { sessionVisualStatus } = useSessionVisualState();
+</script>
+
 <template>
-  <div class="assistant-welcome">
-    <p class="assistant-welcome__hint">Welcome</p>
-  </div>
+  <main class="assistant-welcome">
+    <AssistantAiOrb
+      :motion-mode="sessionVisualStatus === 'running' ? 'active' : 'idle'"
+      :show-greeting="true"
+      welcome-text="Hello, I am your AI assistant"
+    />
+  </main>
 </template>
 
 <style scoped>
 .assistant-welcome {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
-.assistant-welcome__hint {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
+
+.assistant-welcome :deep(.dc-ai-orb) {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
 }
 </style>

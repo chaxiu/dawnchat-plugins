@@ -22,7 +22,6 @@ const boardSize = computed(() => Number(currentResource.value?.data.board_size) 
 const currentPlayer = computed(() => String(currentResource.value?.data.current_player || ""));
 const status = computed(() => String(currentResource.value?.data.status || "playing"));
 const winner = computed(() => String(currentResource.value?.data.winner || ""));
-const moveCount = computed(() => Number(currentResource.value?.data.move_count) || 0);
 const winningCells = computed(() => {
   const cells = currentResource.value?.data.winning_cells;
   return Array.isArray(cells) ? cells.map((value) => Number(value)).filter(Number.isInteger) : [];
@@ -47,35 +46,15 @@ const boardCells = computed(() => {
     isWinning: winningCells.value.includes(index),
   }));
 });
-const lastMoveLabel = computed(() => {
-  const lastMove = currentResource.value?.data.last_move;
-  if (!lastMove || typeof lastMove !== "object" || Array.isArray(lastMove)) {
-    return "等待首手落子";
-  }
-  const row = Number((lastMove as Record<string, unknown>).row);
-  const col = Number((lastMove as Record<string, unknown>).col);
-  const player = String((lastMove as Record<string, unknown>).player || "");
-  return `${player} @ ${row + 1}, ${col + 1}`;
-});
 const statusTitle = computed(() => {
   if (status.value === "won") {
-    return `${winner.value || "X"} wins the round`;
+    return `${winner.value || "X"} 获胜`;
   }
   if (status.value === "draw") {
-    return "Draw after full board";
+    return "平局";
   }
-  return `Player ${currentPlayer.value || "X"} to move`;
+  return `轮到 ${currentPlayer.value || "X"}`;
 });
-const statusHint = computed(() => {
-  if (status.value === "won") {
-    return "本地规则已判定胜负，可继续观察 event/wait 链路或直接重置。";
-  }
-  if (status.value === "draw") {
-    return "棋盘已满，view 本地完成平局判定。";
-  }
-  return "每次点击会先本地落子，再发出实时 runtime event。";
-});
-const capabilityTitles = computed(() => activeManifest.value?.capabilities.map((item) => item.title) || []);
 const isBoardReady = computed(
   () => isActiveTictactoeView.value && Boolean(currentResource.value) && Boolean(activeManifest.value)
 );
@@ -168,102 +147,44 @@ function resetBoard() {
 <template>
   <section class="view-root" data-view-id="tictactoe.main">
     <div v-if="isBoardReady" class="arena">
-      <header
-        class="hero-panel"
-        :data-anchor="activeAnchor === 'tictactoe.header' ? 'active' : 'inactive'"
+      <section
+        class="board-shell"
+        :data-anchor="activeAnchor === 'tictactoe.board' ? 'active' : 'inactive'"
       >
-        <div class="hero-copy">
-          <span class="hero-chip">Stateful Neon Scene</span>
-          <h2>{{ currentResource!.title || "TicTacToe Arena" }}</h2>
-          <p class="hero-title">{{ statusTitle }}</p>
-          <p class="hero-hint">{{ statusHint }}</p>
+        <div class="board-shell__head">
+          <div class="board-shell__intro">
+            <strong class="board-shell__title">井字棋</strong>
+            <p class="board-shell__desc">
+              点击格子轮流落子；本地状态会更新，并同步发出 runtime 事件。
+            </p>
+            <p class="board-shell__status" aria-live="polite">{{ statusTitle }}</p>
+          </div>
+          <button type="button" class="reset-btn" @click="resetBoard">
+            重新开始
+          </button>
         </div>
-        <div class="hero-stats">
-          <div class="stat-card">
-            <span>Board</span>
-            <strong>{{ boardSize }}x{{ boardSize }}</strong>
-          </div>
-          <div class="stat-card">
-            <span>Win</span>
-            <strong>{{ TICTACTOE_WIN_LENGTH }} 连</strong>
-          </div>
-          <div class="stat-card">
-            <span>Moves</span>
-            <strong>{{ moveCount }}</strong>
-          </div>
+        <div
+          class="board-grid"
+          :style="{ gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))` }"
+        >
+          <button
+            v-for="cell in boardCells"
+            :key="cell.index"
+            type="button"
+            class="cell-btn"
+            :class="[
+              cell.value === 'X' ? 'cell-btn--x' : '',
+              cell.value === 'O' ? 'cell-btn--o' : '',
+              cell.isWinning ? 'cell-btn--winning' : '',
+            ]"
+            :data-cell-index="cell.index"
+            :disabled="Boolean(cell.value) || status !== 'playing'"
+            @click="handleCellClick(cell.index)"
+          >
+            <span>{{ cell.value || '·' }}</span>
+          </button>
         </div>
-      </header>
-
-      <div class="content-grid">
-        <section
-          class="board-shell"
-          :data-anchor="activeAnchor === 'tictactoe.board' ? 'active' : 'inactive'"
-        >
-          <div class="board-shell__head">
-            <div>
-              <strong>Realtime Board</strong>
-              <p>点击格子，验证本地状态更新与 runtime event 同步发出。</p>
-            </div>
-            <button type="button" class="reset-btn" @click="resetBoard">
-              Reset Round
-            </button>
-          </div>
-          <div class="board-grid" :style="{ gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))` }">
-            <button
-              v-for="cell in boardCells"
-              :key="cell.index"
-              type="button"
-              class="cell-btn"
-              :class="[
-                cell.value === 'X' ? 'cell-btn--x' : '',
-                cell.value === 'O' ? 'cell-btn--o' : '',
-                cell.isWinning ? 'cell-btn--winning' : '',
-              ]"
-              :data-cell-index="cell.index"
-              :disabled="Boolean(cell.value) || status !== 'playing'"
-              @click="handleCellClick(cell.index)"
-            >
-              <span>{{ cell.value || '·' }}</span>
-            </button>
-          </div>
-        </section>
-
-        <aside
-          class="side-panel"
-          :data-anchor="activeAnchor === 'tictactoe.panel' ? 'active' : 'inactive'"
-        >
-          <section class="info-card">
-            <div class="section-head">
-              <strong>Round State</strong>
-              <span>{{ status }}</span>
-            </div>
-            <dl class="kv-list">
-              <div>
-                <dt>Current</dt>
-                <dd>{{ currentPlayer || "None" }}</dd>
-              </div>
-              <div>
-                <dt>Winner</dt>
-                <dd>{{ winner || "TBD" }}</dd>
-              </div>
-              <div>
-                <dt>Last Move</dt>
-                <dd>{{ lastMoveLabel }}</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section class="info-card">
-            <div class="section-head">
-              <strong>Capabilities</strong>
-              <span>{{ capabilityTitles.length }}</span>
-            </div>
-            <div class="capability-list">
-              <span v-for="title in capabilityTitles" :key="title">{{ title }}</span>
-            </div>
-          </section>
-        </aside>
-      </div>
+      </section>
     </div>
 
     <div v-else class="idle-state">

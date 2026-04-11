@@ -2,11 +2,11 @@ import { createRouter, createWebHistory } from "vue-router";
 import { RegisteredViewRoute, listViewRegistrations } from "@dawnchat/assistant-core/view";
 
 import WebAssistantShell from "../layouts/WebAssistantShell.vue";
-import {
-  getDefaultWebAssistantViewPath,
-  installWebAssistantViewRegistry,
-} from "../runtime/viewRegistry";
+import { installWebAssistantViewRegistry } from "../runtime/viewRegistry";
 import ViewsShell from "../views/ViewsShell.vue";
+import WebAssistantWelcomePage from "../views/welcome/WebAssistantWelcomePage.vue";
+import { resolveSitesHistoryBase } from "./historyBase";
+import { ROUTE_PATHS } from "./routes";
 
 installWebAssistantViewRegistry();
 
@@ -24,7 +24,7 @@ const viewRoutes = listViewRegistrations().map((registration) => ({
 }));
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(resolveSitesHistoryBase()),
   routes: [
     {
       path: "/",
@@ -32,7 +32,12 @@ export const router = createRouter({
       children: [
         {
           path: "",
-          redirect: getDefaultWebAssistantViewPath(),
+          redirect: ROUTE_PATHS.welcome,
+        },
+        {
+          path: "welcome",
+          name: "web-assistant-welcome",
+          component: WebAssistantWelcomePage,
         },
         {
           path: "views",

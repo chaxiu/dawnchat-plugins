@@ -67,6 +67,11 @@ const isImmersiveView = computed(() =>
   display: flex;
   flex-direction: column;
 }
+.view-stage :deep(.assistant-welcome) {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
 .view-stage :deep(.view-root) {
   flex: 1;
   min-height: 0;

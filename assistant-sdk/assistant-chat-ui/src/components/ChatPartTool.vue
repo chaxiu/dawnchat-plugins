@@ -60,7 +60,7 @@
     :width="520"
     placement="auto"
     panel-class="tool-input-popover"
-    :surface-mix="90"
+    :surface-mix="96"
     @outside-click="showInputPopover = false"
   >
     <div class="tool-input-popover-meta">

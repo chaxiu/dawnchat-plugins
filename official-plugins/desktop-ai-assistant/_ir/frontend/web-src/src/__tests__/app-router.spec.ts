@@ -1,22 +1,21 @@
 import { mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
-import { computed, defineComponent } from "vue";
+import { defineComponent } from "vue";
 import { nextTick } from "vue";
 
 vi.mock("../runtime/bootstrap", () => ({
   installAssistantRuntimeCapabilities: () => [],
   uninstallAssistantRuntimeCapabilities: () => {},
 }));
-vi.mock("../components/AssistantOrbLayer.vue", () => {
+
+vi.mock("@dawnchat/assistant-chat-ui", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@dawnchat/assistant-chat-ui")>();
   return {
-    default: defineComponent({
-      name: "AssistantOrbLayerStub",
-      setup() {
-        const route = useRoute();
-        const orbState = computed(() => (route.name === "assistant-welcome" ? "hero" : "dock"));
-        return { orbState };
-      },
-      template: "<section class='assistant-orb-layer' :data-orb-state='orbState'></section>",
+    ...actual,
+    AssistantAiOrb: defineComponent({
+      name: "AssistantAiOrbStub",
+      template:
+        '<section class="dc-ai-orb" data-testid="assistant-welcome-orb-stub"></section>',
     }),
   };
 });
@@ -25,7 +24,6 @@ import App from "../App.vue";
 import { useGuideState } from "../runtime/guide/state";
 import { useSessionVisualState } from "../runtime/session/visualState";
 import { useViewState } from "../runtime/view";
-import { useRoute } from "vue-router";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
 import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 import WordMainView from "../views/pages/word/WordMainView.vue";
@@ -94,14 +92,14 @@ describe("app router shell", () => {
       },
     });
 
-    expect(wrapper.find(".assistant-orb-layer").attributes("data-orb-state")).toBe("hero");
+    expect(wrapper.find('[data-testid="assistant-welcome-orb-stub"]').exists()).toBe(true);
 
     await router.push({ name: "view-word-main" });
     await router.isReady();
     await nextTick();
     expect(router.currentRoute.value.name).toBe("view-word-main");
 
-    expect(wrapper.find(".assistant-orb-layer").exists()).toBe(true);
+    expect(wrapper.find('[data-testid="assistant-welcome-orb-stub"]').exists()).toBe(false);
     vi.restoreAllMocks();
     (globalThis as any).Path2D = originalPath2D;
   });

@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 
 const props = withDefaults(
   defineProps<{
     welcomeText?: string;
-    mode?: "hero" | "dock";
     motionMode?: "idle" | "active";
     showGreeting?: boolean;
   }>(),
   {
     welcomeText: "Hello, I am your AI assistant",
-    mode: "hero",
     motionMode: "idle",
     showGreeting: true,
   },
@@ -30,8 +28,6 @@ let pointerY = 0;
 let shouldReduceMotion = false;
 let unbindPointerListeners: (() => void) | null = null;
 let canvasContextUnavailable = false;
-
-const isDockMode = computed(() => props.mode === "dock");
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -86,10 +82,7 @@ function drawFrame(timestamp: number): void {
       return 8;
     }
     if (shouldReduceMotion) {
-      return isDockMode.value ? 10 : 12;
-    }
-    if (props.mode === "dock") {
-      return props.motionMode === "active" ? 24 : 18;
+      return 12;
     }
     return props.motionMode === "active" ? 52 : 42;
   })();
@@ -104,9 +97,6 @@ function drawFrame(timestamp: number): void {
   const phaseStep = (() => {
     if (shouldReduceMotion) {
       return 0.00085;
-    }
-    if (props.mode === "dock") {
-      return props.motionMode === "active" ? 0.0017 : 0.001;
     }
     return props.motionMode === "active" ? 0.00195 : 0.0014;
   })();
@@ -135,50 +125,48 @@ function drawFrame(timestamp: number): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
-  const cx = width / 2 + pointerX * (props.mode === "dock" ? 8 : 14);
-  const cy = props.mode === "dock" ? height / 2 + pointerY * 8 : height * 0.38 + pointerY * 10;
+  const cx = width / 2 + pointerX * 14;
+  const cy = height * 0.38 + pointerY * 10;
   const minSide = Math.min(width, height);
   const breath = 1 + Math.sin(phase * 0.85) * 0.028;
-  const baseR = minSide * (props.mode === "dock" ? 0.26 : 0.23) * breath;
+  const baseR = minSide * 0.23 * breath;
   const waveAmp = shouldReduceMotion ? 5.5 : 6 + pulse * 2 + (props.motionMode === "active" ? 2 : 0);
 
   const path = buildWavePath(cx, cy, baseR, waveAmp);
 
-  const outerBlur = shouldReduceMotion ? 20 : props.mode === "dock" ? 24 : 42;
-  const midBlur = shouldReduceMotion ? 9 : props.mode === "dock" ? 12 : 18;
+  const outerBlur = shouldReduceMotion ? 20 : 42;
+  const midBlur = shouldReduceMotion ? 9 : 18;
 
   const drift = Math.sin(phase * 0.35) * minSide * 0.02;
-  if (props.mode === "hero") {
-    const ambient = ctx.createRadialGradient(
-      cx + drift * 0.5,
-      cy - minSide * 0.06,
-      0,
-      cx,
-      cy,
-      baseR * 3.4,
-    );
-    ambient.addColorStop(0, "rgba(34, 211, 238, 0.16)");
-    ambient.addColorStop(0.28, "rgba(99, 102, 241, 0.11)");
-    ambient.addColorStop(0.52, "rgba(167, 139, 250, 0.08)");
-    ambient.addColorStop(0.78, "rgba(56, 189, 248, 0.04)");
-    ambient.addColorStop(1, "rgba(2, 6, 23, 0)");
-    ctx.fillStyle = ambient;
-    ctx.fillRect(0, 0, width, height);
+  const ambient = ctx.createRadialGradient(
+    cx + drift * 0.5,
+    cy - minSide * 0.06,
+    0,
+    cx,
+    cy,
+    baseR * 3.4,
+  );
+  ambient.addColorStop(0, "rgba(34, 211, 238, 0.16)");
+  ambient.addColorStop(0.28, "rgba(99, 102, 241, 0.11)");
+  ambient.addColorStop(0.52, "rgba(167, 139, 250, 0.08)");
+  ambient.addColorStop(0.78, "rgba(56, 189, 248, 0.04)");
+  ambient.addColorStop(1, "rgba(2, 6, 23, 0)");
+  ctx.fillStyle = ambient;
+  ctx.fillRect(0, 0, width, height);
 
-    const ambient2 = ctx.createRadialGradient(
-      width * 0.72 + drift,
-      height * 0.55,
-      0,
-      width * 0.55,
-      height * 0.48,
-      baseR * 2.8,
-    );
-    ambient2.addColorStop(0, "rgba(129, 140, 248, 0.09)");
-    ambient2.addColorStop(0.55, "rgba(14, 165, 233, 0.05)");
-    ambient2.addColorStop(1, "rgba(2, 6, 23, 0)");
-    ctx.fillStyle = ambient2;
-    ctx.fillRect(0, 0, width, height);
-  }
+  const ambient2 = ctx.createRadialGradient(
+    width * 0.72 + drift,
+    height * 0.55,
+    0,
+    width * 0.55,
+    height * 0.48,
+    baseR * 2.8,
+  );
+  ambient2.addColorStop(0, "rgba(129, 140, 248, 0.09)");
+  ambient2.addColorStop(0.55, "rgba(14, 165, 233, 0.05)");
+  ambient2.addColorStop(1, "rgba(2, 6, 23, 0)");
+  ctx.fillStyle = ambient2;
+  ctx.fillRect(0, 0, width, height);
 
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
@@ -276,52 +264,50 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section ref="hostRef" class="welcome-orb" :class="{ 'welcome-orb--dock': isDockMode }">
-    <canvas ref="canvasRef" class="welcome-orb__canvas" aria-hidden="true"></canvas>
-    <p v-if="props.showGreeting" class="welcome-orb__greeting">{{ props.welcomeText }}</p>
+  <section ref="hostRef" class="dc-ai-orb" data-dc-ai-orb>
+    <canvas ref="canvasRef" class="dc-ai-orb__canvas" aria-hidden="true"></canvas>
+    <p v-if="props.showGreeting" class="dc-ai-orb__greeting">{{ props.welcomeText }}</p>
   </section>
 </template>
 
 <style scoped>
-.welcome-orb {
+/* Fill parent only. Avoid 100vh/100dvh here: in split-pane iframe hosts the viewport is the full
+   iframe, not the workspace column; viewport min-height can expand the composited layer and cause
+   adjacent-column “ghost” UI (Chrome/Safari). Host pages should set height on ancestors if needed. */
+.dc-ai-orb {
   position: relative;
-  flex: 1;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
+  isolation: isolate;
   background:
     radial-gradient(ellipse 130% 85% at 50% 36%, rgba(34, 211, 238, 0.14), transparent 58%),
     radial-gradient(ellipse 100% 75% at 78% 58%, rgba(99, 102, 241, 0.12), transparent 52%),
     radial-gradient(ellipse 90% 80% at 18% 62%, rgba(167, 139, 250, 0.09), transparent 55%),
     radial-gradient(circle at 50% 120%, rgba(15, 23, 42, 0.88), #020617);
 }
-.welcome-orb--dock {
-  min-height: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(8, 47, 73, 0.38) 0%, rgba(2, 6, 23, 0.06) 68%, rgba(2, 6, 23, 0) 100%);
-}
 
-.welcome-orb__canvas {
+.dc-ai-orb__canvas {
   position: absolute;
   inset: 0;
 }
 
-.welcome-orb__greeting {
+.dc-ai-orb__greeting {
   position: absolute;
   z-index: 1;
   left: 50%;
   bottom: max(8%, 1.5rem);
   transform: translateX(-50%);
   margin: 0;
-  max-width: min(92vw, 28rem);
+  max-width: min(100%, 28rem);
   padding: 0.65rem 1.15rem;
   border-radius: 999px;
-  border: 1px solid rgba(165, 243, 252, 0.18);
-  background: rgba(2, 8, 24, 0.38);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(165, 243, 252, 0.22);
+  /* No backdrop-filter: in split-pane / iframe hosts it samples adjacent columns (ghost chat UI). */
+  background: rgba(2, 8, 24, 0.78);
+  box-shadow: 0 10px 36px rgba(2, 6, 23, 0.55);
   font-size: clamp(0.9rem, 2.1vw, 1.05rem);
   font-weight: 500;
   line-height: 1.35;

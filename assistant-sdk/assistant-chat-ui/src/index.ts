@@ -1,5 +1,9 @@
 import "./styles/chat.css";
 
+export * from "./adapters/agentLoopTranscript";
+export { default as AssistantAiOrb } from "./components/AssistantAiOrb.vue";
+export { default as AssistantChatChrome } from "./components/AssistantChatChrome.vue";
+export { default as AssistantChatSettingsFields } from "./components/AssistantChatSettingsFields.vue";
 export { default as ChatAssistantWaiting } from "./components/ChatAssistantWaiting.vue";
 export { default as ChatMessageList } from "./components/ChatMessageList.vue";
 export { default as ChatMessagePartRenderer } from "./components/ChatMessagePartRenderer.vue";
@@ -13,4 +17,7 @@ export { default as ChatQuestionCard } from "./components/ChatQuestionCard.vue";
 export { default as ChatTodoDock } from "./components/ChatTodoDock.vue";
 
 export * from "./types";
+export * from "./types/assistantChrome";
+export * from "./types/assistantSettingsForm";
+export { officialOpenAiGeminiProviderFields } from "./providers/officialOpenAiGemini";
 export * from "./useStreamingPresentation";

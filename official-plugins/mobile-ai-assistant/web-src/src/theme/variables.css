@@ -1,0 +1,30 @@
+:root {
+  --dawn-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  --dawn-radius-lg: 16px;
+  --dawn-radius-md: 12px;
+  --dawn-shadow-sm: 0 8px 20px rgba(16, 24, 40, 0.08);
+  --dawn-surface-background: linear-gradient(180deg, #f7f9ff 0%, #f3f5f9 100%);
+
+  --ion-color-primary: #5b7cff;
+  --ion-color-primary-rgb: 91, 124, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #506de0;
+  --ion-color-primary-tint: #6c89ff;
+
+  --ion-color-secondary: #6e5cff;
+  --ion-color-secondary-rgb: 110, 92, 255;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-shade: #614fe0;
+  --ion-color-secondary-tint: #7d6bff;
+
+  --ion-color-success: #1ea86a;
+  --ion-color-warning: #ffb547;
+  --ion-color-danger: #e85050;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --dawn-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --dawn-surface-background: linear-gradient(180deg, #171a22 0%, #11141a 100%);
+  }
+}

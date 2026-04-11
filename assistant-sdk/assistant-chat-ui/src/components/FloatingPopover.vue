@@ -172,12 +172,22 @@ onBeforeUnmount(() => {
 <style scoped>
 .floating-popover {
   position: fixed;
-  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--color-border, var(--border, rgba(148, 163, 184, 0.38))) 82%,
+    transparent
+  );
   border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface-2) var(--floating-popover-surface-mix, 92%), transparent);
+  background: color-mix(
+    in srgb,
+    var(--color-surface-2, var(--bg-elevated, rgba(255, 255, 255, 0.94))) var(--floating-popover-surface-mix, 96%),
+    var(--color-app-canvas, var(--bg-primary, #ffffff))
+  );
+  color: var(--color-text, var(--text-primary, #111827));
   box-shadow:
-    0 14px 30px rgba(0, 0, 0, 0.16),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+    0 18px 42px rgba(0, 0, 0, 0.22),
+    0 4px 12px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(14px) saturate(1.08);
   padding: 0.55rem 0.6rem;
   overflow: auto;
 }

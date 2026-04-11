@@ -232,3 +232,5 @@ export function createHostToolRouter(
     },
   }
 }
+
+export * from "./toolDefinitions";

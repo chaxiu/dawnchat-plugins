@@ -1,3 +1,5 @@
+import { flushPromises } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import type { AssistantProviderConfig } from "../../provider/providerTypes";
@@ -87,7 +89,9 @@ describe("useAssistantChat", () => {
 
   it("blocks submission when provider config is missing", async () => {
     const chat = useAssistantChat();
+    await flushPromises();
     chat.prompt.value = "hello";
+    await nextTick();
 
     await chat.submitPrompt({
       ...validConfig,
@@ -100,7 +104,9 @@ describe("useAssistantChat", () => {
 
   it("updates transcript after a successful loop run", async () => {
     const chat = useAssistantChat();
+    await flushPromises();
     chat.prompt.value = "Use math.add for 2 + 3.";
+    await nextTick();
     runMock.mockResolvedValue({
       transcript: [
         { role: "user", content: "Use math.add for 2 + 3." },
@@ -145,7 +151,9 @@ describe("useAssistantChat", () => {
 
   it("shows streaming assistant state before the final transcript settles", async () => {
     const chat = useAssistantChat();
+    await flushPromises();
     chat.prompt.value = "Please add 3 and 4.";
+    await nextTick();
     let streamingSnapshot: AgentLoopMessage[] = [];
 
     runMock.mockImplementation(async (input: {
