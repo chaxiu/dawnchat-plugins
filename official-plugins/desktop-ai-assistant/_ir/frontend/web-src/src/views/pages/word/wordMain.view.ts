@@ -139,12 +139,6 @@ function buildPersistenceWordResourceId(word: string): string {
 export const wordMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 150,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return buildPersistenceWordResourceId(String(resource.data.word || ""));
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneWordResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",

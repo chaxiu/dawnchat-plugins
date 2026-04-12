@@ -151,6 +151,14 @@ describe("assistant.view.list", () => {
               },
             },
           },
+          {
+            name: "assistant.workspace_checkpoint",
+            description: "Append a manual_checkpoint snapshot for the active workspace (stateful view).",
+            input_schema: {
+              type: "object",
+              properties: {},
+            },
+          },
         ],
       },
     });

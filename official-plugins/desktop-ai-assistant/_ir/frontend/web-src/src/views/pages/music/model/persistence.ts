@@ -10,12 +10,6 @@ import {
 export const musicMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 140,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return "music:piano-demo";
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneMusicResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",
