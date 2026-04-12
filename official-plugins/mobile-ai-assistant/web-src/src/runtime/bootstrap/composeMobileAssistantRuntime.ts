@@ -5,6 +5,11 @@ import { router } from "../../router";
 import { ROUTE_PATHS } from "../../router/routes";
 import { getMobileAssistantIdentity } from "../assistantIdentity";
 import { postMobileRuntimeEventToHost } from "../runtimeEventBridge";
+import {
+  createDefaultMobileTtsEngine,
+  createMobileHostVoiceAdapter,
+  type MobileTtsEngine,
+} from "../tts";
 import { mobileAssistantViewRegistryProvider } from "../viewRegistry";
 
 function stripQueryAndHash(path: string): string {
@@ -44,8 +49,13 @@ function isAllowedMobileAssistantNavPath(routePath: string): boolean {
   return getAllowedNavPathSet().has(normalizeNavPath(routePath));
 }
 
-export function composeMobileAssistantRuntime() {
+export interface ComposeMobileAssistantRuntimeOptions {
+  ttsEngine?: MobileTtsEngine;
+}
+
+export function composeMobileAssistantRuntime(options?: ComposeMobileAssistantRuntimeOptions) {
   const identity = getMobileAssistantIdentity();
+  const ttsEngine = options?.ttsEngine ?? createDefaultMobileTtsEngine();
   const hostAdapter: AssistantHostAdapter = {
     navigateToRoute: async (routePath) => {
       if (!isAllowedMobileAssistantNavPath(routePath)) {
@@ -55,6 +65,7 @@ export function composeMobileAssistantRuntime() {
       await router.replace(target);
     },
     postRuntimeEventToHost: postMobileRuntimeEventToHost,
+    voice: createMobileHostVoiceAdapter(ttsEngine),
   };
 
   return {

@@ -203,8 +203,9 @@ function closeMobileChat() {
     min-width: 0;
   }
 
+  /* Fixed inset = dock peek height: avoids layout jump when sheet opens/closes; expanded sheet may still overlay below. */
   .workspace-body {
-    padding: 0;
+    padding-bottom: var(--assistant-chat-dock-peek-height, 120px);
   }
 
   .chat-backdrop {
