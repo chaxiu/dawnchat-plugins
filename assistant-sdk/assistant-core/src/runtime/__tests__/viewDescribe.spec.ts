@@ -1,37 +1,29 @@
 import { createViewDescribeCapabilityRegistration } from "../view";
+import { BOARD_DEFAULT_RESOURCE } from "../../views/pages/board/boardMain.view";
 
 describe("assistant.view.describe", () => {
   it("returns only the current active view state", async () => {
     const registration = createViewDescribeCapabilityRegistration({
       setActiveViewState: vi.fn(() => 1),
       getViewStateSnapshot: vi.fn(() => ({
-        active_view_id: "word.main",
-        active_anchor: "word.meaning",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
-          title: "词汇讲解",
-          data: {
-            word: "Assistant",
-            meaning: "你的自进化智能助理",
-            etymology: ["支持富媒体呈现"],
-          },
-        },
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
+        current_resource: BOARD_DEFAULT_RESOURCE,
         active_manifest: {
-          view_id: "word.main",
-          resource_type: "word",
-          title: "Word Workspace",
-          route_name: "view-word-main",
-          route_path: "/views/word/main",
+          view_id: "board.main",
+          resource_type: "board.workspace",
+          title: "Holographic Clue Wall",
+          route_name: "view-board-main",
+          route_path: "/views/board/main",
           state_mode: "stateful" as const,
           anchors: [],
           capabilities: [],
           interaction_hints: {
-            interaction_intent: "Best for direct view-first reading and small structured updates.",
+            interaction_intent: "Best for arranging notes into a graph.",
           },
           state_summary: {
-            word: "Assistant",
-            active_anchor: "word.meaning",
+            node_count: 3,
+            edge_count: 2,
           },
         },
         view_state_version: 4,
@@ -41,13 +33,13 @@ describe("assistant.view.describe", () => {
         current_task_id: "task-1",
       })),
       getActiveResourceContextSnapshot: vi.fn(() => ({
-        resource_type: "word",
-        resource_id: "word:assistant",
-        title: "词汇讲解",
-        view_id: "word.main",
+        resource_type: "board.workspace",
+        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+        title: String(BOARD_DEFAULT_RESOURCE.title),
+        view_id: "board.main",
         state_summary: {
-          word: "Assistant",
-          active_anchor: "word.meaning",
+          node_count: 3,
+          edge_count: 2,
         },
       })),
       getContinuationSnapshot: vi.fn(() => ({
@@ -57,27 +49,28 @@ describe("assistant.view.describe", () => {
     });
 
     const result = await registration.handler({
-      view_id: "word.main",
+      view_id: "board.main",
     }, {});
 
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
-        active_view_id: "word.main",
-        active_anchor: "word.meaning",
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
         view_state_version: 4,
         current_resource_summary: expect.objectContaining({
-          word: "Assistant",
-          active_anchor: "word.meaning",
+          node_count: 3,
+          edge_count: 2,
+          active_anchor: "board.canvas",
         }),
         task_progress: expect.objectContaining({
           status: "running",
           current_task_id: "task-1",
         }),
         active_resource_context: expect.objectContaining({
-          resource_type: "word",
-          resource_id: "word:assistant",
-          view_id: "word.main",
+          resource_type: "board.workspace",
+          resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+          view_id: "board.main",
         }),
         continuation: expect.objectContaining({
           pending_wait: null,

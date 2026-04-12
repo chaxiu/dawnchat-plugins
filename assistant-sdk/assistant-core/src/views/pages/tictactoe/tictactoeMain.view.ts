@@ -186,12 +186,6 @@ export function openTictactoeMainView(payload: Record<string, unknown>): ViewOpe
 export const tictactoeMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 120,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return "tictactoe:neon-grid";
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneTictactoeResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",

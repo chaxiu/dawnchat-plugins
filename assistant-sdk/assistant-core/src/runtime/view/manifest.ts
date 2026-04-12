@@ -75,7 +75,6 @@ export interface ViewPersistenceStateSnapshot {
 export interface ViewPersistenceConfig {
   version: number;
   debounce_ms?: number;
-  getResourceKey: (resource: ViewResourceBinding) => string;
   serialize: (snapshot: ViewPersistenceStateSnapshot) => Record<string, unknown>;
   deserialize: (payload: Record<string, unknown>) => ViewPersistenceStateSnapshot;
   migrate?: (raw: Record<string, unknown>, fromVersion: number) => Record<string, unknown>;

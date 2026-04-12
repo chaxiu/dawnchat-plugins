@@ -5,8 +5,8 @@ describe("assistant.runtime.bootstrap", () => {
     const registration = createRuntimeBootstrapCapabilityRegistration({
       setActiveViewState: vi.fn(() => 1),
       getViewStateSnapshot: vi.fn(() => ({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
         current_resource: null,
         active_manifest: null,
         view_state_version: 1,
@@ -19,7 +19,7 @@ describe("assistant.runtime.bootstrap", () => {
     expect(result).toEqual({
       ok: true,
       data: {
-        active_view_id: "word.main",
+        active_view_id: "board.main",
         bootstrap: expect.objectContaining({
           startup_sequence: [
             "dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)",
@@ -41,6 +41,9 @@ describe("assistant.runtime.bootstrap", () => {
             }),
             view_contract: expect.objectContaining({
               function: "assistant.view.contract",
+            }),
+            workspace_checkpoint: expect.objectContaining({
+              function: "assistant.workspace_checkpoint",
             }),
           }),
         }),

@@ -1,6 +1,8 @@
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../events";
+import { installAssistantHostAdapter, uninstallAssistantHostAdapter } from "../hostAdapter";
 import {
   emitAssistantRuntimeEvent,
+  HOST_ASSISTANT_RUNTIME_EVENT_MESSAGE,
   installRuntimeEventEmitter,
   postAssistantRuntimeEventToHost,
   uninstallRuntimeEventEmitter,
@@ -9,6 +11,7 @@ import {
 describe("runtime event bridge", () => {
   afterEach(() => {
     uninstallRuntimeEventEmitter();
+    uninstallAssistantHostAdapter();
   });
 
   it("returns false when no runtime emitter is installed", () => {
@@ -53,6 +56,19 @@ describe("runtime event bridge", () => {
         postMessage,
       },
       configurable: true,
+    });
+
+    installAssistantHostAdapter({
+      postRuntimeEventToHost: (event) => {
+        window.parent.postMessage(
+          {
+            type: HOST_ASSISTANT_RUNTIME_EVENT_MESSAGE,
+            payload: event,
+          },
+          "*"
+        );
+        return true;
+      },
     });
 
     expect(postAssistantRuntimeEventToHost({

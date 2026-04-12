@@ -87,17 +87,17 @@ describe("assistant.view.list", () => {
             ]),
           }),
           expect.objectContaining({
-            view_id: "word.main",
-            title: "Word Workspace",
-            resource_type: "word",
+            view_id: "board.main",
+            title: "Holographic Clue Wall",
+            resource_type: "board.workspace",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
             capabilities: expect.arrayContaining([
               expect.objectContaining({
-                capability_id: "append_etymology",
+                capability_id: "board.add_node",
                 mode: "write",
-                title: "Append Etymology",
+                title: "Add Node",
               }),
             ]),
           }),
@@ -149,6 +149,14 @@ describe("assistant.view.list", () => {
               properties: {
                 view_id: { type: "string" },
               },
+            },
+          },
+          {
+            name: "assistant.workspace_checkpoint",
+            description: "Append a manual_checkpoint snapshot for the active workspace (stateful view).",
+            input_schema: {
+              type: "object",
+              properties: {},
             },
           },
         ],

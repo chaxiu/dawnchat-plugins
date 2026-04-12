@@ -3,12 +3,13 @@ import { useGuideState } from "../guide/state";
 import { createSessionLifecycleHooks } from "../session/lifecycleHooks";
 import { createSessionStepCapabilityRegistrations } from "../session/stepExecutor";
 import { useSessionVisualState } from "../session/visualState";
+import { getAssistantPersistenceScope } from "../persistence/scope";
 import {
-  createDefaultBrowserViewPersistenceAdapter,
-  createNoopViewPersistenceAdapter,
-  createViewPersistenceRuntime,
-  type ViewPersistenceAdapter,
-} from "../persistence";
+  createDexieWorkspaceStore,
+  createWorkspaceCheckpointCapabilityRegistration,
+  createWorkspacePersistenceRuntime,
+  type WorkspaceStore,
+} from "../workspace";
 import { installAssistantRuntimeEnvironment, type AssistantRuntimeEnvironment } from "../environment";
 import {
   createRuntimeBootstrapCapabilityRegistration,
@@ -25,8 +26,20 @@ import { postAssistantRuntimeEventToHost } from "../runtimeEventBridge";
 
 export interface ComposeAssistantCoreRuntimeOptions {
   environment?: AssistantRuntimeEnvironment;
-  persistenceAdapter?: ViewPersistenceAdapter | null;
+  /**
+   * IndexedDB scope suffix for workspace storage (same key semantics as legacy persistence scope).
+   * Used only when {@link workspaceStore} is omitted (default Dexie implementation).
+   */
   persistenceScope?: string;
+  /** Overrides persistenceScope when both are set */
+  workspaceScope?: string;
+  /**
+   * Optional workspace persistence backend. When omitted, core uses {@link createDexieWorkspaceStore}
+   * with the resolved scope (Tauri/Capacitor WebView IndexedDB is the typical default).
+   */
+  workspaceStore?: WorkspaceStore;
+  /** When true, append session_completed snapshot on last session step (requires total_steps) */
+  workspaceSnapshotOnSessionEnd?: boolean;
 }
 
 function createViewRouteNavigatorByViewId() {
@@ -52,9 +65,9 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
     postAssistantRuntimeEventToHost(event);
     return event;
   };
-  const persistenceAdapter = options?.persistenceAdapter === undefined
-    ? createDefaultBrowserViewPersistenceAdapter(options?.persistenceScope)
-    : options.persistenceAdapter || createNoopViewPersistenceAdapter();
+  const scope = (options?.workspaceScope || options?.persistenceScope || "").trim()
+    || getAssistantPersistenceScope();
+  const workspaceStore = options?.workspaceStore ?? createDexieWorkspaceStore(scope);
   const {
     setCurrentCard,
     scheduleDismissCurrentCard,
@@ -73,15 +86,18 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
   const observationStore = createRuntimeObservationStore({
     getViewStateSnapshot,
   });
-  const persistenceRuntime = createViewPersistenceRuntime({
+  const snapshotOnSessionEnd = Boolean(options?.workspaceSnapshotOnSessionEnd);
+  const workspaceRuntime = createWorkspacePersistenceRuntime({
+    store: workspaceStore,
     getViewStateSnapshot,
     setActiveViewState,
     navigateToView,
-    adapter: persistenceAdapter,
+    snapshotOnSessionEnd,
   });
   const sessionLifecycleHooks = createSessionLifecycleHooks({
     observationStore,
   });
+  const { onStepApplied: lifecycleOnStepApplied, ...restLifecycleHooks } = sessionLifecycleHooks;
   const registrations = [
     ...createSessionStepCapabilityRegistrations({
       setCurrentCard,
@@ -95,7 +111,11 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
       navigateToView,
       eventBus,
       emitRuntimeEvent,
-      ...sessionLifecycleHooks,
+      ...restLifecycleHooks,
+      onStepApplied: async (payload) => {
+        await lifecycleOnStepApplied(payload);
+        await workspaceRuntime.handleSessionStepApplied(payload);
+      },
       onActiveSessionsChanged: setFromActiveSessions,
     }),
     createViewOpenCapabilityRegistration({
@@ -144,6 +164,7 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
       getContinuationSnapshot: observationStore.getContinuationSnapshot,
       navigateToView,
     }),
+    createWorkspaceCheckpointCapabilityRegistration(workspaceRuntime),
   ];
 
   setCardDismissObserver(({ reason, card }) => {
@@ -160,10 +181,20 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
     });
   });
 
+  const persistenceRuntime = {
+    start: workspaceRuntime.start,
+    hydrate: workspaceRuntime.hydrate,
+    flushActiveView: workspaceRuntime.flushActiveView,
+    dispose: workspaceRuntime.dispose,
+    clear: workspaceRuntime.clear,
+    getLastHydratedStorageKey: () => workspaceRuntime.getLastHydratedWorkspaceId(),
+  };
+
   return {
     registrations,
     emitRuntimeEvent,
     persistenceRuntime,
+    workspaceRuntime,
   };
 }
 

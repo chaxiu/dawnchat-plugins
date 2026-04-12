@@ -1,5 +1,6 @@
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../events";
 import { useGuideState } from "../guide/state";
+import { installAssistantHostAdapter, uninstallAssistantHostAdapter } from "../hostAdapter";
 import { emitAssistantRuntimeEvent } from "../runtimeEventBridge";
 import { listViewRegistrations, useViewState } from "../view";
 import {
@@ -11,7 +12,15 @@ describe("runtime bootstrap wiring", () => {
   const originalRegister = window.__DAWNCHAT_UI_REGISTER_CAPABILITY__;
   const originalUnregister = window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__;
 
+  beforeEach(() => {
+    installAssistantHostAdapter({
+      postRuntimeEventToHost: () => true,
+      navigateToRoute: async () => {},
+    });
+  });
+
   afterEach(() => {
+    uninstallAssistantHostAdapter();
     window.__DAWNCHAT_UI_REGISTER_CAPABILITY__ = originalRegister;
     window.__DAWNCHAT_UI_UNREGISTER_CAPABILITY__ = originalUnregister;
   });
@@ -30,7 +39,7 @@ describe("runtime bootstrap wiring", () => {
 
     const names = installAssistantRuntimeCapabilities();
     expect(listViewRegistrations().map((registration) => registration.view_id)).toEqual(
-      expect.arrayContaining(["word.main", "tictactoe.main", "board.main"])
+      expect.arrayContaining(["tictactoe.main", "board.main", "plane.main", "image.explainer"])
     );
     expect(names).toEqual(expect.arrayContaining([
       "assistant.session_step_execute",
@@ -40,6 +49,7 @@ describe("runtime bootstrap wiring", () => {
       "assistant.view.list",
       "assistant.view.describe",
       "assistant.view.contract",
+      "assistant.workspace_checkpoint",
     ]));
     expect(registered.size).toBe(names.length);
     expect(emitAssistantRuntimeEvent({
@@ -65,13 +75,13 @@ describe("runtime bootstrap wiring", () => {
     });
     const viewState = useViewState();
     viewState.restoreViewState({
-      active_view_id: "word.main",
-      active_anchor: "word.header",
+      active_view_id: "board.main",
+      active_anchor: "board.canvas",
       current_resource: {
-        resource_type: "word",
-        resource_id: "word:pending",
+        resource_type: "board.workspace",
+        resource_id: "board:pending",
         title: "pending resource",
-        data: { word: "pending" },
+        data: { board_id: "board:pending", nodes: [], edges: [] },
       },
       active_manifest: null,
       view_state_version: 5,
@@ -120,13 +130,13 @@ describe("runtime bootstrap wiring", () => {
       errorMessage: "stale",
     });
     viewState.restoreViewState({
-      active_view_id: "word.main",
-      active_anchor: "word.meaning",
+      active_view_id: "board.main",
+      active_anchor: "board.inspector",
       current_resource: {
-        resource_type: "word",
-        resource_id: "word:stale",
+        resource_type: "board.workspace",
+        resource_id: "board:stale",
         title: "stale resource",
-        data: { word: "stale" },
+        data: { board_id: "board:stale", nodes: [], edges: [] },
       },
       active_manifest: null,
       view_state_version: 1,

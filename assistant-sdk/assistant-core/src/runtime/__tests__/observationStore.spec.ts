@@ -1,36 +1,30 @@
 import { createRuntimeObservationStore } from "../observation";
+import { BOARD_DEFAULT_RESOURCE } from "../../views/pages/board/boardMain.view";
 
 describe("runtime observation store", () => {
   it("returns minimal runtime observation snapshots", () => {
+    const boardResource = JSON.parse(JSON.stringify(BOARD_DEFAULT_RESOURCE)) as typeof BOARD_DEFAULT_RESOURCE;
     const store = createRuntimeObservationStore({
       getViewStateSnapshot: () => ({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
-          title: "词汇讲解",
-          data: {
-            word: "Assistant",
-            meaning: "你的自进化智能助理",
-            etymology: ["支持富媒体呈现"],
-          },
-        },
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
+        current_resource: boardResource,
         active_manifest: {
-          view_id: "word.main",
-          resource_type: "word",
-          title: "Word Workspace",
-          route_name: "view-word-main",
-          route_path: "/views/word/main",
+          view_id: "board.main",
+          resource_type: "board.workspace",
+          title: "Holographic Clue Wall",
+          route_name: "view-board-main",
+          route_path: "/views/board/main",
           state_mode: "lightweight",
           anchors: [
-            { id: "word.header", title: "Header" },
-            { id: "word.meaning", title: "Meaning" },
+            { id: "board.header", title: "Header" },
+            { id: "board.canvas", title: "Canvas" },
           ],
           capabilities: [],
           state_summary: {
-            word: "Assistant",
-            active_anchor: "word.header",
+            node_count: 3,
+            edge_count: 2,
+            active_anchor: "board.canvas",
           },
         },
         view_state_version: 2,
@@ -70,13 +64,14 @@ describe("runtime observation store", () => {
       summary: "正在处理词义讲解",
     });
     expect(store.getActiveResourceContextSnapshot()).toEqual({
-      resource_type: "word",
-      resource_id: "word:assistant",
-      title: "词汇讲解",
-      view_id: "word.main",
+      resource_type: "board.workspace",
+      resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+      title: String(BOARD_DEFAULT_RESOURCE.title),
+      view_id: "board.main",
       state_summary: {
-        word: "Assistant",
-        active_anchor: "word.header",
+        node_count: 3,
+        edge_count: 2,
+        active_anchor: "board.canvas",
       },
     });
     expect(store.getContinuationSnapshot()).toEqual({
@@ -99,29 +94,23 @@ describe("runtime observation store", () => {
   });
 
   it("returns cloned observation data and keeps internal state immutable", () => {
+    const boardResource = JSON.parse(JSON.stringify(BOARD_DEFAULT_RESOURCE)) as typeof BOARD_DEFAULT_RESOURCE;
     const store = createRuntimeObservationStore({
       getViewStateSnapshot: () => ({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
-          title: "词汇讲解",
-          data: {
-            word: "Assistant",
-          },
-        },
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
+        current_resource: boardResource,
         active_manifest: {
-          view_id: "word.main",
-          resource_type: "word",
-          title: "Word Workspace",
-          route_name: "view-word-main",
-          route_path: "/views/word/main",
+          view_id: "board.main",
+          resource_type: "board.workspace",
+          title: "Holographic Clue Wall",
+          route_name: "view-board-main",
+          route_path: "/views/board/main",
           state_mode: "lightweight",
           anchors: [],
           capabilities: [],
           state_summary: {
-            word: "Assistant",
+            node_count: 3,
           },
         },
         view_state_version: 1,
@@ -131,7 +120,7 @@ describe("runtime observation store", () => {
     const activeResourceContext = store.getActiveResourceContextSnapshot();
     const continuationSnapshot = store.getContinuationSnapshot();
     if (activeResourceContext) {
-      (activeResourceContext.state_summary as Record<string, unknown>).word = "mutated";
+      (activeResourceContext.state_summary as Record<string, unknown>).node_count = 99;
     }
     continuationSnapshot.pending_wait = {
       action_type: "flow.wait",
@@ -143,37 +132,34 @@ describe("runtime observation store", () => {
     const nextActiveResourceContext = store.getActiveResourceContextSnapshot();
     expect(nextActiveResourceContext).toEqual(expect.objectContaining({
       state_summary: {
-        word: "Assistant",
+        node_count: 3,
       },
     }));
     expect(store.getContinuationSnapshot().pending_wait).toBeNull();
   });
 
   it("keeps active_resource_context bound to current active resource only", () => {
-    let currentResourceId = "word:assistant";
+    let currentResourceId = "board:assistant";
     const store = createRuntimeObservationStore({
       getViewStateSnapshot: () => ({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
         current_resource: {
-          resource_type: "word",
+          ...(JSON.parse(JSON.stringify(BOARD_DEFAULT_RESOURCE)) as typeof BOARD_DEFAULT_RESOURCE),
           resource_id: currentResourceId,
           title: currentResourceId,
-          data: {
-            word: currentResourceId,
-          },
         },
         active_manifest: {
-          view_id: "word.main",
-          resource_type: "word",
-          title: "Word Workspace",
-          route_name: "view-word-main",
-          route_path: "/views/word/main",
+          view_id: "board.main",
+          resource_type: "board.workspace",
+          title: "Holographic Clue Wall",
+          route_name: "view-board-main",
+          route_path: "/views/board/main",
           state_mode: "lightweight",
           anchors: [],
           capabilities: [],
           state_summary: {
-            word: currentResourceId,
+            board_id: currentResourceId,
           },
         },
         view_state_version: 1,
@@ -182,18 +168,18 @@ describe("runtime observation store", () => {
 
     const snapshotA = store.getActiveResourceContextSnapshot();
     expect(snapshotA).toEqual(expect.objectContaining({
-      resource_id: "word:assistant",
+      resource_id: "board:assistant",
       state_summary: {
-        word: "word:assistant",
+        board_id: "board:assistant",
       },
     }));
 
-    currentResourceId = "word:agent";
+    currentResourceId = "board:agent";
     const snapshotB = store.getActiveResourceContextSnapshot();
     expect(snapshotB).toEqual(expect.objectContaining({
-      resource_id: "word:agent",
+      resource_id: "board:agent",
       state_summary: {
-        word: "word:agent",
+        board_id: "board:agent",
       },
     }));
   });

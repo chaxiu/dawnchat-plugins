@@ -10,12 +10,6 @@ import {
 export const imageExplainerMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 120,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return "image:explainer-demo";
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneImageExplainerResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",

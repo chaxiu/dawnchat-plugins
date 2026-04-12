@@ -10,12 +10,6 @@ import {
 export const coordinatePlaneMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 120,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return "plane:coordinate-lab";
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneCoordinatePlaneResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",

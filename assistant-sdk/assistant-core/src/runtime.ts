@@ -2,6 +2,7 @@ export {
   composeAssistantCoreRuntime,
   type ComposeAssistantCoreRuntimeOptions,
 } from "./runtime/bootstrap/composeRuntime";
+export type { WorkspaceStore } from "./runtime/workspace";
 export {
   installAssistantRuntimeEnvironment,
   uninstallAssistantRuntimeEnvironment,

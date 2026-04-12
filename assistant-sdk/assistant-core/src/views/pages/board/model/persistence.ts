@@ -10,12 +10,6 @@ import {
 export const boardMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 180,
-  getResourceKey: (resource) => {
-    if (typeof resource.resource_id === "string" && resource.resource_id.trim()) {
-      return resource.resource_id.trim();
-    }
-    return "board:holographic-clue-wall";
-  },
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
     resource: cloneBoardResource(snapshot.resource),
     active_anchor: snapshot.activeAnchor || "",

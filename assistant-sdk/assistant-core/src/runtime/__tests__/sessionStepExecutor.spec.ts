@@ -7,6 +7,8 @@ import {
 import { ASSISTANT_RUNTIME_EVENT_TYPES, createAssistantEventBus } from "../events";
 import { GUIDE_ACTIONS } from "../guide/actions";
 import { createViewDescribeCapabilityRegistration } from "../view";
+import { installAssistantHostAdapter, uninstallAssistantHostAdapter } from "../hostAdapter";
+import { BOARD_DEFAULT_RESOURCE } from "../../views/pages/board/boardMain.view";
 
 const createDeps = (): SessionStepExecutorDeps => ({
   setCurrentCard: vi.fn(() => 1),
@@ -17,86 +19,43 @@ const createDeps = (): SessionStepExecutorDeps => ({
   setActiveViewState: vi.fn(() => 1),
   setTaskProgress: vi.fn(),
   navigateToView: vi.fn(),
-  getViewStateSnapshot: vi.fn(() => ({
-    active_view_id: "word.main",
-    active_anchor: "word.header",
-    current_resource: {
-      resource_type: "word",
-      resource_id: "word:assistant",
-      title: "词汇讲解",
-      data: {
-        word: "Assistant",
-        meaning: "你的自进化智能助理",
-        etymology: ["支持富媒体呈现"],
+  getViewStateSnapshot: vi.fn(() => {
+    const resource = JSON.parse(JSON.stringify(BOARD_DEFAULT_RESOURCE)) as typeof BOARD_DEFAULT_RESOURCE;
+    return {
+      active_view_id: "board.main",
+      active_anchor: "board.canvas",
+      current_resource: resource,
+      active_manifest: {
+        view_id: "board.main",
+        resource_type: "board.workspace",
+        title: "Holographic Clue Wall",
+        route_name: "view-board-main",
+        route_path: "/views/board/main",
+        state_mode: "stateful" as const,
+        anchors: [
+          { id: "board.header", title: "Topbar", description: "Topbar" },
+          { id: "board.canvas", title: "Canvas", description: "Canvas" },
+          { id: "board.inspector", title: "Inspector", description: "Inspector" },
+        ],
+        capabilities: [
+          {
+            id: "board.add_node",
+            mode: "write" as const,
+            title: "Add Node",
+            description: "Add a node",
+            input_schema: { type: "object", properties: {} },
+            affected_anchors: ["board.canvas"],
+            error_codes: [],
+          },
+        ],
+        state_summary: {
+          node_count: 3,
+          edge_count: 2,
+        },
       },
-    },
-    active_manifest: {
-      view_id: "word.main",
-      resource_type: "word",
-      title: "Word Workspace",
-      route_name: "view-word-main",
-      route_path: "/views/word/main",
-      state_mode: "lightweight" as const,
-      anchors: [
-        { id: "word.header", title: "Header", description: "Word title and overview area." },
-        { id: "word.meaning", title: "Meaning", description: "Primary meaning and explanation area." },
-        { id: "word.etymology", title: "Etymology", description: "Etymology and extension notes area." },
-      ],
-      capabilities: [
-        {
-          id: "highlight_meaning",
-          mode: "read" as const,
-          title: "Highlight Meaning",
-          description: "Move the current page focus to the meaning section.",
-          input_schema: {
-            type: "object",
-            properties: {},
-          },
-          affected_anchors: ["word.meaning"],
-          error_codes: [],
-        },
-        {
-          id: "append_etymology",
-          mode: "write" as const,
-          title: "Append Etymology",
-          description: "Append new entries to the etymology list.",
-          input_schema: {
-            type: "object",
-            properties: {
-              items: {
-                type: "array",
-                items: { type: "string" },
-                minItems: 1,
-              },
-            },
-            required: ["items"],
-          },
-          affected_anchors: ["word.etymology"],
-          error_codes: ["invalid_view_capability_input"],
-        },
-        {
-          id: "set_title",
-          mode: "write" as const,
-          title: "Set Title",
-          description: "Update the current page title.",
-          input_schema: {
-            type: "object",
-            properties: {
-              title: { type: "string", minLength: 1 },
-            },
-            required: ["title"],
-          },
-          affected_anchors: ["word.header"],
-          error_codes: ["invalid_view_capability_input"],
-        },
-      ],
-      state_summary: {
-        word: "Assistant",
-        active_anchor: "word.header",
-      },
-    },
-    view_state_version: 1,
-  })),
+      view_state_version: 1,
+    };
+  }),
   onActiveSessionsChanged: vi.fn(),
   emitRuntimeEvent: vi.fn(),
 });
@@ -235,7 +194,7 @@ describe("session step executor", () => {
       action: {
         type: "view.close",
         payload: {
-          view_id: "word.main",
+          view_id: "board.main",
         },
       },
     }, {});
@@ -494,40 +453,57 @@ describe("session step executor", () => {
       action: {
         type: "view.open",
         payload: {
-          view_id: "word.main",
+          view_id: "board.main",
           resource: {
-            resource_type: "word",
-            resource_id: "word:synchronize",
-            title: "词汇工作区",
+            resource_type: "board.workspace",
+            resource_id: "board:workflow",
+            title: "流程白板",
             data: {
-              word: "synchronize",
-              meaning: "使同步",
-              etymology: ["syn", "chron"],
+              board_id: "board:workflow",
+              description: "session open",
+              nodes: [],
+              edges: [],
+              viewport: { x: 0, y: 0, zoom: 1 },
+              selection: {
+                selected_node_ids: [],
+                selected_edge_ids: [],
+                focused_node_id: "",
+              },
+              layout_mode: "auto",
+              style_settings: {
+                layout_algorithm: "stress",
+                layout_direction: "LR",
+                edge_style: "bezier",
+                edge_curvature: 0.5,
+                handles_mode: "eight-points",
+                auto_layout_on_add: true,
+                avoid_overlap_strength: "medium",
+              },
             },
           },
-          initial_anchor: "word.meaning",
+          initial_anchor: "board.inspector",
         },
       },
     }, {});
     expect(deps.setActiveViewState).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewId: "word.main",
-        activeAnchor: "word.meaning",
+        viewId: "board.main",
+        activeAnchor: "board.inspector",
         resource: expect.objectContaining({
-          resource_type: "word",
-          resource_id: "word:synchronize",
+          resource_type: "board.workspace",
+          resource_id: "board:workflow",
         }),
       })
     );
-    expect(deps.navigateToView).toHaveBeenCalledWith("word.main");
+    expect(deps.navigateToView).toHaveBeenCalledWith("board.main");
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        view_id: "word.main",
-        active_anchor: "word.meaning",
-        route_path: "/views/word/main",
-        resource_type: "word",
+        view_id: "board.main",
+        active_anchor: "board.inspector",
+        route_path: "/views/board/main",
+        resource_type: "board.workspace",
         session_id: sessionId,
         step_id: "step-view-open",
         action_type: "view.open",
@@ -535,18 +511,18 @@ describe("session step executor", () => {
     });
   });
 
-  it("returns invalid_view_resource when word resource is malformed", async () => {
+  it("returns invalid_view_resource when board resource type is wrong", async () => {
     const handler = createSessionStepHandler(createDeps());
     const result = await handler({
       session_id: sessionId,
       action: {
         type: "view.open",
         payload: {
-          view_id: "word.main",
+          view_id: "board.main",
           resource: {
             resource_type: "word",
             data: {
-              meaning: "缺少单词",
+              meaning: "wrong binding",
             },
           },
         },
@@ -555,7 +531,7 @@ describe("session step executor", () => {
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "word.main requires resource.data.word to be a non-empty string",
+      message: "board.main requires resource.resource_type to be 'board.workspace'",
     });
   });
 
@@ -568,24 +544,24 @@ describe("session step executor", () => {
       action: {
         type: "view.focus",
         payload: {
-          view_id: "word.main",
-          anchor: "word.etymology",
+          view_id: "board.main",
+          anchor: "board.inspector",
         },
       },
     }, {});
     expect(deps.getViewStateSnapshot).toHaveBeenCalled();
     expect(deps.setActiveViewState).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewId: "word.main",
-        activeAnchor: "word.etymology",
+        viewId: "board.main",
+        activeAnchor: "board.inspector",
       })
     );
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        view_id: "word.main",
-        active_anchor: "word.etymology",
+        view_id: "board.main",
+        active_anchor: "board.inspector",
         session_id: sessionId,
         step_id: "step-view-focus",
         action_type: "view.focus",
@@ -602,22 +578,22 @@ describe("session step executor", () => {
       action: {
         type: "view.focus",
         payload: {
-          anchor_id: "word.meaning",
+          anchor_id: "board.header",
         },
       },
     }, {});
     expect(deps.setActiveViewState).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewId: "word.main",
-        activeAnchor: "word.meaning",
+        viewId: "board.main",
+        activeAnchor: "board.header",
       })
     );
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        view_id: "word.main",
-        active_anchor: "word.meaning",
+        view_id: "board.main",
+        active_anchor: "board.header",
         session_id: sessionId,
         step_id: "step-view-focus-anchor-id",
         action_type: "view.focus",
@@ -634,21 +610,26 @@ describe("session step executor", () => {
       action: {
         type: "view.capability.invoke",
         payload: {
-          view_id: "word.main",
-          capability_id: "append_etymology",
+          view_id: "board.main",
+          capability_id: "board.add_node",
           input: {
-            items: ["ize"],
+            title: "Aux Node",
+            description: "added by session step",
           },
         },
       },
     }, {});
     expect(deps.setActiveViewState).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewId: "word.main",
-        activeAnchor: "word.etymology",
+        viewId: "board.main",
+        activeAnchor: "board.canvas",
         resource: expect.objectContaining({
           data: expect.objectContaining({
-            etymology: ["支持富媒体呈现", "ize"],
+            nodes: expect.arrayContaining([
+              expect.objectContaining({
+                title: "Aux Node",
+              }),
+            ]),
           }),
         }),
       })
@@ -657,49 +638,26 @@ describe("session step executor", () => {
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        view_id: "word.main",
-        capability_id: "append_etymology",
-        active_anchor: "word.etymology",
-        appended_count: 1,
-        appended_items: ["ize"],
+        view_id: "board.main",
+        capability_id: "board.add_node",
+        active_anchor: "board.canvas",
         session_id: sessionId,
         step_id: "step-view-capability",
         action_type: "view.capability.invoke",
       }),
     });
+    expect((result.data as Record<string, unknown>).node_id).toEqual(expect.any(String));
   });
 
-  it("returns invalid_view_capability_input when append_etymology items are empty", async () => {
+  it("returns invalid_view_capability_input when board.add_node title is empty", async () => {
     const handler = createSessionStepHandler(createDeps());
     const result = await handler({
       session_id: sessionId,
       action: {
         type: "view.capability.invoke",
         payload: {
-          view_id: "word.main",
-          capability_id: "append_etymology",
-          input: {
-            items: [],
-          },
-        },
-      },
-    }, {});
-    expect(result).toEqual({
-      ok: false,
-      error_code: "invalid_view_capability_input",
-      message: "append_etymology requires input.items to be a non-empty string array",
-    });
-  });
-
-  it("returns invalid_view_capability_input when set_title title is empty", async () => {
-    const handler = createSessionStepHandler(createDeps());
-    const result = await handler({
-      session_id: sessionId,
-      action: {
-        type: "view.capability.invoke",
-        payload: {
-          view_id: "word.main",
-          capability_id: "set_title",
+          view_id: "board.main",
+          capability_id: "board.add_node",
           input: {
             title: "   ",
           },
@@ -709,7 +667,29 @@ describe("session step executor", () => {
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_capability_input",
-      message: "set_title requires input.title to be a non-empty string",
+      message: "board.add_node requires input.title to be a non-empty string",
+    });
+  });
+
+  it("returns invalid_view_capability_input when board.pin_node node_id is empty", async () => {
+    const handler = createSessionStepHandler(createDeps());
+    const result = await handler({
+      session_id: sessionId,
+      action: {
+        type: "view.capability.invoke",
+        payload: {
+          view_id: "board.main",
+          capability_id: "board.pin_node",
+          input: {
+            node_id: "   ",
+          },
+        },
+      },
+    }, {});
+    expect(result).toEqual({
+      ok: false,
+      error_code: "invalid_view_capability_input",
+      message: "board.pin_node requires input.node_id to be a non-empty string",
     });
   });
 
@@ -720,8 +700,8 @@ describe("session step executor", () => {
       action: {
         type: "view.capability.invoke",
         payload: {
-          view_id: "word.main",
-          capability_id: "set_title",
+          view_id: "board.main",
+          capability_id: "board.update_node",
           title: "Direct title",
         },
       },
@@ -740,15 +720,15 @@ describe("session step executor", () => {
       action: {
         type: "view.focus",
         payload: {
-          view_id: "word.main",
-          anchor: "word.unknown",
+          view_id: "board.main",
+          anchor: "board.unknown",
         },
       },
     }, {});
     expect(result).toEqual({
       ok: false,
       error_code: "anchor_not_found",
-      message: "Anchor not found: word.unknown",
+      message: "Anchor not found: board.unknown",
     });
   });
 
@@ -759,7 +739,7 @@ describe("session step executor", () => {
       action: {
         type: "view.capability.invoke",
         payload: {
-          view_id: "word.main",
+          view_id: "board.main",
           capability_id: "missing_capability",
         },
       },
@@ -850,56 +830,57 @@ describe("session step executor", () => {
 
   it("calls host voice bridge and completes guide.narrate after voice playback", async () => {
     const speak = vi.fn(async () => ({ ok: true, data: { status: "completed" } }));
-    (window as any).__DAWNCHAT_HOST_VOICE__ = {
-      speak,
-    };
-    const deps = createDeps();
-    const handler = createSessionStepHandler(deps);
-    const result = await handler({
-      session_id: sessionId,
-      step_id: "step-3",
-      action: {
-        type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-        payload: {
-          text: "hello world",
-          interrupt: true,
-        },
-      },
-    }, {});
-    expect(speak).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: "hello world",
-      })
-    );
-    expect(deps.setNarrationState).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        status: "playing",
-        text: "hello world",
-      })
-    );
-    expect(deps.setNarrationState).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        status: "completed",
-        text: "hello world",
-      })
-    );
-    expect(deps.scheduleDismissCurrentCard).toHaveBeenCalledWith(2200, "narration_completed");
-    expect(deps.scheduleResetNarrationState).toHaveBeenCalledWith(2200);
-    expect(result).toEqual({
-      ok: true,
-      data: {
-        status: "completed",
-        narration_text: "hello world",
-        voice_applied: true,
+    installAssistantHostAdapter({ voice: { speak } });
+    try {
+      const deps = createDeps();
+      const handler = createSessionStepHandler(deps);
+      const result = await handler({
         session_id: sessionId,
         step_id: "step-3",
-        action_type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-        timeout_ms: undefined,
-      },
-    });
-    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+        action: {
+          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          payload: {
+            text: "hello world",
+            interrupt: true,
+          },
+        },
+      }, {});
+      expect(speak).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: "hello world",
+        })
+      );
+      expect(deps.setNarrationState).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          status: "playing",
+          text: "hello world",
+        })
+      );
+      expect(deps.setNarrationState).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          status: "completed",
+          text: "hello world",
+        })
+      );
+      expect(deps.scheduleDismissCurrentCard).toHaveBeenCalledWith(2200, "narration_completed");
+      expect(deps.scheduleResetNarrationState).toHaveBeenCalledWith(2200);
+      expect(result).toEqual({
+        ok: true,
+        data: {
+          status: "completed",
+          narration_text: "hello world",
+          voice_applied: true,
+          session_id: sessionId,
+          step_id: "step-3",
+          action_type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          timeout_ms: undefined,
+        },
+      });
+    } finally {
+      uninstallAssistantHostAdapter();
+    }
   });
 
   it("fails guide.narrate when payload.text is missing", async () => {
@@ -926,34 +907,35 @@ describe("session step executor", () => {
       error_code: "tts_failed",
       message: "tts failed",
     }));
-    (window as any).__DAWNCHAT_HOST_VOICE__ = {
-      speak,
-    };
-    const deps = createDeps();
-    const handler = createSessionStepHandler(deps);
-    const result = await handler({
-      session_id: sessionId,
-      action: {
-        type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-        payload: {
-          text: "hello world",
+    installAssistantHostAdapter({ voice: { speak } });
+    try {
+      const deps = createDeps();
+      const handler = createSessionStepHandler(deps);
+      const result = await handler({
+        session_id: sessionId,
+        action: {
+          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          payload: {
+            text: "hello world",
+          },
         },
-      },
-    }, {});
-    expect(result).toEqual({
-      ok: false,
-      error_code: "tts_failed",
-      message: "tts failed",
-    });
-    expect(deps.setNarrationState).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        status: "failed",
-        text: "hello world",
-        errorMessage: "tts failed",
-      })
-    );
-    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+      }, {});
+      expect(result).toEqual({
+        ok: false,
+        error_code: "tts_failed",
+        message: "tts failed",
+      });
+      expect(deps.setNarrationState).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          status: "failed",
+          text: "hello world",
+          errorMessage: "tts failed",
+        })
+      );
+    } finally {
+      uninstallAssistantHostAdapter();
+    }
   });
 
   it("fails guide.tip.show when payload.message is missing", async () => {
@@ -995,161 +977,171 @@ describe("session step executor", () => {
         task_id: "task-1",
       },
     }));
-    (window as any).__DAWNCHAT_HOST_VOICE__ = {
-      speak,
-      stop,
-      status,
-    };
-    const deps = createDeps();
-    const registrations = createSessionStepCapabilityRegistrations(deps);
-    const execute = registrations.find((item) => item.definition.name === "assistant.session_step_execute")?.handler;
-    const cancel = registrations.find((item) => item.definition.name === "assistant.session_step_cancel")?.handler;
-    expect(execute).toBeTypeOf("function");
-    expect(cancel).toBeTypeOf("function");
-
-    const executePromise = execute?.({
-      session_id: sessionId,
-      step_id: "step-4",
-      action: {
-        type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-        payload: {
-          text: "cancel me",
-        },
+    installAssistantHostAdapter({
+      voice: {
+        speak,
+        stop,
+        status,
       },
-    }, {}) as Promise<Record<string, unknown>>;
+    });
+    try {
+      const deps = createDeps();
+      const registrations = createSessionStepCapabilityRegistrations(deps);
+      const execute = registrations.find((item) => item.definition.name === "assistant.session_step_execute")?.handler;
+      const cancel = registrations.find((item) => item.definition.name === "assistant.session_step_cancel")?.handler;
+      expect(execute).toBeTypeOf("function");
+      expect(cancel).toBeTypeOf("function");
 
-    await Promise.resolve();
-
-    const cancelResult = await cancel?.({
-      session_id: sessionId,
-      step_id: "step-4",
-      reason: "agent_interrupted",
-    }, {});
-
-    expect(cancelResult).toEqual({
-      ok: true,
-      data: {
+      const executePromise = execute?.({
         session_id: sessionId,
         step_id: "step-4",
-        active_step_found: true,
-        cancel_requested: true,
+        action: {
+          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          payload: {
+            text: "cancel me",
+          },
+        },
+      }, {}) as Promise<Record<string, unknown>>;
+
+      await Promise.resolve();
+
+      const cancelResult = await cancel?.({
+        session_id: sessionId,
+        step_id: "step-4",
         reason: "agent_interrupted",
-      },
-    });
-    expect(stop).toHaveBeenCalledTimes(1);
+      }, {});
 
-    resolveAsyncStep(resolveSpeak, {
-      ok: false,
-      error_code: "voice_task_not_completed",
-      message: "voice task terminal status: cancelled",
-      data: {
-        task_id: "task-1",
-        status: "cancelled",
-      },
-    });
+      expect(cancelResult).toEqual({
+        ok: true,
+        data: {
+          session_id: sessionId,
+          step_id: "step-4",
+          active_step_found: true,
+          cancel_requested: true,
+          reason: "agent_interrupted",
+        },
+      });
+      expect(stop).toHaveBeenCalledTimes(1);
 
-    await expect(executePromise).resolves.toEqual({
-      ok: false,
-      error_code: "step_cancelled",
-      message: "guide narration cancelled",
-      data: {
-        status: "cancelled",
-        narration_text: "cancel me",
+      resolveAsyncStep(resolveSpeak, {
+        ok: false,
+        error_code: "voice_task_not_completed",
+        message: "voice task terminal status: cancelled",
+        data: {
+          task_id: "task-1",
+          status: "cancelled",
+        },
+      });
+
+      await expect(executePromise).resolves.toEqual({
+        ok: false,
+        error_code: "step_cancelled",
+        message: "guide narration cancelled",
+        data: {
+          status: "cancelled",
+          narration_text: "cancel me",
+          task_id: "task-1",
+        },
+      });
+      expect(status).toHaveBeenCalledWith({
         task_id: "task-1",
-      },
-    });
-    expect(status).toHaveBeenCalledWith({
-      task_id: "task-1",
-    });
-    expect(deps.setNarrationState).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        status: "cancelling",
-        text: "cancel me",
-      })
-    );
-    expect(deps.setNarrationState).toHaveBeenNthCalledWith(
-      3,
-      expect.objectContaining({
-        status: "cancelled",
-        text: "cancel me",
-      })
-    );
-    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+      });
+      expect(deps.setNarrationState).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          status: "cancelling",
+          text: "cancel me",
+        })
+      );
+      expect(deps.setNarrationState).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          status: "cancelled",
+          text: "cancel me",
+        })
+      );
+    } finally {
+      uninstallAssistantHostAdapter();
+    }
   });
 
   it("does not report cancelled narration as failed", async () => {
     let resolveSpeak: ((value: Record<string, unknown>) => void) | null = null;
-    (window as any).__DAWNCHAT_HOST_VOICE__ = {
-      speak: vi.fn(
-        async () =>
-          await new Promise<Record<string, unknown>>((resolve) => {
-            resolveSpeak = resolve;
-          }),
-      ),
-      stop: vi.fn(async () => ({ ok: true, data: { stopped: true } })),
-      status: vi.fn(async () => ({
-        ok: true,
+    installAssistantHostAdapter({
+      voice: {
+        speak: vi.fn(
+          async () =>
+            await new Promise<Record<string, unknown>>((resolve) => {
+              resolveSpeak = resolve;
+            }),
+        ),
+        stop: vi.fn(async () => ({ ok: true, data: { stopped: true } })),
+        status: vi.fn(async () => ({
+          ok: true,
+          data: {
+            status: "cancelled",
+            task_id: "task-2",
+          },
+        })),
+      },
+    });
+    try {
+      const onStepFailed = vi.fn();
+      const emitRuntimeEvent = vi.fn();
+      const deps = {
+        ...createDeps(),
+        onStepFailed,
+        emitRuntimeEvent,
+      };
+      const registrations = createSessionStepCapabilityRegistrations(deps);
+      const execute = registrations.find((item) => item.definition.name === "assistant.session_step_execute")?.handler;
+      const cancel = registrations.find((item) => item.definition.name === "assistant.session_step_cancel")?.handler;
+
+      const executePromise = execute?.({
+        session_id: sessionId,
+        step_id: "step-cancel-no-fail",
+        action: {
+          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+          payload: {
+            text: "cancel without fail",
+          },
+        },
+      }, {}) as Promise<Record<string, unknown>>;
+
+      await Promise.resolve();
+      await cancel?.({
+        session_id: sessionId,
+        step_id: "step-cancel-no-fail",
+        reason: "user_cancelled",
+      }, {});
+
+      resolveAsyncStep(resolveSpeak, {
+        ok: false,
+        error_code: "voice_task_not_completed",
+        message: "voice task terminal status: cancelled",
+        data: {
+          task_id: "task-2",
+          status: "cancelled",
+        },
+      });
+
+      await expect(executePromise).resolves.toEqual({
+        ok: false,
+        error_code: "step_cancelled",
+        message: "guide narration cancelled",
         data: {
           status: "cancelled",
+          narration_text: "cancel without fail",
           task_id: "task-2",
         },
-      })),
-    };
-    const onStepFailed = vi.fn();
-    const emitRuntimeEvent = vi.fn();
-    const deps = {
-      ...createDeps(),
-      onStepFailed,
-      emitRuntimeEvent,
-    };
-    const registrations = createSessionStepCapabilityRegistrations(deps);
-    const execute = registrations.find((item) => item.definition.name === "assistant.session_step_execute")?.handler;
-    const cancel = registrations.find((item) => item.definition.name === "assistant.session_step_cancel")?.handler;
-
-    const executePromise = execute?.({
-      session_id: sessionId,
-      step_id: "step-cancel-no-fail",
-      action: {
-        type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-        payload: {
-          text: "cancel without fail",
-        },
-      },
-    }, {}) as Promise<Record<string, unknown>>;
-
-    await Promise.resolve();
-    await cancel?.({
-      session_id: sessionId,
-      step_id: "step-cancel-no-fail",
-      reason: "user_cancelled",
-    }, {});
-
-    resolveAsyncStep(resolveSpeak, {
-      ok: false,
-      error_code: "voice_task_not_completed",
-      message: "voice task terminal status: cancelled",
-      data: {
-        task_id: "task-2",
-        status: "cancelled",
-      },
-    });
-
-    await expect(executePromise).resolves.toEqual({
-      ok: false,
-      error_code: "step_cancelled",
-      message: "guide narration cancelled",
-      data: {
-        status: "cancelled",
-        narration_text: "cancel without fail",
-        task_id: "task-2",
-      },
-    });
-    expect(onStepFailed).not.toHaveBeenCalled();
-    expect(emitRuntimeEvent).not.toHaveBeenCalledWith(expect.objectContaining({
-      type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_FAILED,
-    }));
-    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+      });
+      expect(onStepFailed).not.toHaveBeenCalled();
+      expect(emitRuntimeEvent).not.toHaveBeenCalledWith(expect.objectContaining({
+        type: ASSISTANT_RUNTIME_EVENT_TYPES.SESSION_STEP_FAILED,
+      }));
+    } finally {
+      uninstallAssistantHostAdapter();
+    }
   });
 
   it("builds session step capability definition", () => {
@@ -1169,38 +1161,43 @@ describe("session step executor", () => {
   it("syncs active session ids for visual state", async () => {
     const deps = createDeps();
     let resolveSpeak: ((value: Record<string, unknown>) => void) | null = null;
-    (window as any).__DAWNCHAT_HOST_VOICE__ = {
-      speak: vi.fn(
-        async () =>
-          await new Promise<Record<string, unknown>>((resolve) => {
-            resolveSpeak = resolve;
-          }),
-      ),
-      stop: vi.fn(async () => ({ ok: true })),
-      status: vi.fn(async () => ({ ok: true, data: { status: "completed" } })),
-    };
-    const handler = createSessionStepHandler(deps);
-    const executePromise = handler(
-      {
-        session_id: sessionId,
-        step_id: "step-visual-state",
-        action: {
-          type: `guide.${GUIDE_ACTIONS.NARRATE}`,
-          payload: {
-            text: "state sync",
+    installAssistantHostAdapter({
+      voice: {
+        speak: vi.fn(
+          async () =>
+            await new Promise<Record<string, unknown>>((resolve) => {
+              resolveSpeak = resolve;
+            }),
+        ),
+        stop: vi.fn(async () => ({ ok: true })),
+        status: vi.fn(async () => ({ ok: true, data: { status: "completed" } })),
+      },
+    });
+    try {
+      const handler = createSessionStepHandler(deps);
+      const executePromise = handler(
+        {
+          session_id: sessionId,
+          step_id: "step-visual-state",
+          action: {
+            type: `guide.${GUIDE_ACTIONS.NARRATE}`,
+            payload: {
+              text: "state sync",
+            },
           },
         },
-      },
-      {},
-    );
-    await Promise.resolve();
-    expect(deps.onActiveSessionsChanged).toHaveBeenCalledWith([sessionId]);
+        {},
+      );
+      await Promise.resolve();
+      expect(deps.onActiveSessionsChanged).toHaveBeenCalledWith([sessionId]);
 
-    resolveAsyncStep(resolveSpeak, { ok: true, data: { status: "completed" } });
-    await executePromise;
+      resolveAsyncStep(resolveSpeak, { ok: true, data: { status: "completed" } });
+      await executePromise;
 
-    expect(deps.onActiveSessionsChanged).toHaveBeenLastCalledWith([]);
-    delete (window as any).__DAWNCHAT_HOST_VOICE__;
+      expect(deps.onActiveSessionsChanged).toHaveBeenLastCalledWith([]);
+    } finally {
+      uninstallAssistantHostAdapter();
+    }
   });
 
   it("builds assistant.view.describe capability and returns active snapshot", async () => {
@@ -1229,15 +1226,16 @@ describe("session step executor", () => {
     const registration = createViewDescribeCapabilityRegistration(deps);
     expect(registration.definition.name).toBe("assistant.view.describe");
     const result = await registration.handler({
-      view_id: "word.main",
+      view_id: "board.main",
     }, {});
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
         current_resource_summary: expect.objectContaining({
-          word: "Assistant",
+          node_count: 3,
+          edge_count: 2,
         }),
       }),
     });

@@ -1,5 +1,2 @@
-export {
-  DexieViewPersistenceAdapter,
-  createDefaultBrowserViewPersistenceAdapter,
-  getAssistantPersistenceScope,
-} from "./runtime/persistence";
+export { createDexieWorkspaceStore } from "./runtime/workspace";
+export { getAssistantPersistenceScope } from "./runtime/persistence/scope";

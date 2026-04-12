@@ -13,9 +13,10 @@ export function composeDesktopAssistantRuntime() {
     voice: createDesktopHostVoiceAdapter(),
   };
   return composeAssistantCoreRuntime({
+    workspaceSnapshotOnSessionEnd: true,
     environment: {
       hostAdapter,
       viewRegistryProvider: createDesktopViewRegistryProvider(),
-    }
+    },
   });
 }

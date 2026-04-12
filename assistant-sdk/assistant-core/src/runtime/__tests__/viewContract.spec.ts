@@ -1,12 +1,30 @@
 import { createViewContractCapabilityRegistration } from "../view";
+import { invokeBoardMainCapability } from "../../views/pages/board/capabilities";
+import {
+  BOARD_DEFAULT_RESOURCE,
+  boardMainView,
+  buildBoardMainStateSummary,
+  openBoardMainView,
+  validateBoardResource,
+} from "../../views/pages/board/boardMain.view";
+import {
+  buildTictactoeMainStateSummary,
+  invokeTictactoeMainCapability,
+} from "../../views/pages/tictactoe/tictactoeMain.capabilities";
+import {
+  openTictactoeMainView,
+  TICTACTOE_DEFAULT_RESOURCE,
+  tictactoeMainView,
+  validateTictactoeResource,
+} from "../../views/pages/tictactoe/tictactoeMain.view";
 
 describe("assistant.view.contract", () => {
   it("returns one view definition with scene-specific hints and examples", async () => {
     const registration = createViewContractCapabilityRegistration({
       setActiveViewState: vi.fn(() => 1),
       getViewStateSnapshot: vi.fn(() => ({
-        active_view_id: "word.main",
-        active_anchor: "word.header",
+        active_view_id: "board.main",
+        active_anchor: "board.canvas",
         current_resource: null,
         active_manifest: null,
         view_state_version: 1,
@@ -159,14 +177,14 @@ describe("assistant.view.contract", () => {
                       }),
                     }),
                   }),
-                expect.objectContaining({
-                  action: expect.objectContaining({
-                    type: "view.capability.invoke",
-                    payload: expect.objectContaining({
-                      capability_id: "plane.set_label",
+                  expect.objectContaining({
+                    action: expect.objectContaining({
+                      type: "view.capability.invoke",
+                      payload: expect.objectContaining({
+                        capability_id: "plane.set_label",
+                      }),
                     }),
                   }),
-                }),
                 ]),
               }),
             }),
@@ -199,146 +217,80 @@ describe("assistant.view.contract", () => {
     });
   });
 });
-import {
-  buildWordMainStateSummary,
-  invokeWordMainCapability,
-} from "../../views/pages/word/wordMain.capabilities";
-import {
-  openWordMainView,
-  normalizeWordResource,
-  WORD_DEFAULT_RESOURCE,
-  wordMainView,
-} from "../../views/pages/word/wordMain.view";
-import {
-  buildTictactoeMainStateSummary,
-  invokeTictactoeMainCapability,
-} from "../../views/pages/tictactoe/tictactoeMain.capabilities";
-import {
-  openTictactoeMainView,
-  TICTACTOE_DEFAULT_RESOURCE,
-  tictactoeMainView,
-  validateTictactoeResource,
-} from "../../views/pages/tictactoe/tictactoeMain.view";
 
 describe("scene definitions", () => {
   it("exposes compact view definitions for registered scenes", () => {
-    expect(wordMainView.route.full_path).toBe("/views/word/main");
+    expect(boardMainView.route.full_path).toBe("/views/board/main");
     expect(tictactoeMainView.route.full_path).toBe("/views/tictactoe/main");
-    expect(wordMainView.capabilities.map((item) => [item.id, item.mode])).toEqual([
-      ["highlight_meaning", "read"],
-      ["append_etymology", "write"],
-      ["set_title", "write"],
-    ]);
+    expect(boardMainView.capabilities.map((item) => [item.id, item.mode])).toEqual(
+      expect.arrayContaining([
+        ["board.add_node", "write"],
+        ["board.update_node", "write"],
+      ])
+    );
     expect(tictactoeMainView.capabilities.map((item) => item.id)).toEqual([
       "game.place_mark",
       "game.reset",
     ]);
   });
 
-  it("opens word.main with normalized resource payload", () => {
-    const result = openWordMainView({
-      resource: {
-        resource_type: "word",
-        data: {
-          word: "Evolution",
-          meaning: "逐步演化",
-          etymology: ["e- + volvere"],
-        },
-      },
+  it("opens board.main with normalized resource payload", () => {
+    const result = openBoardMainView({
+      resource: {},
     });
 
     expect(result).toEqual({
-      resource: {
-        resource_type: "word",
-        resource_id: "word:evolution",
-        title: "Evolution Workspace",
-        data: {
-          word: "Evolution",
-          meaning: "逐步演化",
-          etymology: ["e- + volvere"],
-        },
-      },
-      activeAnchor: "word.header",
+      resource: expect.objectContaining({
+        resource_type: "board.workspace",
+        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+      }),
+      activeAnchor: "board.canvas",
       data: {
         status: "applied",
-        resource_id: "word:evolution",
+        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
       },
     });
   });
 
-  it("rejects invalid word resource payload", () => {
-    const result = normalizeWordResource({
-      resource_type: "word",
-      data: {
-        word: "",
-      },
+  it("rejects invalid board resource payload", () => {
+    const result = validateBoardResource({
+      resource_type: "wrong.type",
+      data: {},
     });
 
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "word.main requires resource.data.word to be a non-empty string",
+      message: "board.main requires resource.resource_type to be 'board.workspace'",
       data: undefined,
     });
   });
 
-  it("appends etymology entries and updates active anchor", () => {
-    const result = invokeWordMainCapability("append_etymology", {
-      items: ["来自拉丁语演化"],
-    }, WORD_DEFAULT_RESOURCE);
-
-    expect(result).toEqual({
-      resource: {
-        resource_type: "word",
-        resource_id: "word:assistant",
-        title: "词汇讲解",
-        data: {
-          word: "Assistant",
-          meaning: "你的自进化智能助理",
-          etymology: ["支持富媒体呈现", "支持代码级进化", "来自拉丁语演化"],
-        },
-      },
-      activeAnchor: "word.etymology",
-      data: {
-        status: "applied",
-        appended_count: 1,
-        appended_items: ["来自拉丁语演化"],
-      },
-    });
-  });
-
-  it("returns capability input error for empty title", () => {
-    const result = invokeWordMainCapability("set_title", {
-      title: "   ",
-    }, WORD_DEFAULT_RESOURCE);
+  it("returns capability input error for empty pin_node node_id", async () => {
+    const result = await invokeBoardMainCapability("board.pin_node", {
+      node_id: "   ",
+    }, BOARD_DEFAULT_RESOURCE);
 
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_capability_input",
-      message: "set_title requires input.title to be a non-empty string",
+      message: "board.pin_node requires input.node_id to be a non-empty string",
       data: undefined,
     });
   });
 
-  it("builds word state summary from current resource", () => {
-    const summary = buildWordMainStateSummary({
-      resource_type: "word",
-      resource_id: "word:reference",
-      title: "Checkpoint Workspace",
-      data: {
-        word: "Checkpoint",
-        meaning: "恢复点",
-        etymology: ["check + point"],
-      },
-    }, "word.meaning");
+  it("builds board state summary from current resource", () => {
+    const summary = buildBoardMainStateSummary(BOARD_DEFAULT_RESOURCE, "board.canvas");
 
-    expect(summary).toEqual({
-      resource_title: "Checkpoint Workspace",
-      word: "Checkpoint",
-      has_meaning: true,
-      etymology_count: 1,
-      active_anchor: "word.meaning",
-    });
+    expect(summary).toEqual(
+      expect.objectContaining({
+        resource_title: BOARD_DEFAULT_RESOURCE.title,
+        board_id: "board:holographic-clue-wall",
+        node_count: 3,
+        edge_count: 2,
+        active_anchor: "board.canvas",
+      })
+    );
   });
 
   it("opens tictactoe.main with normalized board payload", () => {
@@ -536,5 +488,4 @@ describe("scene definitions", () => {
       active_anchor: "tictactoe.board",
     });
   });
-
 });

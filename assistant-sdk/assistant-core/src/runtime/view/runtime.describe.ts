@@ -40,6 +40,13 @@ function buildViewContractSchema(): Record<string, unknown> {
   };
 }
 
+function buildWorkspaceCheckpointListSchema(): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {},
+  };
+}
+
 function buildViewOpenSchema(): Record<string, unknown> {
   return {
     type: "object",
@@ -126,6 +133,15 @@ function buildRuntimeBootstrapData() {
           input: {
             view_id: "<view_id>",
           },
+        },
+      },
+      workspace_checkpoint: {
+        tool: "dawnchat.ui.capability.invoke",
+        function: "assistant.workspace_checkpoint",
+        payload_example: {
+          plugin_id: "<plugin_id>",
+          function: "assistant.workspace_checkpoint",
+          input: {},
         },
       },
       session_start: {
@@ -359,6 +375,11 @@ export function createViewListCapabilityRegistration(
             name: "assistant.view.contract",
             description: "Inspect one specific view definition, capability schemas, events, and examples.",
             input_schema: buildViewContractSchema(),
+          },
+          {
+            name: "assistant.workspace_checkpoint",
+            description: "Append a manual_checkpoint snapshot for the active workspace (stateful view).",
+            input_schema: buildWorkspaceCheckpointListSchema(),
           },
         ],
       },

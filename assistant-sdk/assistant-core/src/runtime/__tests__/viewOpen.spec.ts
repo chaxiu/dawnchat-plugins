@@ -1,5 +1,6 @@
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../events";
 import { createViewOpenCapabilityRegistration } from "../view";
+import { BOARD_DEFAULT_RESOURCE } from "../../views/pages/board/boardMain.view";
 
 describe("view.open", () => {
   it("opens a registered view through the top-level capability surface", async () => {
@@ -38,45 +39,38 @@ describe("view.open", () => {
     });
 
     const result = await registration.handler({
-      view_id: "word.main",
-      resource: {
-        resource_type: "word",
-        data: {
-          word: "Evolution",
-          meaning: "逐步演化",
-          etymology: ["e- + volvere"],
-        },
-      },
+      view_id: "board.main",
+      resource: {},
     }, {});
 
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
         status: "applied",
-        view_id: "word.main",
-        active_anchor: "word.header",
-        route_path: "/views/word/main",
-        resource_type: "word",
-        resource_id: "word:evolution",
+        view_id: "board.main",
+        active_anchor: "board.canvas",
+        route_path: "/views/board/main",
+        resource_type: "board.workspace",
+        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
       }),
     });
     expect(setActiveViewState).toHaveBeenCalledWith(expect.objectContaining({
-      viewId: "word.main",
-      activeAnchor: "word.header",
+      viewId: "board.main",
+      activeAnchor: "board.canvas",
       resource: expect.objectContaining({
-        resource_type: "word",
-        resource_id: "word:evolution",
+        resource_type: "board.workspace",
+        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
       }),
       manifest: expect.objectContaining({
-        view_id: "word.main",
+        view_id: "board.main",
       }),
     }));
-    expect(navigateToView).toHaveBeenCalledWith("word.main");
+    expect(navigateToView).toHaveBeenCalledWith("board.main");
     expect(emitRuntimeEvent).toHaveBeenCalledWith(expect.objectContaining({
       type: ASSISTANT_RUNTIME_EVENT_TYPES.VIEW_STATE_APPLIED,
       payload: expect.objectContaining({
         trigger: "view.open",
-        view_id: "word.main",
+        view_id: "board.main",
       }),
       session_id: "",
       step_id: undefined,

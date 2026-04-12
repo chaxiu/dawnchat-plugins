@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { uninstallHostOrchestrationEnvironment } from "../src/env";
 import { useAssistantSessionOrchestrator } from "../src/session-core";
@@ -77,6 +77,51 @@ describe("session-core", () => {
         status: "timed_out",
       }),
     }));
+  });
+
+  it("propagates step_index and total_steps on each assistant.session_step_execute", async () => {
+    const orchestrator = useAssistantSessionOrchestrator({
+      pluginId: { value: "demo.plugin" },
+    });
+    const stepPayloads: Record<string, unknown>[] = [];
+    const executePluginCapability = async (invoke: {
+      functionName: string;
+      payload: Record<string, unknown>;
+      options: Record<string, unknown>;
+    }) => {
+      if (invoke.functionName === "assistant.session_step_execute") {
+        stepPayloads.push({ ...invoke.payload });
+        return { ok: true, data: {} };
+      }
+      return { ok: true, data: {} };
+    };
+
+    const startResult = await orchestrator.handleCapabilityInvokeRequest({
+      requestId: "req-start-steps",
+      pluginId: "demo.plugin",
+      invoke: {
+        functionName: "assistant.session.start",
+        payload: {
+          steps: [
+            { action: { type: "a.one", payload: {} } },
+            { action: { type: "a.two", payload: {} } },
+            { action: { type: "a.three", payload: {} } },
+          ],
+        },
+        options: {},
+      },
+      executePluginCapability,
+    });
+
+    expect(startResult).toEqual(expect.objectContaining({ ok: true }));
+
+    await vi.waitFor(() => {
+      expect(stepPayloads).toHaveLength(3);
+    });
+
+    expect(stepPayloads[0]).toMatchObject({ step_index: 0, total_steps: 3 });
+    expect(stepPayloads[1]).toMatchObject({ step_index: 1, total_steps: 3 });
+    expect(stepPayloads[2]).toMatchObject({ step_index: 2, total_steps: 3 });
   });
 });
 
