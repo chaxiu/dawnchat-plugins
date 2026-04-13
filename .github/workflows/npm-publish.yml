@@ -1,3 +1,5 @@
+# Trusted publishing (OIDC) requires npm CLI >= 11.5.1 and Node >= 22.14.0
+# https://docs.npmjs.com/trusted-publishers
 name: Publish DawnChat Packages to npm
 
 on:
@@ -31,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
           cache-dependency-path: |
