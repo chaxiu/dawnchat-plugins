@@ -18,17 +18,22 @@ import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, NamedTuple
+from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 from zipfile import ZipInfo
 
 
-class WebBuildPlan(NamedTuple):
+@dataclass(frozen=True)
+class WebBuildPlan:
+    """Install + optional assistant-sdk pre-build, then template `bun run build`."""
+
     install_cmd: list[str]
     build_cmd: list[str]
     install_cwd: Path
     build_cwd: Path
     manager_label: str
+    pre_build_cmd: list[str] | None = None
+    pre_build_cwd: Path | None = None
 
 
 EXCLUDE_DIRS = {
@@ -387,12 +392,16 @@ def _resolve_web_build_plan(web_src: Path) -> WebBuildPlan:
         assert bun is not None
         install_cwd = assistant_ws_root if use_assistant_ws else web_src
         mgr = "bun(assistant-workspace)" if use_assistant_ws else default_label
+        pre_cmd = [bun, "run", "build:sdk"] if use_assistant_ws else None
+        pre_cwd = assistant_ws_root if use_assistant_ws else None
         return WebBuildPlan(
             install_cmd=[bun, "install"],
             build_cmd=[bun, "run", "build"],
             install_cwd=install_cwd,
             build_cwd=web_src,
             manager_label=mgr,
+            pre_build_cmd=pre_cmd,
+            pre_build_cwd=pre_cwd,
         )
 
     if bun_lock.exists() or bun_lockb.exists():
@@ -472,6 +481,11 @@ def _build_web_assets(plugin_dir: Path) -> None:
     print(
         f"[web-build] {plugin_dir.name}: install(cwd={plan.install_cwd})={' '.join(plan.install_cmd)}"
     )
+    if plan.pre_build_cmd:
+        print(
+            f"[web-build] {plugin_dir.name}: pre-build(cwd={plan.pre_build_cwd})="
+            f"{' '.join(plan.pre_build_cmd)}"
+        )
     print(f"[web-build] {plugin_dir.name}: build(cwd={plan.build_cwd})={' '.join(plan.build_cmd)}")
 
     subprocess.run(
@@ -479,6 +493,12 @@ def _build_web_assets(plugin_dir: Path) -> None:
         cwd=plan.install_cwd,
         check=True,
     )
+    if plan.pre_build_cmd:
+        subprocess.run(
+            plan.pre_build_cmd,
+            cwd=plan.pre_build_cwd,
+            check=True,
+        )
     subprocess.run(plan.build_cmd, cwd=plan.build_cwd, check=True)
 
 
