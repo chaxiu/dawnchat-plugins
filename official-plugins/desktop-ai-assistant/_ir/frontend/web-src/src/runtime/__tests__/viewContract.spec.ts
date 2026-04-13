@@ -7,7 +7,7 @@ describe("assistant.view.contract", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "word.main",
         active_anchor: "word.header",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: null,
         view_state_version: 1,
       })),
@@ -47,7 +47,7 @@ describe("assistant.view.contract", () => {
       }),
     });
     expect(result.data).not.toHaveProperty("runtime_contracts");
-    expect(result.data).not.toHaveProperty("current_resource_summary");
+    expect(result.data).not.toHaveProperty("current_state_binding_summary");
   });
 
   it("exposes image.explainer narration-oriented examples", async () => {
@@ -56,7 +56,7 @@ describe("assistant.view.contract", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "image.explainer",
         active_anchor: "image.stage",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: null,
         view_state_version: 1,
       })),
@@ -105,7 +105,7 @@ describe("assistant.view.contract", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "plane.main",
         active_anchor: "plane.stage",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: null,
         view_state_version: 1,
       })),
@@ -234,8 +234,8 @@ describe("scene definitions", () => {
 
   it("opens word.main with normalized resource payload", () => {
     const result = openWordMainView({
-      resource: {
-        resource_type: "word",
+      state_binding: {
+        binding_type: "word",
         data: {
           word: "Evolution",
           meaning: "逐步演化",
@@ -245,9 +245,9 @@ describe("scene definitions", () => {
     });
 
     expect(result).toEqual({
-      resource: {
-        resource_type: "word",
-        resource_id: "word:evolution",
+      state_binding: {
+        binding_type: "word",
+        binding_label: "word:evolution",
         title: "Evolution Workspace",
         data: {
           word: "Evolution",
@@ -258,14 +258,14 @@ describe("scene definitions", () => {
       activeAnchor: "word.header",
       data: {
         status: "applied",
-        resource_id: "word:evolution",
+        binding_label: "word:evolution",
       },
     });
   });
 
   it("rejects invalid word resource payload", () => {
     const result = normalizeWordResource({
-      resource_type: "word",
+      binding_type: "word",
       data: {
         word: "",
       },
@@ -274,7 +274,7 @@ describe("scene definitions", () => {
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "word.main requires resource.data.word to be a non-empty string",
+      message: "word.main requires state_binding.data.word to be a non-empty string",
       data: undefined,
     });
   });
@@ -285,9 +285,9 @@ describe("scene definitions", () => {
     }, WORD_DEFAULT_RESOURCE);
 
     expect(result).toEqual({
-      resource: {
-        resource_type: "word",
-        resource_id: "word:assistant",
+      state_binding: {
+        binding_type: "word",
+        binding_label: "word:assistant",
         title: "词汇讲解",
         data: {
           word: "Assistant",
@@ -319,8 +319,8 @@ describe("scene definitions", () => {
 
   it("builds word state summary from current resource", () => {
     const summary = buildWordMainStateSummary({
-      resource_type: "word",
-      resource_id: "word:reference",
+      binding_type: "word",
+      binding_label: "word:reference",
       title: "Checkpoint Workspace",
       data: {
         word: "Checkpoint",
@@ -341,8 +341,8 @@ describe("scene definitions", () => {
   it("opens tictactoe.main with normalized board payload", () => {
     const tictactoeMainView = getTictactoeMainRegistration();
     const result = tictactoeMainView.open!({
-      resource: {
-        resource_type: "tictactoe.game",
+      state_binding: {
+        binding_type: "tictactoe.game",
         title: "Flow Wait Arena",
         data: {
           cells: [
@@ -368,9 +368,9 @@ describe("scene definitions", () => {
     });
 
     expect(result).toEqual({
-      resource: {
-        resource_type: "tictactoe.game",
-        resource_id: "tictactoe:neon-grid",
+      state_binding: {
+        binding_type: "tictactoe.game",
+        binding_label: "tictactoe:neon-grid",
         title: "Flow Wait Arena",
         data: {
           board_size: 5,
@@ -398,29 +398,29 @@ describe("scene definitions", () => {
       activeAnchor: "tictactoe.board",
       data: {
         status: "applied",
-        resource_id: "tictactoe:neon-grid",
+        binding_label: "tictactoe:neon-grid",
       },
     });
   });
 
   it("rejects invalid tictactoe resource payload", () => {
     const tictactoeMainView = getTictactoeMainRegistration();
-    const result = tictactoeMainView.normalizeResource!({
-      resource_type: "wrong.type",
+    const result = tictactoeMainView.normalizeStateBinding!({
+      binding_type: "wrong.type",
       data: {},
     });
 
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "tictactoe.main requires resource.resource_type to be 'tictactoe.game'",
+      message: "tictactoe.main requires state_binding.binding_type to be 'tictactoe.game'",
       data: undefined,
     });
   });
 
   it("places a mark, resolves 4-line wins, and supports reset", () => {
     const tictactoeMainView = getTictactoeMainRegistration();
-    const defaultResource = JSON.parse(JSON.stringify(tictactoeMainView.default_resource)) as typeof tictactoeMainView.default_resource;
+    const defaultResource = JSON.parse(JSON.stringify(tictactoeMainView.default_state_binding)) as typeof tictactoeMainView.default_state_binding;
     const midgame = {
       ...defaultResource,
       data: {
@@ -441,9 +441,9 @@ describe("scene definitions", () => {
     }, midgame);
 
     expect(placeResult).toEqual({
-      resource: {
-        resource_type: "tictactoe.game",
-        resource_id: "tictactoe:neon-grid",
+      state_binding: {
+        binding_type: "tictactoe.game",
+        binding_label: "tictactoe:neon-grid",
         title: "Neon Grid",
         data: {
           board_size: 5,
@@ -485,8 +485,8 @@ describe("scene definitions", () => {
 
     const resetResult = tictactoeMainView.invokeCapability!("game.reset", {}, midgame);
     expect(resetResult).toEqual({
-      resource: expect.objectContaining({
-        resource_type: "tictactoe.game",
+      state_binding: expect.objectContaining({
+        binding_type: "tictactoe.game",
         data: expect.objectContaining({
           current_player: "X",
           move_count: 0,
@@ -507,8 +507,8 @@ describe("scene definitions", () => {
   it("builds tictactoe state summary from current resource", () => {
     const tictactoeMainView = getTictactoeMainRegistration();
     const summary = tictactoeMainView.getStateSummary({
-      resource_type: "tictactoe.game",
-      resource_id: "tictactoe:demo",
+      binding_type: "tictactoe.game",
+      binding_label: "tictactoe:demo",
       title: "Realtime Arena",
       data: {
         board_size: 5,

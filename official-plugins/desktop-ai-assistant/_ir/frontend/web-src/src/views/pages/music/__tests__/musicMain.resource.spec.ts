@@ -6,8 +6,8 @@ import {
 describe("music.main resource", () => {
   it("opens music.main with normalized payload", () => {
     const result = openMusicMainView({
-      resource: {
-        resource_type: "music.piano",
+      state_binding: {
+        binding_type: "music.piano",
         title: "Promo Piano",
         data: {
           instrument: "piano",
@@ -26,8 +26,8 @@ describe("music.main resource", () => {
       },
     });
     expect(result).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
-        resource_type: "music.piano",
+      state_binding: expect.objectContaining({
+        binding_type: "music.piano",
         title: "Promo Piano",
         data: expect.objectContaining({
           instrument: "piano",
@@ -49,13 +49,13 @@ describe("music.main resource", () => {
 
   it("rejects invalid resource type", () => {
     const result = validateMusicResource({
-      resource_type: "wrong.resource",
+      binding_type: "wrong.resource",
       data: {},
     });
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "music.main requires resource.resource_type to be 'music.piano'",
+      message: "music.main requires state_binding.binding_type to be 'music.piano'",
       data: undefined,
     });
   });

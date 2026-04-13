@@ -6,7 +6,7 @@ import {
 describe("plane.main summary", () => {
   it("builds a compact scene summary", () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       title: "Coordinate Lab",
       data: {
         viewport: {

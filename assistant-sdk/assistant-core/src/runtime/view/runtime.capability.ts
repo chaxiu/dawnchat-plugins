@@ -1,6 +1,6 @@
 import {
   applyViewState,
-  cloneResource,
+  cloneStateBinding,
   hasAnchor,
   hasCapability,
   resolveActiveViewState,
@@ -62,14 +62,14 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
       };
     }
     const capabilityResult = activeState.registration.invokeCapability
-      ? await activeState.registration.invokeCapability(capabilityId, capabilityInput, activeState.resource)
+      ? await activeState.registration.invokeCapability(capabilityId, capabilityInput, activeState.stateBinding)
       : {};
     if ("ok" in capabilityResult && capabilityResult.ok === false) {
       return capabilityResult;
     }
-    const nextResource = capabilityResult.resource
-      ? cloneResource(capabilityResult.resource)
-      : activeState.resource;
+    const nextStateBinding = capabilityResult.state_binding
+      ? cloneStateBinding(capabilityResult.state_binding)
+      : activeState.stateBinding;
     const nextAnchor = capabilityResult.activeAnchor || activeState.activeAnchor;
     if (nextAnchor && !hasAnchor(activeState.registration, nextAnchor)) {
       return {
@@ -78,7 +78,7 @@ export function createViewCapabilityInvokeHandler(deps: ViewRuntimeDeps): ViewAc
         message: `Anchor not found: ${nextAnchor}`,
       };
     }
-    const manifest = applyViewState(deps, activeState.registration, nextResource, nextAnchor, {
+    const manifest = applyViewState(deps, activeState.registration, nextStateBinding, nextAnchor, {
       trigger: "view.capability.invoke",
       context,
     });

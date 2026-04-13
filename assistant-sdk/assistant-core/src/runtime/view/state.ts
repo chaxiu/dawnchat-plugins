@@ -1,12 +1,12 @@
 import { ref } from "vue";
 
 import { cloneViewInteractionHints } from "./manifest";
-import type { ViewManifestSnapshot, ViewResourceBinding } from "./manifest";
+import type { ViewManifestSnapshot, ViewStateBinding } from "./manifest";
 
 export interface ViewStateSnapshot {
   active_view_id: string;
   active_anchor: string;
-  current_resource: ViewResourceBinding | null;
+  current_state_binding: ViewStateBinding | null;
   active_manifest: ViewManifestSnapshot | null;
   view_state_version: number;
 }
@@ -14,13 +14,13 @@ export interface ViewStateSnapshot {
 export interface SetActiveViewStateInput {
   viewId: string;
   activeAnchor?: string;
-  resource: ViewResourceBinding;
+  state_binding: ViewStateBinding;
   manifest: ViewManifestSnapshot;
 }
 
 const activeViewId = ref("");
 const activeAnchor = ref("");
-const currentResource = ref<ViewResourceBinding | null>(null);
+const currentStateBinding = ref<ViewStateBinding | null>(null);
 const activeManifest = ref<ViewManifestSnapshot | null>(null);
 const viewStateVersion = ref(0);
 
@@ -32,19 +32,19 @@ function cloneRecord(raw: Record<string, unknown>): Record<string, unknown> {
   return cloneJsonValue(raw);
 }
 
-function cloneResource(resource: ViewResourceBinding): ViewResourceBinding {
+function cloneStateBinding(binding: ViewStateBinding): ViewStateBinding {
   return {
-    resource_type: resource.resource_type,
-    resource_id: resource.resource_id,
-    title: resource.title,
-    data: cloneRecord(resource.data),
+    binding_type: binding.binding_type,
+    binding_label: binding.binding_label,
+    title: binding.title,
+    data: cloneRecord(binding.data),
   };
 }
 
 function cloneManifest(manifest: ViewManifestSnapshot): ViewManifestSnapshot {
   return {
     view_id: manifest.view_id,
-    resource_type: manifest.resource_type,
+    binding_type: manifest.binding_type,
     title: manifest.title,
     route_name: manifest.route_name,
     route_path: manifest.route_path,
@@ -65,7 +65,7 @@ export function useViewState() {
   const setActiveViewState = (nextState: SetActiveViewStateInput) => {
     activeViewId.value = nextState.viewId;
     activeAnchor.value = nextState.activeAnchor || "";
-    currentResource.value = cloneResource(nextState.resource);
+    currentStateBinding.value = cloneStateBinding(nextState.state_binding);
     activeManifest.value = cloneManifest(nextState.manifest);
     viewStateVersion.value += 1;
     return viewStateVersion.value;
@@ -74,7 +74,7 @@ export function useViewState() {
   const clearViewState = () => {
     activeViewId.value = "";
     activeAnchor.value = "";
-    currentResource.value = null;
+    currentStateBinding.value = null;
     activeManifest.value = null;
     viewStateVersion.value += 1;
   };
@@ -84,7 +84,9 @@ export function useViewState() {
     // Stateful views must still own their actual business persistence.
     activeViewId.value = snapshot.active_view_id;
     activeAnchor.value = snapshot.active_anchor;
-    currentResource.value = snapshot.current_resource ? cloneResource(snapshot.current_resource) : null;
+    currentStateBinding.value = snapshot.current_state_binding
+      ? cloneStateBinding(snapshot.current_state_binding)
+      : null;
     activeManifest.value = snapshot.active_manifest ? cloneManifest(snapshot.active_manifest) : null;
     viewStateVersion.value += 1;
     return viewStateVersion.value;
@@ -94,7 +96,9 @@ export function useViewState() {
     return {
       active_view_id: activeViewId.value,
       active_anchor: activeAnchor.value,
-      current_resource: currentResource.value ? cloneResource(currentResource.value) : null,
+      current_state_binding: currentStateBinding.value
+        ? cloneStateBinding(currentStateBinding.value)
+        : null,
       active_manifest: activeManifest.value ? cloneManifest(activeManifest.value) : null,
       view_state_version: viewStateVersion.value,
     };
@@ -103,7 +107,7 @@ export function useViewState() {
   return {
     activeViewId,
     activeAnchor,
-    currentResource,
+    currentStateBinding,
     activeManifest,
     viewStateVersion,
     setActiveViewState,

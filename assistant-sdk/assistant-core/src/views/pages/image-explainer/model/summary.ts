@@ -1,11 +1,11 @@
-import type { ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewStateBinding } from "../../../../runtime/view";
 import { readImageExplainerResourceData } from "./resource";
 
-export function buildImageExplainerMainStateSummary(resource: ViewResourceBinding, activeAnchor?: string) {
-  const deck = readImageExplainerResourceData(resource).deck;
+export function buildImageExplainerMainStateSummary(state_binding: ViewStateBinding, activeAnchor?: string) {
+  const deck = readImageExplainerResourceData(state_binding).deck;
   const currentPage = deck.pages[deck.current_page_index];
   return {
-    resource_title: resource.title || "",
+    resource_title: state_binding.title || "",
     deck_title: deck.title || "",
     page_count: deck.pages.length,
     current_page_index: deck.current_page_index,

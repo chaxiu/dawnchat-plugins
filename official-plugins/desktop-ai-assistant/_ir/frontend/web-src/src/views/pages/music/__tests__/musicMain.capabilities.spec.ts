@@ -55,7 +55,7 @@ describe("music.main capabilities", () => {
         waiting_for_match: true,
         prompt_text: "请先弹 C4",
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           lesson: expect.objectContaining({
             highlighted_note: "C4",

@@ -6,9 +6,9 @@ describe("runtime observation store", () => {
       getViewStateSnapshot: () => ({
         active_view_id: "word.main",
         active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
+        current_state_binding: {
+          binding_type: "word",
+          binding_label: "word:assistant",
           title: "词汇讲解",
           data: {
             word: "Assistant",
@@ -18,7 +18,7 @@ describe("runtime observation store", () => {
         },
         active_manifest: {
           view_id: "word.main",
-          resource_type: "word",
+          binding_type: "word",
           title: "Word Workspace",
           route_name: "view-word-main",
           route_path: "/views/word/main",
@@ -69,9 +69,9 @@ describe("runtime observation store", () => {
       total_steps: 3,
       summary: "正在处理词义讲解",
     });
-    expect(store.getActiveResourceContextSnapshot()).toEqual({
-      resource_type: "word",
-      resource_id: "word:assistant",
+    expect(store.getActiveStateBindingContextSnapshot()).toEqual({
+      binding_type: "word",
+      binding_label: "word:assistant",
       title: "词汇讲解",
       view_id: "word.main",
       state_summary: {
@@ -103,9 +103,9 @@ describe("runtime observation store", () => {
       getViewStateSnapshot: () => ({
         active_view_id: "word.main",
         active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: "word:assistant",
+        current_state_binding: {
+          binding_type: "word",
+          binding_label: "word:assistant",
           title: "词汇讲解",
           data: {
             word: "Assistant",
@@ -113,7 +113,7 @@ describe("runtime observation store", () => {
         },
         active_manifest: {
           view_id: "word.main",
-          resource_type: "word",
+          binding_type: "word",
           title: "Word Workspace",
           route_name: "view-word-main",
           route_path: "/views/word/main",
@@ -128,7 +128,7 @@ describe("runtime observation store", () => {
       }),
     });
 
-    const activeResourceContext = store.getActiveResourceContextSnapshot();
+    const activeResourceContext = store.getActiveStateBindingContextSnapshot();
     const continuationSnapshot = store.getContinuationSnapshot();
     if (activeResourceContext) {
       (activeResourceContext.state_summary as Record<string, unknown>).word = "mutated";
@@ -140,7 +140,7 @@ describe("runtime observation store", () => {
       waiting_since_ms: 1,
     };
 
-    const nextActiveResourceContext = store.getActiveResourceContextSnapshot();
+    const nextActiveResourceContext = store.getActiveStateBindingContextSnapshot();
     expect(nextActiveResourceContext).toEqual(expect.objectContaining({
       state_summary: {
         word: "Assistant",
@@ -149,15 +149,15 @@ describe("runtime observation store", () => {
     expect(store.getContinuationSnapshot().pending_wait).toBeNull();
   });
 
-  it("keeps active_resource_context bound to current active resource only", () => {
+  it("keeps active_state_binding bound to current active resource only", () => {
     let currentResourceId = "word:assistant";
     const store = createRuntimeObservationStore({
       getViewStateSnapshot: () => ({
         active_view_id: "word.main",
         active_anchor: "word.header",
-        current_resource: {
-          resource_type: "word",
-          resource_id: currentResourceId,
+        current_state_binding: {
+          binding_type: "word",
+          binding_label: currentResourceId,
           title: currentResourceId,
           data: {
             word: currentResourceId,
@@ -165,7 +165,7 @@ describe("runtime observation store", () => {
         },
         active_manifest: {
           view_id: "word.main",
-          resource_type: "word",
+          binding_type: "word",
           title: "Word Workspace",
           route_name: "view-word-main",
           route_path: "/views/word/main",
@@ -180,18 +180,18 @@ describe("runtime observation store", () => {
       }),
     });
 
-    const snapshotA = store.getActiveResourceContextSnapshot();
+    const snapshotA = store.getActiveStateBindingContextSnapshot();
     expect(snapshotA).toEqual(expect.objectContaining({
-      resource_id: "word:assistant",
+      binding_label: "word:assistant",
       state_summary: {
         word: "word:assistant",
       },
     }));
 
     currentResourceId = "word:agent";
-    const snapshotB = store.getActiveResourceContextSnapshot();
+    const snapshotB = store.getActiveStateBindingContextSnapshot();
     expect(snapshotB).toEqual(expect.objectContaining({
-      resource_id: "word:agent",
+      binding_label: "word:agent",
       state_summary: {
         word: "word:agent",
       },

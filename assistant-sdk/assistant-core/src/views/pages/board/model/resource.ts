@@ -1,11 +1,11 @@
 import type {
   ViewOpenSuccess,
   ViewOperationFailure,
-  ViewResourceBinding,
+  ViewStateBinding,
 } from "../../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
   toStringArray,
@@ -212,22 +212,22 @@ export function createDefaultBoardData(): BoardResourceData {
   };
 }
 
-export const BOARD_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: "board.workspace",
-  resource_id: "board:holographic-clue-wall",
+export const BOARD_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: "board.workspace",
+  binding_label: "board:holographic-clue-wall",
   title: "Holographic Clue Wall",
   data: createDefaultBoardData() as unknown as Record<string, unknown>,
 };
 
-export function cloneBoardResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneBoardStateBinding(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
-export function readBoardResourceData(resource: ViewResourceBinding): BoardResourceData {
-  return resource.data as unknown as BoardResourceData;
+export function readBoardStateBindingData(state_binding: ViewStateBinding): BoardResourceData {
+  return state_binding.data as unknown as BoardResourceData;
 }
 
-export function normalizeBoardResource(raw: Record<string, unknown>): ViewResourceBinding {
+export function normalizeBoardStateBinding(raw: Record<string, unknown>): ViewStateBinding {
   const defaults = createDefaultBoardData();
   const rawData = raw.data && typeof raw.data === "object" && !Array.isArray(raw.data)
     ? raw.data as Record<string, unknown>
@@ -290,8 +290,8 @@ export function normalizeBoardResource(raw: Record<string, unknown>): ViewResour
   const focusedNodeId = trimLimitedText(rawSelection.focused_node_id, 64);
 
   return {
-    resource_type: "board.workspace",
-    resource_id: trimLimitedText(raw.resource_id, 96, String(BOARD_DEFAULT_RESOURCE.resource_id || "board:holographic-clue-wall")),
+    binding_type: "board.workspace",
+    binding_label: trimLimitedText(raw.binding_label, 96, String(BOARD_DEFAULT_RESOURCE.binding_label || "board:holographic-clue-wall")),
     title: trimLimitedText(raw.title, BOARD_TITLE_LIMIT, String(BOARD_DEFAULT_RESOURCE.title || "Holographic Clue Wall")),
     data: {
       board_id: trimLimitedText(rawData.board_id, 96, defaults.board_id),
@@ -314,18 +314,18 @@ export function normalizeBoardResource(raw: Record<string, unknown>): ViewResour
   };
 }
 
-export function validateBoardResource(
+export function validateBoardStateBinding(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
-    return cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    return cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
   }
 
-  const resourceType = trimLimitedText(payload.resource_type, 64, "board.workspace");
+  const resourceType = trimLimitedText(payload.binding_type, 64, "board.workspace");
   if (resourceType !== "board.workspace") {
     return buildOperationError(
       "invalid_view_resource",
-      "board.main requires resource.resource_type to be 'board.workspace'"
+      "board.main requires state_binding.binding_type to be 'board.workspace'"
     );
   }
 
@@ -333,26 +333,26 @@ export function validateBoardResource(
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "board.main requires resource.data to be an object"
+      "board.main requires state_binding.data to be an object"
     );
   }
 
-  return normalizeBoardResource(payload);
+  return normalizeBoardStateBinding(payload);
 }
 
 export function openBoardMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = validateBoardResource(toRecord(input.resource));
+  const normalizedResource = validateBoardStateBinding(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = trimLimitedText(input.initial_anchor, 64);
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "board.canvas",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
     },
   };
 }

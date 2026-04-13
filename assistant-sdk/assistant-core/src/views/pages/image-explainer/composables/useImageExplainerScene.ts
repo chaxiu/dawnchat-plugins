@@ -4,14 +4,14 @@ import { useViewState } from "../../../../runtime/view/state";
 import { readImageExplainerResourceData } from "../model/resource";
 
 export function useImageExplainerScene() {
-  const { activeViewId, currentResource } = useViewState();
+  const { activeViewId, currentStateBinding } = useViewState();
 
   const isImageExplainerActive = computed(() => activeViewId.value === "image.explainer");
   const deck = computed(() => {
-    if (!currentResource.value || !isImageExplainerActive.value) {
+    if (!currentStateBinding.value || !isImageExplainerActive.value) {
       return null;
     }
-    return readImageExplainerResourceData(currentResource.value).deck;
+    return readImageExplainerResourceData(currentStateBinding.value).deck;
   });
   const currentPage = computed(() => {
     if (!deck.value) {
@@ -23,7 +23,7 @@ export function useImageExplainerScene() {
     if (!deck.value) {
       return "";
     }
-    return currentPage.value?.title || deck.value.title || currentResource.value?.title || "";
+    return currentPage.value?.title || deck.value.title || currentStateBinding.value?.title || "";
   });
 
   function getHighlightsForImage(imageId: string) {

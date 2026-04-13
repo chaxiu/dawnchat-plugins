@@ -2,7 +2,7 @@ import { ref } from "vue";
 
 import type { ViewStateSnapshot } from "../view/state";
 import type {
-  ActiveResourceContext,
+  ActiveStateBindingContext,
   SessionContinuation,
   SessionPendingWait,
   SessionTaskProgress,
@@ -34,15 +34,15 @@ function cloneTaskProgress(nextProgress: SessionTaskProgress): SessionTaskProgre
   };
 }
 
-function cloneActiveResourceContext(
-  nextContext: ActiveResourceContext | null
-): ActiveResourceContext | null {
+function cloneActiveStateBindingContext(
+  nextContext: ActiveStateBindingContext | null
+): ActiveStateBindingContext | null {
   if (!nextContext) {
     return null;
   }
   return {
-    resource_type: nextContext.resource_type,
-    resource_id: nextContext.resource_id,
+    binding_type: nextContext.binding_type,
+    binding_label: nextContext.binding_label,
     title: nextContext.title,
     view_id: nextContext.view_id,
     state_summary: cloneJsonValue(nextContext.state_summary),
@@ -96,19 +96,19 @@ export function createRuntimeObservationStore(deps: RuntimeObservationStoreDeps)
     });
   };
 
-  const getActiveResourceContextSnapshot = (): ActiveResourceContext | null => {
+  const getActiveStateBindingContextSnapshot = (): ActiveStateBindingContext | null => {
     const viewState = deps.getViewStateSnapshot();
-    const currentResource = viewState.current_resource ? cloneJsonValue(viewState.current_resource) : null;
-    const activeResourceContext = currentResource && viewState.active_manifest
+    const current = viewState.current_state_binding ? cloneJsonValue(viewState.current_state_binding) : null;
+    const activeContext = current && viewState.active_manifest
       ? {
-          resource_type: currentResource.resource_type,
-          resource_id: currentResource.resource_id,
-          title: currentResource.title,
+          binding_type: current.binding_type,
+          binding_label: current.binding_label,
+          title: current.title,
           view_id: viewState.active_view_id,
           state_summary: cloneJsonValue(viewState.active_manifest.state_summary),
         }
       : null;
-    return cloneActiveResourceContext(activeResourceContext);
+    return cloneActiveStateBindingContext(activeContext);
   };
 
   return {
@@ -119,6 +119,6 @@ export function createRuntimeObservationStore(deps: RuntimeObservationStoreDeps)
     patchContinuation,
     getTaskProgressSnapshot: () => cloneTaskProgress(taskProgress.value),
     getContinuationSnapshot: () => cloneContinuation(continuation.value),
-    getActiveResourceContextSnapshot,
+    getActiveStateBindingContextSnapshot,
   };
 }

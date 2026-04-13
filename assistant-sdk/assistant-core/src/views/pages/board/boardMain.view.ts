@@ -5,7 +5,7 @@ import { boardMainPersistence } from "./model/persistence";
 import {
   BOARD_DEFAULT_RESOURCE,
   openBoardMainView,
-  validateBoardResource,
+  validateBoardStateBinding,
 } from "./model/resource";
 import { buildBoardMainStateSummary } from "./model/summary";
 import {
@@ -15,11 +15,11 @@ import {
 
 export {
   BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
-  normalizeBoardResource,
+  cloneBoardStateBinding,
+  normalizeBoardStateBinding,
   openBoardMainView,
-  readBoardResourceData,
-  validateBoardResource,
+  readBoardStateBindingData,
+  validateBoardStateBinding,
 } from "./model/resource";
 export { boardMainPersistence } from "./model/persistence";
 export { buildBoardMainStateSummary } from "./model/summary";
@@ -27,12 +27,12 @@ export * from "./model/types";
 
 export const boardMainView = defineView({
   view_id: "board.main",
-  resource_type: "board.workspace",
+  binding_type: "board.workspace",
   title: "Holographic Clue Wall",
   component: BoardMainView,
   render_mode: "shadow-dom",
   state_mode: "stateful",
-  default_resource: BOARD_DEFAULT_RESOURCE,
+  default_state_binding: BOARD_DEFAULT_RESOURCE,
   anchors: [
     { id: "board.header", title: "Topbar", description: "Floating topbar with compact scene stats and quick actions." },
     { id: "board.canvas", title: "Canvas", description: "The main board canvas with nodes and directed edges." },
@@ -215,7 +215,7 @@ export const boardMainView = defineView({
             function: "view.open",
             input: {
               view_id: "board.main",
-              resource: {},
+              state_binding: {},
               initial_anchor: "board.canvas",
             },
           },
@@ -330,9 +330,9 @@ export const boardMainView = defineView({
   },
   persistence: boardMainPersistence,
   open: openBoardMainView,
-  normalizeResource: validateBoardResource,
+  normalizeStateBinding: validateBoardStateBinding,
   invokeCapability: invokeBoardMainCapability,
-  describeState: (resource, activeAnchor, options) =>
-    buildBoardMainStateSummary(resource, activeAnchor, options),
+  describeState: (stateBinding, activeAnchor, options) =>
+    buildBoardMainStateSummary(stateBinding, activeAnchor, options),
   getStateSummary: buildBoardMainStateSummary,
 });

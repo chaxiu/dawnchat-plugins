@@ -1,6 +1,6 @@
-import type { ViewCapabilityResult, ViewOperationFailure, ViewResourceBinding } from "../../../runtime/view";
+import type { ViewCapabilityResult, ViewOperationFailure, ViewStateBinding } from "../../../runtime/view";
 import {
-  cloneTictactoeResource,
+  cloneTictactoeStateBinding,
   createDefaultTictactoeData,
   TICTACTOE_BOARD_SIZE,
   TICTACTOE_WIN_LENGTH,
@@ -13,7 +13,7 @@ import {
 import { buildOperationError } from "../../shared/viewUtils";
 
 interface PlaceMarkOutcome {
-  resource: ViewResourceBinding;
+  state_binding: ViewStateBinding;
   player: TicTacToePlayer;
   moveIndex: number;
   row: number;
@@ -25,19 +25,19 @@ interface PlaceMarkOutcome {
   winningCells: number[];
 }
 
-function readBoardSize(resource: ViewResourceBinding): number {
-  const boardSize = Number(resource.data.board_size);
+function readBoardSize(state_binding: ViewStateBinding): number {
+  const boardSize = Number(state_binding.data.board_size);
   return Number.isInteger(boardSize) && boardSize > 0 ? boardSize : TICTACTOE_BOARD_SIZE;
 }
 
-function readWinLength(resource: ViewResourceBinding): number {
-  const winLength = Number(resource.data.win_length);
+function readWinLength(state_binding: ViewStateBinding): number {
+  const winLength = Number(state_binding.data.win_length);
   return Number.isInteger(winLength) && winLength > 0 ? winLength : TICTACTOE_WIN_LENGTH;
 }
 
-function readCells(resource: ViewResourceBinding): string[] {
-  const cells = Array.isArray(resource.data.cells) ? resource.data.cells : [];
-  const boardSize = readBoardSize(resource);
+function readCells(state_binding: ViewStateBinding): string[] {
+  const cells = Array.isArray(state_binding.data.cells) ? state_binding.data.cells : [];
+  const boardSize = readBoardSize(state_binding);
   const normalized = cells
     .slice(0, boardSize * boardSize)
     .map((cell) => (cell === "X" || cell === "O" ? cell : ""));
@@ -47,18 +47,18 @@ function readCells(resource: ViewResourceBinding): string[] {
   return normalized;
 }
 
-function readWinner(resource: ViewResourceBinding): TicTacToeWinner {
-  return resource.data.winner === "X" || resource.data.winner === "O" || resource.data.winner === "draw"
-    ? resource.data.winner
+function readWinner(state_binding: ViewStateBinding): TicTacToeWinner {
+  return state_binding.data.winner === "X" || state_binding.data.winner === "O" || state_binding.data.winner === "draw"
+    ? state_binding.data.winner
     : "";
 }
 
-function readStatus(resource: ViewResourceBinding): TicTacToeStatus {
-  return resource.data.status === "won" || resource.data.status === "draw" ? resource.data.status : "playing";
+function readStatus(state_binding: ViewStateBinding): TicTacToeStatus {
+  return state_binding.data.status === "won" || state_binding.data.status === "draw" ? state_binding.data.status : "playing";
 }
 
-function readCurrentPlayer(resource: ViewResourceBinding): TicTacToePlayer {
-  return resource.data.current_player === "O" ? "O" : "X";
+function readCurrentPlayer(state_binding: ViewStateBinding): TicTacToePlayer {
+  return state_binding.data.current_player === "O" ? "O" : "X";
 }
 
 function buildLastMove(index: number, player: TicTacToePlayer, boardSize: number): TicTacToeLastMove {
@@ -130,15 +130,15 @@ function buildNextPlayer(player: TicTacToePlayer): TicTacToePlayer {
 }
 
 export function placeTictactoeMark(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   index: number
 ): PlaceMarkOutcome | ViewOperationFailure {
-  const boardSize = readBoardSize(resource);
-  const winLength = readWinLength(resource);
-  const cells = readCells(resource);
-  const player = readCurrentPlayer(resource);
-  const status = readStatus(resource);
-  const winner = readWinner(resource);
+  const boardSize = readBoardSize(state_binding);
+  const winLength = readWinLength(state_binding);
+  const cells = readCells(state_binding);
+  const player = readCurrentPlayer(state_binding);
+  const status = readStatus(state_binding);
+  const winner = readWinner(state_binding);
   const maxIndex = boardSize * boardSize - 1;
 
   if (!Number.isInteger(index) || index < 0 || index > maxIndex) {
@@ -160,7 +160,7 @@ export function placeTictactoeMark(
     );
   }
 
-  const nextResource = cloneTictactoeResource(resource);
+  const nextResource = cloneTictactoeStateBinding(state_binding);
   const nextCells = [...cells];
   nextCells[index] = player;
   const moveCount = nextCells.filter((cell) => cell === "X" || cell === "O").length;
@@ -185,7 +185,7 @@ export function placeTictactoeMark(
   } satisfies TicTacToeResourceData;
 
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     player,
     moveIndex: index,
     row: lastMove.row,
@@ -198,8 +198,8 @@ export function placeTictactoeMark(
   };
 }
 
-function resetTictactoeResource(resource: ViewResourceBinding): ViewResourceBinding {
-  const nextResource = cloneTictactoeResource(resource);
+function resetTictactoeResource(state_binding: ViewStateBinding): ViewStateBinding {
+  const nextResource = cloneTictactoeStateBinding(state_binding);
   const defaults = createDefaultTictactoeData();
   nextResource.data = {
     ...nextResource.data,
@@ -211,16 +211,16 @@ function resetTictactoeResource(resource: ViewResourceBinding): ViewResourceBind
 export function invokeTictactoeMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): ViewCapabilityResult {
   if (capabilityId === "game.place_mark") {
-    const outcome = placeTictactoeMark(resource, Number(input.index));
+    const outcome = placeTictactoeMark(state_binding, Number(input.index));
     if ("ok" in outcome && outcome.ok === false) {
       return outcome;
     }
     const placeOutcome = outcome as PlaceMarkOutcome;
     return {
-      resource: placeOutcome.resource,
+      state_binding: placeOutcome.state_binding,
       activeAnchor: "tictactoe.board",
       data: {
         status: "applied",
@@ -238,9 +238,9 @@ export function invokeTictactoeMainCapability(
   }
 
   if (capabilityId === "game.reset") {
-    const nextResource = resetTictactoeResource(resource);
+    const nextResource = resetTictactoeResource(state_binding);
     return {
-      resource: nextResource,
+      state_binding: nextResource,
       activeAnchor: "tictactoe.board",
       data: {
         status: "applied",
@@ -256,17 +256,17 @@ export function invokeTictactoeMainCapability(
   );
 }
 
-export function buildTictactoeMainStateSummary(resource: ViewResourceBinding, activeAnchor?: string) {
-  const lastMove = resource.data.last_move && typeof resource.data.last_move === "object"
-    ? resource.data.last_move as Record<string, unknown>
+export function buildTictactoeMainStateSummary(state_binding: ViewStateBinding, activeAnchor?: string) {
+  const lastMove = state_binding.data.last_move && typeof state_binding.data.last_move === "object"
+    ? state_binding.data.last_move as Record<string, unknown>
     : null;
   const moveIndex = lastMove && typeof lastMove.index === "number" ? lastMove.index : -1;
   return {
-    resource_title: resource.title || "",
-    status: readStatus(resource),
-    current_player: typeof resource.data.current_player === "string" ? resource.data.current_player : "",
-    winner: readWinner(resource),
-    move_count: typeof resource.data.move_count === "number" ? resource.data.move_count : 0,
+    resource_title: state_binding.title || "",
+    status: readStatus(state_binding),
+    current_player: typeof state_binding.data.current_player === "string" ? state_binding.data.current_player : "",
+    winner: readWinner(state_binding),
+    move_count: typeof state_binding.data.move_count === "number" ? state_binding.data.move_count : 0,
     last_move_index: moveIndex,
     active_anchor: activeAnchor || "",
   };

@@ -52,7 +52,7 @@ function buildViewOpenSchema(): Record<string, unknown> {
     type: "object",
     properties: {
       view_id: { type: "string" },
-      resource: { type: "object" },
+      state_binding: { type: "object" },
       initial_anchor: { type: "string" },
     },
     required: ["view_id"],
@@ -107,7 +107,7 @@ function buildRuntimeBootstrapData() {
           function: "view.open",
           input: {
             view_id: "<view_id>",
-            resource: {},
+            state_binding: {},
             initial_anchor: "<anchor_id>",
           },
         },
@@ -219,7 +219,7 @@ function summarizeCapabilityDefinition(
 function buildViewDefinition(registration: ReturnType<typeof listViewRegistrations>[number]) {
   return {
     view_id: registration.view_id,
-    resource_type: registration.resource_type,
+    binding_type: registration.binding_type,
     title: registration.title,
     route_name: registration.route.name,
     route_path: registration.route.full_path,
@@ -271,7 +271,7 @@ function buildViewCatalogItem(
   const item: Record<string, unknown> = {
     view_id: registration.view_id,
     title: registration.title,
-    resource_type: registration.resource_type,
+    binding_type: registration.binding_type,
     state_mode: registration.state_mode,
     description: interactionHints?.interaction_intent || registration.title,
     is_active: registration.view_id === activeViewId,
@@ -300,7 +300,7 @@ function buildDescribeSummary(
   const activeRegistration = activeViewId
     ? registrations.find((registration) => registration.view_id === activeViewId)
     : null;
-  if (!activeRegistration || !currentSnapshot.current_resource) {
+  if (!activeRegistration || !currentSnapshot.current_state_binding) {
     return currentSnapshot.active_manifest?.state_summary || {};
   }
   const describeOptions = {
@@ -309,13 +309,13 @@ function buildDescribeSummary(
   };
   if (activeRegistration.describeState) {
     return activeRegistration.describeState(
-      currentSnapshot.current_resource,
+      currentSnapshot.current_state_binding,
       currentSnapshot.active_anchor,
       describeOptions
     );
   }
   return activeRegistration.getStateSummary(
-    currentSnapshot.current_resource,
+    currentSnapshot.current_state_binding,
     currentSnapshot.active_anchor
   );
 }
@@ -363,7 +363,7 @@ export function createViewListCapabilityRegistration(
         functions: [
           {
             name: "view.open",
-            description: "Open one registered assistant view and optionally bind its resource payload.",
+            description: "Open one registered assistant view and optionally bind its state binding payload.",
             input_schema: buildViewOpenSchema(),
           },
           {
@@ -403,7 +403,7 @@ export function createViewDescribeCapabilityRegistration(
     const payload = toRecord(rawPayload);
     const currentSnapshot = deps.getViewStateSnapshot();
     const taskProgress = deps.getTaskProgressSnapshot?.() || null;
-    const activeResourceContext = deps.getActiveResourceContextSnapshot?.() || null;
+    const activeStateBindingContext = deps.getActiveStateBindingContextSnapshot?.() || null;
     const continuation = deps.getContinuationSnapshot?.() || null;
 
     return {
@@ -411,10 +411,10 @@ export function createViewDescribeCapabilityRegistration(
       data: {
         active_view_id: currentSnapshot.active_view_id,
         active_anchor: currentSnapshot.active_anchor,
-        current_resource_summary: buildDescribeSummary(deps, payload),
+        current_state_binding_summary: buildDescribeSummary(deps, payload),
         view_state_version: currentSnapshot.view_state_version,
         task_progress: taskProgress,
-        active_resource_context: activeResourceContext,
+        active_state_binding: activeStateBindingContext,
         continuation,
       },
     };

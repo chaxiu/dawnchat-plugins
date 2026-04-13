@@ -17,7 +17,7 @@ const {
   activeManifest,
   boardData,
   capabilityTitles,
-  currentResource,
+  currentStateBinding,
   edges,
   flowEdges,
   flowNodes,
@@ -349,8 +349,10 @@ function handlePaneClick() {
 
 .board-root {
   width: 100%;
-  height: 100dvh;
-  min-height: 100dvh;
+  /* 嵌套在分栏 / iframe / flex 宿主内时用父级高度，避免 100dvh 按顶层视口计量导致右侧工作区撑不满或溢出 */
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;

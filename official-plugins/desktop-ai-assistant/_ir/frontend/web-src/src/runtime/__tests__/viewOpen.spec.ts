@@ -11,7 +11,7 @@ describe("view.open", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "",
         active_anchor: "",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: null,
         view_state_version: 0,
       })),
@@ -29,7 +29,7 @@ describe("view.open", () => {
         status: "idle" as const,
         current_task_id: "",
       })),
-      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getActiveStateBindingContextSnapshot: vi.fn(() => null),
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
@@ -39,8 +39,8 @@ describe("view.open", () => {
 
     const result = await registration.handler({
       view_id: "word.main",
-      resource: {
-        resource_type: "word",
+      state_binding: {
+        binding_type: "word",
         data: {
           word: "Evolution",
           meaning: "逐步演化",
@@ -56,16 +56,16 @@ describe("view.open", () => {
         view_id: "word.main",
         active_anchor: "word.header",
         route_path: "/views/word/main",
-        resource_type: "word",
-        resource_id: "word:evolution",
+        binding_type: "word",
+        binding_label: "word:evolution",
       }),
     });
     expect(setActiveViewState).toHaveBeenCalledWith(expect.objectContaining({
       viewId: "word.main",
       activeAnchor: "word.header",
-      resource: expect.objectContaining({
-        resource_type: "word",
-        resource_id: "word:evolution",
+      state_binding: expect.objectContaining({
+        binding_type: "word",
+        binding_label: "word:evolution",
       }),
       manifest: expect.objectContaining({
         view_id: "word.main",

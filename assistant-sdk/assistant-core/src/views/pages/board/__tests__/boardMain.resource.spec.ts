@@ -1,14 +1,14 @@
 import {
   buildBoardMainStateSummary,
   openBoardMainView,
-  validateBoardResource,
+  validateBoardStateBinding,
 } from "../boardMain.view";
 
 describe("board.main resource", () => {
   it("opens board.main with normalized board payload", () => {
     const result = openBoardMainView({
-      resource: {
-        resource_type: "board.workspace",
+      state_binding: {
+        binding_type: "board.workspace",
         title: "Case Cluster",
         data: {
           board_id: "board:case-cluster",
@@ -68,9 +68,9 @@ describe("board.main resource", () => {
     });
 
     expect(result).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
-        resource_type: "board.workspace",
-        resource_id: "board:holographic-clue-wall",
+      state_binding: expect.objectContaining({
+        binding_type: "board.workspace",
+        binding_label: "board:holographic-clue-wall",
         title: "Case Cluster",
         data: expect.objectContaining({
           board_id: "board:case-cluster",
@@ -108,15 +108,15 @@ describe("board.main resource", () => {
       activeAnchor: "board.canvas",
       data: {
         status: "applied",
-        resource_id: "board:holographic-clue-wall",
+        binding_label: "board:holographic-clue-wall",
       },
     }));
   });
 
   it("defaults style_settings.layout_algorithm to stress for legacy payload", () => {
     const result = openBoardMainView({
-      resource: {
-        resource_type: "board.workspace",
+      state_binding: {
+        binding_type: "board.workspace",
         data: {
           nodes: [],
           edges: [],
@@ -129,21 +129,21 @@ describe("board.main resource", () => {
     if ("ok" in result && result.ok === false) {
       throw new Error(result.message);
     }
-    expect(result.resource?.data?.style_settings).toEqual(expect.objectContaining({
+    expect(result.state_binding?.data?.style_settings).toEqual(expect.objectContaining({
       layout_algorithm: "stress",
     }));
   });
 
   it("rejects invalid board resource payload", () => {
-    const result = validateBoardResource({
-      resource_type: "wrong.type",
+    const result = validateBoardStateBinding({
+      binding_type: "wrong.type",
       data: {},
     });
 
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "board.main requires resource.resource_type to be 'board.workspace'",
+      message: "board.main requires state_binding.binding_type to be 'board.workspace'",
       data: undefined,
     });
   });
@@ -153,7 +153,7 @@ describe("board.main resource", () => {
     if ("ok" in openResult && openResult.ok === false) {
       throw new Error(openResult.message);
     }
-    const summary = buildBoardMainStateSummary(openResult.resource, "board.canvas", {
+    const summary = buildBoardMainStateSummary(openResult.state_binding, "board.canvas", {
       max_nodes: 2,
       max_edges: 1,
     });

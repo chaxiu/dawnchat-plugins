@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import { buildAngleMarkerGeometry } from "../runtime/planeGeometry";
 import {
@@ -99,8 +99,8 @@ function upsertSceneObject(
   objects.push(nextObject);
 }
 
-function removeInvalidHighlights(resource: ViewResourceBinding) {
-  const data = readCoordinatePlaneResourceData(resource);
+function removeInvalidHighlights(state_binding: ViewStateBinding) {
+  const data = readCoordinatePlaneResourceData(state_binding);
   const objectIds = new Set(data.objects.map((object) => object.id));
   data.highlights = data.highlights
     .map((highlight) => ({
@@ -110,8 +110,8 @@ function removeInvalidHighlights(resource: ViewResourceBinding) {
     .filter((highlight) => highlight.target_ids.length > 0);
 }
 
-function resetAnimation(resource: ViewResourceBinding) {
-  readCoordinatePlaneResourceData(resource).animation_state = createDefaultPlaneAnimationState();
+function resetAnimation(state_binding: ViewStateBinding) {
+  readCoordinatePlaneResourceData(state_binding).animation_state = createDefaultPlaneAnimationState();
 }
 
 function collectTargetIds(
@@ -155,7 +155,7 @@ function applyStylePatchToObject(
 }
 
 export function mutateSetViewport(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const xMin = input.x_min;
@@ -179,7 +179,7 @@ export function mutateSetViewport(
       "plane.set_viewport requires valid x_min, x_max, y_min, y_max with min < max"
     );
   }
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const viewport = readCoordinatePlaneResourceData(nextResource).viewport;
   viewport.x_min = xMin;
   viewport.x_max = xMax;
@@ -188,7 +188,7 @@ export function mutateSetViewport(
   viewport.show_grid = normalizeBoolean(input.show_grid, viewport.show_grid);
   viewport.show_axes = normalizeBoolean(input.show_axes, viewport.show_axes);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -198,10 +198,10 @@ export function mutateSetViewport(
 }
 
 export function mutateClearScene(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const data = readCoordinatePlaneResourceData(nextResource);
   data.objects = [];
   data.highlights = [];
@@ -217,7 +217,7 @@ export function mutateClearScene(
     };
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -228,10 +228,10 @@ export function mutateClearScene(
 }
 
 export function mutateAddPoint(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const point: PlanePointObject = {
     id: normalizeString(input.id) || `point-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "point",
@@ -249,7 +249,7 @@ export function mutateAddPoint(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, point);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -260,11 +260,11 @@ export function mutateAddPoint(
 }
 
 export function mutateAddLine(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const lineType = input.line_type === "line" ? "line" : "segment";
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const nextLine: PlaneSegmentObject | PlaneLineObject = {
     id: normalizeString(input.id) || `${lineType}-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: lineType,
@@ -291,7 +291,7 @@ export function mutateAddLine(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, nextLine);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -302,7 +302,7 @@ export function mutateAddLine(
 }
 
 export function mutateAddCurve(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const rawPoints = Array.isArray(input.points) ? input.points : [];
@@ -319,7 +319,7 @@ export function mutateAddCurve(
       y: normalizeNumber(source.y, 0),
     };
   });
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const curve: PlaneCurveObject = {
     id: normalizeString(input.id) || `curve-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "curve",
@@ -336,7 +336,7 @@ export function mutateAddCurve(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, curve);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -348,10 +348,10 @@ export function mutateAddCurve(
 }
 
 export function mutateAddCircle(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const circle: PlaneCircleObject = {
     id: normalizeString(input.id) || `circle-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "circle",
@@ -370,7 +370,7 @@ export function mutateAddCircle(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, circle);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -382,10 +382,10 @@ export function mutateAddCircle(
 }
 
 export function mutateAddEllipse(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const ellipse: PlaneEllipseObject = {
     id: normalizeString(input.id) || `ellipse-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "ellipse",
@@ -405,7 +405,7 @@ export function mutateAddEllipse(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, ellipse);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -416,7 +416,7 @@ export function mutateAddEllipse(
 }
 
 export function mutateAddPolygon(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const rawPoints = Array.isArray(input.points) ? input.points : [];
@@ -427,7 +427,7 @@ export function mutateAddPolygon(
     );
   }
   const points = rawPoints.map((point, index) => normalizeCoordinate(point, index));
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const polygon: PlanePolygonObject = {
     id: normalizeString(input.id) || `polygon-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "polygon",
@@ -444,7 +444,7 @@ export function mutateAddPolygon(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, polygon);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -456,10 +456,10 @@ export function mutateAddPolygon(
 }
 
 export function mutateAddArc(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const arc: PlaneArcObject = {
     id: normalizeString(input.id) || `arc-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "arc",
@@ -480,7 +480,7 @@ export function mutateAddArc(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, arc);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -491,7 +491,7 @@ export function mutateAddArc(
 }
 
 export function mutateAddAngleMarker(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const ax = normalizeNumber(input.ax, Number.NaN);
@@ -532,7 +532,7 @@ export function mutateAddAngleMarker(
     );
   }
 
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const angleMarker: PlaneAngleMarkerObject = {
     id: normalizeString(input.id) || `angle-marker-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "angle_marker",
@@ -557,7 +557,7 @@ export function mutateAddAngleMarker(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, angleMarker);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -571,10 +571,10 @@ export function mutateAddAngleMarker(
 }
 
 export function mutateAddVector(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const vector: PlaneVectorObject = {
     id: normalizeString(input.id) || `vector-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "vector",
@@ -601,7 +601,7 @@ export function mutateAddVector(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, vector);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -612,11 +612,11 @@ export function mutateAddVector(
 }
 
 export function mutateAddAnnotation(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const annotationType = input.annotation_type === "marker" ? "marker" : "label";
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const object: PlaneLabelObject | PlaneMarkerObject = annotationType === "marker"
     ? {
       id: normalizeString(input.id) || `marker-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
@@ -649,7 +649,7 @@ export function mutateAddAnnotation(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, object);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -660,7 +660,7 @@ export function mutateAddAnnotation(
 }
 
 export function mutateShowFormulaLabel(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const text = normalizeString(input.text);
@@ -670,7 +670,7 @@ export function mutateShowFormulaLabel(
       "plane.show_formula_label requires input.text"
     );
   }
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const formulaLabel: PlaneFormulaLabelObject = {
     id: normalizeString(input.id) || `formula-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "formula_label",
@@ -688,7 +688,7 @@ export function mutateShowFormulaLabel(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, formulaLabel);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -699,10 +699,10 @@ export function mutateShowFormulaLabel(
 }
 
 export function mutateHighlight(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const data = readCoordinatePlaneResourceData(nextResource);
   const targetIds = collectTargetIds(input, data.objects.map((object) => object.id));
   if (targetIds.length === 0) {
@@ -724,7 +724,7 @@ export function mutateHighlight(
     data.highlights.push(highlight);
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -735,10 +735,10 @@ export function mutateHighlight(
 }
 
 export function mutateSetStyle(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const data = readCoordinatePlaneResourceData(nextResource);
   const targetIds = collectTargetIds(input, data.objects.map((object) => object.id));
   if (targetIds.length === 0) {
@@ -756,7 +756,7 @@ export function mutateSetStyle(
     updatedIds.push(object.id);
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -774,7 +774,7 @@ export function mutateSetStyle(
 }
 
 export function mutateFocusRegion(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   let xMin = Number.NaN;
@@ -817,14 +817,14 @@ export function mutateFocusRegion(
       "plane.focus_region requires either x_min/x_max/y_min/y_max or center_x/center_y/x_span/y_span"
     );
   }
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const viewport = readCoordinatePlaneResourceData(nextResource).viewport;
   viewport.x_min = xMin;
   viewport.x_max = xMax;
   viewport.y_min = yMin;
   viewport.y_max = yMax;
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -834,7 +834,7 @@ export function mutateFocusRegion(
 }
 
 export function mutateSetLabel(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const targetId = normalizeString(input.target_id);
@@ -844,7 +844,7 @@ export function mutateSetLabel(
       "plane.set_label requires input.target_id"
     );
   }
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const data = readCoordinatePlaneResourceData(nextResource);
   const target = data.objects.find((object) => object.id === targetId);
   if (!target) {
@@ -866,7 +866,7 @@ export function mutateSetLabel(
     target.label_offset_dy = normalizeNumber(input.label_offset_dy, target.label_offset_dy);
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -879,11 +879,11 @@ export function mutateSetLabel(
   };
 }
 
-export function mutateClearHighlight(resource: ViewResourceBinding): ViewCapabilityResult {
-  const nextResource = cloneCoordinatePlaneResource(resource);
+export function mutateClearHighlight(state_binding: ViewStateBinding): ViewCapabilityResult {
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   readCoordinatePlaneResourceData(nextResource).highlights = [];
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -893,13 +893,13 @@ export function mutateClearHighlight(resource: ViewResourceBinding): ViewCapabil
 }
 
 export function mutateAddObject(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const shape = PLANE_OBJECT_SHAPES.includes(input.shape as PlaneMovingObject["shape"])
     ? input.shape as PlaneMovingObject["shape"]
     : "circle";
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const object: PlaneMovingObject = {
     id: normalizeString(input.id) || `object-${readCoordinatePlaneResourceData(nextResource).objects.length + 1}`,
     type: "object",
@@ -918,7 +918,7 @@ export function mutateAddObject(
   upsertSceneObject(readCoordinatePlaneResourceData(nextResource).objects, object);
   removeInvalidHighlights(nextResource);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",
@@ -930,7 +930,7 @@ export function mutateAddObject(
 }
 
 export function mutateAnimateObject(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const objectId = normalizeString(input.object_id);
@@ -940,7 +940,7 @@ export function mutateAnimateObject(
       "plane.animate_object requires input.object_id"
     );
   }
-  const nextResource = cloneCoordinatePlaneResource(resource);
+  const nextResource = cloneCoordinatePlaneResource(state_binding);
   const data = readCoordinatePlaneResourceData(nextResource);
   const object = data.objects.find((item): item is PlaneMovingObject => item.id === objectId && item.type === "object");
   if (!object) {
@@ -967,7 +967,7 @@ export function mutateAnimateObject(
     token: data.animation_state.token + 1,
   };
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "plane.stage",
     data: {
       status: "applied",

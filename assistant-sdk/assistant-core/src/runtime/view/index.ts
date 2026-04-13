@@ -56,7 +56,7 @@ export type {
   ViewRenderMode,
   ViewRecommendedMode,
   ViewRegistration,
-  ViewResourceBinding,
+  ViewStateBinding,
   ViewRouteDefinition,
   ViewStateMode,
   ViewWaitStrategy,

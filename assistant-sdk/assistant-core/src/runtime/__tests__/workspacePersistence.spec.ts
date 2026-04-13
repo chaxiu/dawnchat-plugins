@@ -5,11 +5,11 @@ import {
 import { createManifestSnapshot, getViewRegistration, useViewState } from "../view";
 import {
   BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
+  cloneBoardStateBinding,
 } from "../../views/pages/board/boardMain.view";
 import {
   TICTACTOE_DEFAULT_RESOURCE,
-  cloneTictactoeResource,
+  cloneTictactoeStateBinding,
 } from "../../views/pages/tictactoe/tictactoeMain.view";
 
 function createStore(historyLimit?: number) {
@@ -37,12 +37,12 @@ describe("workspace persistence runtime", () => {
     expect(registration).not.toBeNull();
 
     runtime.start();
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
     const manifest = createManifestSnapshot(registration!, resource, "board.canvas");
     viewState.setActiveViewState({
       viewId: "board.main",
       activeAnchor: "board.canvas",
-      resource,
+      state_binding: resource,
       manifest,
     });
 
@@ -56,8 +56,8 @@ describe("workspace persistence runtime", () => {
     expect(head?.head_payload).toEqual(
       expect.objectContaining({
         active_anchor: "board.canvas",
-        resource: expect.objectContaining({
-          resource_type: "board.workspace",
+        state_binding: expect.objectContaining({
+          binding_type: "board.workspace",
         }),
       })
     );
@@ -73,9 +73,9 @@ describe("workspace persistence runtime", () => {
     const registration = getViewRegistration("tictactoe.main");
     expect(registration).not.toBeNull();
     const wid = crypto.randomUUID();
-    const resource = cloneTictactoeResource(TICTACTOE_DEFAULT_RESOURCE);
+    const resource = cloneTictactoeStateBinding(TICTACTOE_DEFAULT_RESOURCE);
     const payload = registration!.persistence!.serialize({
-      resource,
+      state_binding: resource,
       activeAnchor: "tictactoe.board",
     });
     await store.createWorkspaceWithHead({
@@ -110,9 +110,9 @@ describe("workspace persistence runtime", () => {
     const registration = getViewRegistration("board.main");
     expect(registration).not.toBeNull();
     const wid = crypto.randomUUID();
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
     const basePayload = registration!.persistence!.serialize({
-      resource,
+      state_binding: resource,
       activeAnchor: "board.canvas",
     }) as Record<string, unknown>;
 
@@ -144,9 +144,9 @@ describe("workspace persistence runtime", () => {
     const registration = getViewRegistration("board.main");
     expect(registration).not.toBeNull();
     const wid = crypto.randomUUID();
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
     const headPayload = registration!.persistence!.serialize({
-      resource,
+      state_binding: resource,
       activeAnchor: "board.canvas",
     }) as Record<string, unknown>;
     await store.createWorkspaceWithHead({
@@ -162,7 +162,7 @@ describe("workspace persistence runtime", () => {
     viewState.setActiveViewState({
       viewId: "board.main",
       activeAnchor: "board.canvas",
-      resource,
+      state_binding: resource,
       manifest,
     });
 

@@ -65,7 +65,7 @@ describe("plane.main capabilities", () => {
     }, COORDINATE_PLANE_DEFAULT_RESOURCE);
     const withViewport = "ok" in viewportResult && viewportResult.ok === false
       ? COORDINATE_PLANE_DEFAULT_RESOURCE
-      : (viewportResult.resource || COORDINATE_PLANE_DEFAULT_RESOURCE);
+      : (viewportResult.state_binding || COORDINATE_PLANE_DEFAULT_RESOURCE);
 
     const pointResult = await invokeCoordinatePlaneMainCapability("plane.add_point", {
       id: "point-a",
@@ -73,7 +73,7 @@ describe("plane.main capabilities", () => {
       y: 4,
       label: "A",
     }, withViewport);
-    const withPoint = "ok" in pointResult && pointResult.ok === false ? withViewport : (pointResult.resource || withViewport);
+    const withPoint = "ok" in pointResult && pointResult.ok === false ? withViewport : (pointResult.state_binding || withViewport);
 
     const lineResult = await invokeCoordinatePlaneMainCapability("plane.add_line", {
       id: "segment-a",
@@ -83,7 +83,7 @@ describe("plane.main capabilities", () => {
       x2: 5,
       y2: 5,
     }, withPoint);
-    const withLine = "ok" in lineResult && lineResult.ok === false ? withPoint : (lineResult.resource || withPoint);
+    const withLine = "ok" in lineResult && lineResult.ok === false ? withPoint : (lineResult.state_binding || withPoint);
 
     const curveResult = await invokeCoordinatePlaneMainCapability("plane.add_curve", {
       id: "curve-a",
@@ -99,7 +99,7 @@ describe("plane.main capabilities", () => {
         object_id: "curve-a",
         point_count: 3,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           viewport: expect.objectContaining({
             x_min: -1,
@@ -118,7 +118,7 @@ describe("plane.main capabilities", () => {
 
   it("adds annotations, highlights, and clears them", async () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       data: {
         objects: [
           { id: "point-a", type: "point", x: 1, y: 1, label: "A" },
@@ -135,7 +135,7 @@ describe("plane.main capabilities", () => {
     }, resource);
     const withAnnotation = "ok" in annotationResult && annotationResult.ok === false
       ? resource
-      : (annotationResult.resource || resource);
+      : (annotationResult.state_binding || resource);
 
     const highlightResult = await invokeCoordinatePlaneMainCapability("plane.highlight", {
       id: "focus-a",
@@ -152,14 +152,14 @@ describe("plane.main capabilities", () => {
 
     const withHighlight = "ok" in highlightResult && highlightResult.ok === false
       ? withAnnotation
-      : (highlightResult.resource || withAnnotation);
+      : (highlightResult.state_binding || withAnnotation);
     const clearResult = await invokeCoordinatePlaneMainCapability("plane.clear_highlight", {}, withHighlight);
 
     expect(clearResult).toEqual(expect.objectContaining({
       data: expect.objectContaining({
         highlight_count: 0,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           highlights: [],
         }),
@@ -177,7 +177,7 @@ describe("plane.main capabilities", () => {
     }, COORDINATE_PLANE_DEFAULT_RESOURCE);
     const withCircle = "ok" in circleResult && circleResult.ok === false
       ? COORDINATE_PLANE_DEFAULT_RESOURCE
-      : (circleResult.resource || COORDINATE_PLANE_DEFAULT_RESOURCE);
+      : (circleResult.state_binding || COORDINATE_PLANE_DEFAULT_RESOURCE);
 
     const polygonResult = await invokeCoordinatePlaneMainCapability("plane.add_polygon", {
       id: "triangle-abc",
@@ -189,7 +189,7 @@ describe("plane.main capabilities", () => {
     }, withCircle);
     const withPolygon = "ok" in polygonResult && polygonResult.ok === false
       ? withCircle
-      : (polygonResult.resource || withCircle);
+      : (polygonResult.state_binding || withCircle);
 
     const formulaResult = await invokeCoordinatePlaneMainCapability("plane.show_formula_label", {
       id: "formula-1",
@@ -199,7 +199,7 @@ describe("plane.main capabilities", () => {
     }, withPolygon);
 
     expect(formulaResult).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           objects: expect.arrayContaining([
             expect.objectContaining({ id: "circle-o", type: "circle", radius: 4 }),
@@ -235,7 +235,7 @@ describe("plane.main capabilities", () => {
         marker_style: "right_angle_square",
         sweep_deg: expect.any(Number),
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           objects: expect.arrayContaining([
             expect.objectContaining({
@@ -258,7 +258,7 @@ describe("plane.main capabilities", () => {
 
   it("patches object labels and lightweight label position", async () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       data: {
         objects: [
           {
@@ -289,7 +289,7 @@ describe("plane.main capabilities", () => {
         label_offset_dx: 0.2,
         label_offset_dy: 0.4,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           objects: expect.arrayContaining([
             expect.objectContaining({
@@ -307,7 +307,7 @@ describe("plane.main capabilities", () => {
 
   it("applies style patch and focuses one local region", async () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       data: {
         viewport: {
           x_min: -10,
@@ -339,7 +339,7 @@ describe("plane.main capabilities", () => {
     }, resource);
     const styledResource = "ok" in styleResult && styleResult.ok === false
       ? resource
-      : (styleResult.resource || resource);
+      : (styleResult.state_binding || resource);
     const focusResult = await invokeCoordinatePlaneMainCapability("plane.focus_region", {
       center_x: 0,
       center_y: 0,
@@ -348,7 +348,7 @@ describe("plane.main capabilities", () => {
     }, styledResource);
 
     expect(focusResult).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           viewport: expect.objectContaining({
             x_min: -3,
@@ -380,7 +380,7 @@ describe("plane.main capabilities", () => {
     }, COORDINATE_PLANE_DEFAULT_RESOURCE);
     const withObject = "ok" in addObjectResult && addObjectResult.ok === false
       ? COORDINATE_PLANE_DEFAULT_RESOURCE
-      : (addObjectResult.resource || COORDINATE_PLANE_DEFAULT_RESOURCE);
+      : (addObjectResult.state_binding || COORDINATE_PLANE_DEFAULT_RESOURCE);
 
     const animateResult = await invokeCoordinatePlaneMainCapability("plane.animate_object", {
       object_id: "car-a",
@@ -396,7 +396,7 @@ describe("plane.main capabilities", () => {
         to_x: 8,
         to_y: 1,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           animation_state: expect.objectContaining({
             status: "playing",
@@ -420,7 +420,7 @@ describe("plane.main capabilities", () => {
 
   it("reads current scene state and exposes geometry-oriented examples", async () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       data: {
         objects: [
           { id: "point-a", type: "point", x: 2, y: 3, label: "A" },

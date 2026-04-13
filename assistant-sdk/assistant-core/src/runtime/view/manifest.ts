@@ -6,9 +6,9 @@ export interface ViewAnchorDefinition {
   description?: string;
 }
 
-export interface ViewResourceBinding {
-  resource_type: string;
-  resource_id?: string;
+export interface ViewStateBinding {
+  binding_type: string;
+  binding_label?: string;
   title?: string;
   data: Record<string, unknown>;
 }
@@ -68,7 +68,7 @@ export interface ViewDescribeOptions {
 export type ViewStateMode = "stateful" | "lightweight";
 
 export interface ViewPersistenceStateSnapshot {
-  resource: ViewResourceBinding;
+  state_binding: ViewStateBinding;
   activeAnchor?: string;
 }
 
@@ -96,41 +96,41 @@ export type ViewRenderMode = "light-dom" | "shadow-dom";
 
 export interface DefineViewInput {
   view_id: string;
-  resource_type: string;
+  binding_type: string;
   title: string;
   component: Component;
   render_mode?: ViewRenderMode;
   style_texts?: string[];
   theme_vars?: string[];
   state_mode: ViewStateMode;
-  default_resource: ViewResourceBinding;
+  default_state_binding: ViewStateBinding;
   anchors?: ViewAnchorDefinition[];
   capabilities?: ViewCapabilityDefinition[];
   interaction_hints?: ViewInteractionHints;
   persistence?: ViewPersistenceConfig;
-  normalizeResource?: (
+  normalizeStateBinding?: (
     payload: Record<string, unknown>
-  ) => Promise<ViewResourceBinding | ViewOperationFailure> | ViewResourceBinding | ViewOperationFailure;
+  ) => Promise<ViewStateBinding | ViewOperationFailure> | ViewStateBinding | ViewOperationFailure;
   open?: (payload: Record<string, unknown>) => Promise<ViewOpenResult> | ViewOpenResult;
   invokeCapability?: (
     capabilityId: string,
     input: Record<string, unknown>,
-    resource: ViewResourceBinding
+    stateBinding: ViewStateBinding
   ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
   describeState?: (
-    resource: ViewResourceBinding,
+    stateBinding: ViewStateBinding,
     activeAnchor: string | undefined,
     options: ViewDescribeOptions
   ) => Record<string, unknown>;
   getStateSummary: (
-    resource: ViewResourceBinding,
+    stateBinding: ViewStateBinding,
     activeAnchor?: string
   ) => Record<string, unknown>;
 }
 
 export interface ViewRegistration {
   view_id: string;
-  resource_type: string;
+  binding_type: string;
   title: string;
   component: Component;
   render_mode: ViewRenderMode;
@@ -138,34 +138,34 @@ export interface ViewRegistration {
   theme_vars: string[];
   route: ViewRouteDefinition;
   state_mode: ViewStateMode;
-  default_resource: ViewResourceBinding;
+  default_state_binding: ViewStateBinding;
   anchors: ViewAnchorDefinition[];
   capabilities: ViewCapabilityDefinition[];
   interaction_hints?: ViewInteractionHints;
   persistence?: ViewPersistenceConfig;
-  normalizeResource?: (
+  normalizeStateBinding?: (
     payload: Record<string, unknown>
-  ) => Promise<ViewResourceBinding | ViewOperationFailure> | ViewResourceBinding | ViewOperationFailure;
+  ) => Promise<ViewStateBinding | ViewOperationFailure> | ViewStateBinding | ViewOperationFailure;
   open?: (payload: Record<string, unknown>) => Promise<ViewOpenResult> | ViewOpenResult;
   invokeCapability?: (
     capabilityId: string,
     input: Record<string, unknown>,
-    resource: ViewResourceBinding
+    stateBinding: ViewStateBinding
   ) => Promise<ViewCapabilityResult> | ViewCapabilityResult;
   describeState?: (
-    resource: ViewResourceBinding,
+    stateBinding: ViewStateBinding,
     activeAnchor: string | undefined,
     options: ViewDescribeOptions
   ) => Record<string, unknown>;
   getStateSummary: (
-    resource: ViewResourceBinding,
+    stateBinding: ViewStateBinding,
     activeAnchor?: string
   ) => Record<string, unknown>;
 }
 
 export interface ViewManifestSnapshot {
   view_id: string;
-  resource_type: string;
+  binding_type: string;
   title: string;
   route_name: string;
   route_path: string;
@@ -185,7 +185,7 @@ export interface ViewOperationFailure {
 
 export interface ViewOpenSuccess {
   ok?: true;
-  resource: ViewResourceBinding;
+  state_binding: ViewStateBinding;
   activeAnchor?: string;
   data?: Record<string, unknown>;
 }
@@ -194,7 +194,7 @@ export type ViewOpenResult = ViewOpenSuccess | ViewOperationFailure;
 
 export interface ViewCapabilitySuccess {
   ok?: true;
-  resource?: ViewResourceBinding;
+  state_binding?: ViewStateBinding;
   activeAnchor?: string;
   data?: Record<string, unknown>;
 }
@@ -218,7 +218,7 @@ export function defineView(
 ): ViewRegistration {
   return {
     view_id: input.view_id,
-    resource_type: input.resource_type,
+    binding_type: input.binding_type,
     title: input.title,
     component: input.component,
     render_mode: input.render_mode || "light-dom",
@@ -226,14 +226,14 @@ export function defineView(
     theme_vars: input.theme_vars ? [...input.theme_vars] : [],
     route: buildViewRouteDefinition(input.view_id),
     state_mode: input.state_mode,
-    default_resource: JSON.parse(JSON.stringify(input.default_resource)) as ViewResourceBinding,
+    default_state_binding: JSON.parse(JSON.stringify(input.default_state_binding)) as ViewStateBinding,
     anchors: input.anchors ? JSON.parse(JSON.stringify(input.anchors)) as ViewAnchorDefinition[] : [],
     capabilities: input.capabilities
       ? JSON.parse(JSON.stringify(input.capabilities)) as ViewCapabilityDefinition[]
       : [],
     interaction_hints: cloneViewInteractionHints(input.interaction_hints),
     persistence: input.persistence,
-    normalizeResource: input.normalizeResource,
+    normalizeStateBinding: input.normalizeStateBinding,
     open: input.open,
     invokeCapability: input.invokeCapability,
     describeState: input.describeState,

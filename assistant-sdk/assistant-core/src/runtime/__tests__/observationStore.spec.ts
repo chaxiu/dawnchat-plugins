@@ -8,10 +8,10 @@ describe("runtime observation store", () => {
       getViewStateSnapshot: () => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: boardResource,
+        current_state_binding: boardResource,
         active_manifest: {
           view_id: "board.main",
-          resource_type: "board.workspace",
+          binding_type: "board.workspace",
           title: "Holographic Clue Wall",
           route_name: "view-board-main",
           route_path: "/views/board/main",
@@ -63,9 +63,9 @@ describe("runtime observation store", () => {
       total_steps: 3,
       summary: "正在处理词义讲解",
     });
-    expect(store.getActiveResourceContextSnapshot()).toEqual({
-      resource_type: "board.workspace",
-      resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+    expect(store.getActiveStateBindingContextSnapshot()).toEqual({
+      binding_type: "board.workspace",
+      binding_label: BOARD_DEFAULT_RESOURCE.binding_label,
       title: String(BOARD_DEFAULT_RESOURCE.title),
       view_id: "board.main",
       state_summary: {
@@ -99,10 +99,10 @@ describe("runtime observation store", () => {
       getViewStateSnapshot: () => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: boardResource,
+        current_state_binding: boardResource,
         active_manifest: {
           view_id: "board.main",
-          resource_type: "board.workspace",
+          binding_type: "board.workspace",
           title: "Holographic Clue Wall",
           route_name: "view-board-main",
           route_path: "/views/board/main",
@@ -117,7 +117,7 @@ describe("runtime observation store", () => {
       }),
     });
 
-    const activeResourceContext = store.getActiveResourceContextSnapshot();
+    const activeResourceContext = store.getActiveStateBindingContextSnapshot();
     const continuationSnapshot = store.getContinuationSnapshot();
     if (activeResourceContext) {
       (activeResourceContext.state_summary as Record<string, unknown>).node_count = 99;
@@ -129,7 +129,7 @@ describe("runtime observation store", () => {
       waiting_since_ms: 1,
     };
 
-    const nextActiveResourceContext = store.getActiveResourceContextSnapshot();
+    const nextActiveResourceContext = store.getActiveStateBindingContextSnapshot();
     expect(nextActiveResourceContext).toEqual(expect.objectContaining({
       state_summary: {
         node_count: 3,
@@ -138,20 +138,20 @@ describe("runtime observation store", () => {
     expect(store.getContinuationSnapshot().pending_wait).toBeNull();
   });
 
-  it("keeps active_resource_context bound to current active resource only", () => {
+  it("keeps active_state_binding bound to current active resource only", () => {
     let currentResourceId = "board:assistant";
     const store = createRuntimeObservationStore({
       getViewStateSnapshot: () => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: {
+        current_state_binding: {
           ...(JSON.parse(JSON.stringify(BOARD_DEFAULT_RESOURCE)) as typeof BOARD_DEFAULT_RESOURCE),
-          resource_id: currentResourceId,
+          binding_label: currentResourceId,
           title: currentResourceId,
         },
         active_manifest: {
           view_id: "board.main",
-          resource_type: "board.workspace",
+          binding_type: "board.workspace",
           title: "Holographic Clue Wall",
           route_name: "view-board-main",
           route_path: "/views/board/main",
@@ -166,18 +166,18 @@ describe("runtime observation store", () => {
       }),
     });
 
-    const snapshotA = store.getActiveResourceContextSnapshot();
+    const snapshotA = store.getActiveStateBindingContextSnapshot();
     expect(snapshotA).toEqual(expect.objectContaining({
-      resource_id: "board:assistant",
+      binding_label: "board:assistant",
       state_summary: {
         board_id: "board:assistant",
       },
     }));
 
     currentResourceId = "board:agent";
-    const snapshotB = store.getActiveResourceContextSnapshot();
+    const snapshotB = store.getActiveStateBindingContextSnapshot();
     expect(snapshotB).toEqual(expect.objectContaining({
-      resource_id: "board:agent",
+      binding_label: "board:agent",
       state_summary: {
         board_id: "board:agent",
       },

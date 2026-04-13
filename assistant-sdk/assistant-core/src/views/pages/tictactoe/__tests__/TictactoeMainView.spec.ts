@@ -4,7 +4,7 @@ import { createManifestSnapshot } from "../../../../runtime/view";
 import { useViewState } from "../../../../runtime/view/state";
 import TictactoeMainView from "../TictactoeMainView.vue";
 import {
-  cloneTictactoeResource,
+  cloneTictactoeStateBinding,
   TICTACTOE_DEFAULT_RESOURCE,
   tictactoeMainView,
 } from "../tictactoeMain.view";
@@ -17,11 +17,11 @@ vi.mock("../../../../runtime/runtimeEventBridge", () => ({
   emitAssistantRuntimeEvent,
 }));
 
-function activateView(resource = cloneTictactoeResource(TICTACTOE_DEFAULT_RESOURCE)) {
+function activateView(resource = cloneTictactoeStateBinding(TICTACTOE_DEFAULT_RESOURCE)) {
   useViewState().setActiveViewState({
     viewId: "tictactoe.main",
     activeAnchor: "tictactoe.board",
-    resource,
+    state_binding: resource,
     manifest: createManifestSnapshot(tictactoeMainView, resource, "tictactoe.board"),
   });
 }
@@ -39,14 +39,14 @@ describe("TictactoeMainView", () => {
     await wrapper.get('[data-cell-index="0"]').trigger("click");
 
     const snapshot = useViewState().getViewStateSnapshot();
-    expect(snapshot.current_resource?.data).toEqual(expect.objectContaining({
+    expect(snapshot.current_state_binding?.data).toEqual(expect.objectContaining({
       current_player: "O",
       move_count: 1,
       status: "playing",
       winner: "",
       cells: expect.arrayContaining(["X"]),
     }));
-    expect((snapshot.current_resource?.data.cells as string[])[0]).toBe("X");
+    expect((snapshot.current_state_binding?.data.cells as string[])[0]).toBe("X");
     expect(emitAssistantRuntimeEvent).toHaveBeenCalledWith({
       type: "assistant.game.tictactoe.cell_selected",
       source: "view",
@@ -62,7 +62,7 @@ describe("TictactoeMainView", () => {
   });
 
   it("emits round_finished when the local move closes a 4-line", async () => {
-    const resource = cloneTictactoeResource(TICTACTOE_DEFAULT_RESOURCE);
+    const resource = cloneTictactoeStateBinding(TICTACTOE_DEFAULT_RESOURCE);
     resource.data = {
       ...resource.data,
       cells: [
@@ -85,7 +85,7 @@ describe("TictactoeMainView", () => {
     await wrapper.get('[data-cell-index="3"]').trigger("click");
 
     const snapshot = useViewState().getViewStateSnapshot();
-    expect(snapshot.current_resource?.data).toEqual(expect.objectContaining({
+    expect(snapshot.current_state_binding?.data).toEqual(expect.objectContaining({
       current_player: "",
       move_count: 6,
       status: "won",

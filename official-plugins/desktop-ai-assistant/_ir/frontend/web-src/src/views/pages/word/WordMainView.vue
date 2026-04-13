@@ -3,13 +3,13 @@ import { computed } from "vue";
 
 import { useViewState } from "../../../runtime/view/state";
 
-const { activeViewId, activeAnchor, currentResource, activeManifest } = useViewState();
+const { activeViewId, activeAnchor, currentStateBinding, activeManifest } = useViewState();
 
 const isActiveWordView = computed(() => activeViewId.value === "word.main");
-const word = computed(() => String(currentResource.value?.data.word || "").trim());
-const meaning = computed(() => String(currentResource.value?.data.meaning || "").trim());
+const word = computed(() => String(currentStateBinding.value?.data.word || "").trim());
+const meaning = computed(() => String(currentStateBinding.value?.data.meaning || "").trim());
 const etymology = computed(() => {
-  const items = currentResource.value?.data.etymology;
+  const items = currentStateBinding.value?.data.etymology;
   if (!Array.isArray(items)) {
     return [];
   }
@@ -20,7 +20,7 @@ const capabilityTitles = computed(() => {
 });
 
 const isWordWorkspaceReady = computed(
-  () => isActiveWordView.value && Boolean(currentResource.value) && Boolean(activeManifest.value),
+  () => isActiveWordView.value && Boolean(currentStateBinding.value) && Boolean(activeManifest.value),
 );
 </script>
 
@@ -32,7 +32,7 @@ const isWordWorkspaceReady = computed(
         :data-anchor="activeAnchor === 'word.header' ? 'active' : 'inactive'"
       >
         <span class="chip">Word View</span>
-        <h2>{{ currentResource!.title || "词汇工作区" }}</h2>
+        <h2>{{ currentStateBinding!.title || "词汇工作区" }}</h2>
         <p>{{ word || "未设置单词" }}</p>
       </header>
 

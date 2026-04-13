@@ -1,11 +1,11 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import { normalizeMusicNote } from "../model/notes";
 import { cloneMusicResource, readMusicResourceData } from "../model/resource";
 import { MUSIC_INSTRUMENTS } from "../model/types";
 
 export interface PlayNoteMutationStart {
-  resource: ViewResourceBinding;
+  state_binding: ViewStateBinding;
   normalizedNote: string;
   durationMs: number;
   gapAfterMs: number;
@@ -20,7 +20,7 @@ function clampNumber(value: unknown, fallback: number, min: number, max: number)
 }
 
 export function mutateSetInstrument(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const instrument = typeof input.instrument === "string" ? input.instrument.trim() : "";
@@ -31,12 +31,12 @@ export function mutateSetInstrument(
     );
   }
 
-  const nextResource = cloneMusicResource(resource);
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.instrument = instrument as (typeof MUSIC_INSTRUMENTS)[number];
   music.volume = clampNumber(input.volume, music.volume, 0, 1);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "music.header",
     data: {
       status: "applied",
@@ -47,7 +47,7 @@ export function mutateSetInstrument(
 }
 
 export function mutateHighlightKey(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const clear = input.clear === true;
@@ -58,7 +58,7 @@ export function mutateHighlightKey(
       "music.highlight_key requires note within supported range C3~B6"
     );
   }
-  const nextResource = cloneMusicResource(resource);
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.lesson.highlighted_note = normalizedNote;
   music.lesson.waiting_for_match = Boolean(normalizedNote);
@@ -69,7 +69,7 @@ export function mutateHighlightKey(
     music.lesson.prompt_text = "";
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "music.keyboard",
     data: {
       status: "applied",
@@ -81,12 +81,12 @@ export function mutateHighlightKey(
 }
 
 export function mutateLessonMatched(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: {
     note: string;
   }
-): ViewResourceBinding {
-  const nextResource = cloneMusicResource(resource);
+): ViewStateBinding {
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.lesson.last_matched_note = input.note;
   music.lesson.highlighted_note = "";
@@ -96,14 +96,14 @@ export function mutateLessonMatched(
 }
 
 export function mutateTransportState(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: {
     audioContextState?: "running" | "suspended" | "closed" | "uninitialized";
     requiresUserGesture?: boolean;
     activeNotes?: string[];
   }
-): ViewResourceBinding {
-  const nextResource = cloneMusicResource(resource);
+): ViewStateBinding {
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   if (input.audioContextState) {
     music.audio.audio_context_state = input.audioContextState;
@@ -119,7 +119,7 @@ export function mutateTransportState(
 }
 
 export function mutatePlayNoteStart(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): PlayNoteMutationStart | ReturnType<typeof buildOperationError> {
   const normalizedNote = normalizeMusicNote(String(input.note || ""));
@@ -133,7 +133,7 @@ export function mutatePlayNoteStart(
   const gapAfterMs = Math.trunc(clampNumber(input.gap_after_ms, 0, 0, 3000));
   const velocity = clampNumber(input.velocity, 0.8, 0, 1);
 
-  const nextResource = cloneMusicResource(resource);
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.playback.active_notes = [normalizedNote];
   music.playback.last_note = normalizedNote;
@@ -144,7 +144,7 @@ export function mutatePlayNoteStart(
   music.playback.played_notes_count += 1;
 
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     normalizedNote,
     durationMs,
     gapAfterMs,
@@ -152,21 +152,21 @@ export function mutatePlayNoteStart(
   };
 }
 
-export function mutatePlayNoteEnd(resource: ViewResourceBinding): ViewResourceBinding {
-  const nextResource = cloneMusicResource(resource);
+export function mutatePlayNoteEnd(state_binding: ViewStateBinding): ViewStateBinding {
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.playback.active_notes = [];
   music.playback.is_playing = false;
   return nextResource;
 }
 
-export function mutateStopAll(resource: ViewResourceBinding): ViewCapabilityResult {
-  const nextResource = cloneMusicResource(resource);
+export function mutateStopAll(state_binding: ViewStateBinding): ViewCapabilityResult {
+  const nextResource = cloneMusicResource(state_binding);
   const music = readMusicResourceData(nextResource);
   music.playback.active_notes = [];
   music.playback.is_playing = false;
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "music.panel",
     data: {
       status: "applied",

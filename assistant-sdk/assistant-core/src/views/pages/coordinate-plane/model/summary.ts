@@ -1,14 +1,14 @@
-import type { ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewStateBinding } from "../../../../runtime/view";
 import { readCoordinatePlaneResourceData } from "./resource";
 
-export function buildCoordinatePlaneMainStateSummary(resource: ViewResourceBinding, activeAnchor?: string) {
-  const data = readCoordinatePlaneResourceData(resource);
+export function buildCoordinatePlaneMainStateSummary(state_binding: ViewStateBinding, activeAnchor?: string) {
+  const data = readCoordinatePlaneResourceData(state_binding);
   const typeCount = data.objects.reduce<Record<string, number>>((accumulator, object) => {
     accumulator[object.type] = (accumulator[object.type] || 0) + 1;
     return accumulator;
   }, {});
   return {
-    resource_title: resource.title || "",
+    resource_title: state_binding.title || "",
     object_count: data.objects.length,
     object_types: typeCount,
     highlight_count: data.highlights.length,

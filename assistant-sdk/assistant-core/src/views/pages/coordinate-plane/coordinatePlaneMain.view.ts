@@ -29,12 +29,12 @@ export * from "./model/types";
 
 export const coordinatePlaneMainView = defineView({
   view_id: "plane.main",
-  resource_type: "plane.scene",
+  binding_type: "plane.scene",
   title: "Coordinate Lab",
   component: CoordinatePlaneMainView,
   render_mode: "shadow-dom",
   state_mode: "stateful",
-  default_resource: COORDINATE_PLANE_DEFAULT_RESOURCE,
+  default_state_binding: COORDINATE_PLANE_DEFAULT_RESOURCE,
   anchors: [
     { id: "plane.header", title: "Header", description: "Floating coordinate-lab title and quick state strip." },
     { id: "plane.stage", title: "Stage", description: "Full-screen JSXGraph board for coordinates, graphs, highlights, and motion." },
@@ -518,7 +518,7 @@ export const coordinatePlaneMainView = defineView({
     examples: coordinatePlaneMainExamples,
   },
   persistence: coordinatePlaneMainPersistence,
-  normalizeResource: validateCoordinatePlaneResource,
+  normalizeStateBinding: validateCoordinatePlaneResource,
   open: openCoordinatePlaneMainView,
   invokeCapability: invokeCoordinatePlaneMainCapability,
   getStateSummary: buildCoordinatePlaneMainStateSummary,

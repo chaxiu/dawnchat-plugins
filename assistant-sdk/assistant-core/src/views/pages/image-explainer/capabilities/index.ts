@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import { readImageExplainerResourceData } from "../model/resource";
 import {
@@ -12,28 +12,28 @@ import {
 export async function invokeImageExplainerMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): Promise<ViewCapabilityResult> {
   if (capabilityId === "image.set_pages") {
-    return mutateSetPages(resource, input);
+    return mutateSetPages(state_binding, input);
   }
   if (capabilityId === "image.show_page") {
-    return mutateShowPage(resource, input);
+    return mutateShowPage(state_binding, input);
   }
   if (capabilityId === "image.set_title") {
-    return mutateSetTitle(resource, input);
+    return mutateSetTitle(state_binding, input);
   }
   if (capabilityId === "image.highlight_region") {
-    return mutateHighlightRegion(resource, input);
+    return mutateHighlightRegion(state_binding, input);
   }
   if (capabilityId === "image.clear_highlight") {
-    return mutateClearHighlight(resource);
+    return mutateClearHighlight(state_binding);
   }
   if (capabilityId === "image.get_scene_state") {
-    const deck = readImageExplainerResourceData(resource).deck;
+    const deck = readImageExplainerResourceData(state_binding).deck;
     const currentPage = deck.pages[deck.current_page_index];
     return {
-      resource,
+      state_binding,
       activeAnchor: "image.header",
       data: {
         status: "applied",

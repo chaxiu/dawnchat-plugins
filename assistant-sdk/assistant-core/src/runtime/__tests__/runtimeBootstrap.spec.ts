@@ -7,7 +7,7 @@ describe("assistant.runtime.bootstrap", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: null,
         view_state_version: 1,
       })),

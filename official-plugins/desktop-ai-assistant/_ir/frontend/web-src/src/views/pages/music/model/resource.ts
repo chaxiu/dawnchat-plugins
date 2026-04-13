@@ -1,11 +1,11 @@
 import type {
   ViewOpenSuccess,
   ViewOperationFailure,
-  ViewResourceBinding,
+  ViewStateBinding,
 } from "../../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
 } from "../../../shared/viewUtils";
@@ -90,22 +90,22 @@ function normalizeLesson(raw: unknown, fallback: MusicLessonState): MusicLessonS
   };
 }
 
-export const MUSIC_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: MUSIC_RESOURCE_TYPE,
-  resource_id: MUSIC_RESOURCE_ID,
+export const MUSIC_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: MUSIC_RESOURCE_TYPE,
+  binding_label: MUSIC_RESOURCE_ID,
   title: MUSIC_RESOURCE_TITLE,
   data: createDefaultMusicResourceData() as unknown as Record<string, unknown>,
 };
 
-export function cloneMusicResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneMusicResource(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
-export function readMusicResourceData(resource: ViewResourceBinding): MusicResourceData {
-  return resource.data as unknown as MusicResourceData;
+export function readMusicResourceData(state_binding: ViewStateBinding): MusicResourceData {
+  return state_binding.data as unknown as MusicResourceData;
 }
 
-export function normalizeMusicResource(raw: Record<string, unknown>): ViewResourceBinding {
+export function normalizeMusicResource(raw: Record<string, unknown>): ViewStateBinding {
   const defaults = createDefaultMusicResourceData();
   const rawData = raw.data && typeof raw.data === "object" && !Array.isArray(raw.data)
     ? raw.data as Record<string, unknown>
@@ -120,9 +120,9 @@ export function normalizeMusicResource(raw: Record<string, unknown>): ViewResour
     : defaults.keyboard.supported_notes;
 
   return {
-    resource_type: MUSIC_RESOURCE_TYPE,
-    resource_id: typeof raw.resource_id === "string" && raw.resource_id.trim()
-      ? raw.resource_id.trim()
+    binding_type: MUSIC_RESOURCE_TYPE,
+    binding_label: typeof raw.binding_label === "string" && raw.binding_label.trim()
+      ? raw.binding_label.trim()
       : MUSIC_RESOURCE_ID,
     title: typeof raw.title === "string" && raw.title.trim()
       ? raw.title.trim()
@@ -144,18 +144,18 @@ export function normalizeMusicResource(raw: Record<string, unknown>): ViewResour
 
 export function validateMusicResource(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
     return cloneMusicResource(MUSIC_DEFAULT_RESOURCE);
   }
 
-  const resourceType = typeof payload.resource_type === "string" && payload.resource_type.trim()
-    ? payload.resource_type.trim()
+  const resourceType = typeof payload.binding_type === "string" && payload.binding_type.trim()
+    ? payload.binding_type.trim()
     : MUSIC_RESOURCE_TYPE;
   if (resourceType !== MUSIC_RESOURCE_TYPE) {
     return buildOperationError(
       "invalid_view_resource",
-      `music.main requires resource.resource_type to be '${MUSIC_RESOURCE_TYPE}'`
+      `music.main requires state_binding.binding_type to be '${MUSIC_RESOURCE_TYPE}'`
     );
   }
 
@@ -163,7 +163,7 @@ export function validateMusicResource(
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "music.main requires resource.data to be an object"
+      "music.main requires state_binding.data to be an object"
     );
   }
 
@@ -172,17 +172,17 @@ export function validateMusicResource(
 
 export function openMusicMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = validateMusicResource(toRecord(input.resource));
+  const normalizedResource = validateMusicResource(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "music.keyboard",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
     },
   };
 }

@@ -7,10 +7,10 @@ describe("assistant.view.list", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "tictactoe.main",
         active_anchor: "tictactoe.board",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: {
           view_id: "tictactoe.main",
-          resource_type: "tictactoe.game",
+          binding_type: "tictactoe.game",
           title: "TicTacToe Arena",
           route_name: "view-tictactoe-main",
           route_path: "/views/tictactoe/main",
@@ -42,7 +42,7 @@ describe("assistant.view.list", () => {
         status: "idle" as const,
         current_task_id: "",
       })),
-      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getActiveStateBindingContextSnapshot: vi.fn(() => null),
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
@@ -59,7 +59,7 @@ describe("assistant.view.list", () => {
           expect.objectContaining({
             view_id: "plane.main",
             title: "Coordinate Lab",
-            resource_type: "plane.scene",
+            binding_type: "plane.scene",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
@@ -74,7 +74,7 @@ describe("assistant.view.list", () => {
           expect.objectContaining({
             view_id: "image.explainer",
             title: "AI Visual Explainer",
-            resource_type: "image.deck",
+            binding_type: "image.deck",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
@@ -89,7 +89,7 @@ describe("assistant.view.list", () => {
           expect.objectContaining({
             view_id: "board.main",
             title: "Holographic Clue Wall",
-            resource_type: "board.workspace",
+            binding_type: "board.workspace",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: false,
@@ -104,7 +104,7 @@ describe("assistant.view.list", () => {
           expect.objectContaining({
             view_id: "tictactoe.main",
             title: "TicTacToe Arena",
-            resource_type: "tictactoe.game",
+            binding_type: "tictactoe.game",
             state_mode: "stateful",
             description: expect.any(String),
             is_active: true,
@@ -118,12 +118,12 @@ describe("assistant.view.list", () => {
         functions: [
           {
             name: "view.open",
-            description: "Open one registered assistant view and optionally bind its resource payload.",
+            description: "Open one registered assistant view and optionally bind its state binding payload.",
             input_schema: {
               type: "object",
               properties: {
                 view_id: { type: "string" },
-                resource: { type: "object" },
+                state_binding: { type: "object" },
                 initial_anchor: { type: "string" },
               },
               required: ["view_id"],

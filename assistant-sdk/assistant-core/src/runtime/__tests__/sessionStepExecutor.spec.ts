@@ -24,10 +24,10 @@ const createDeps = (): SessionStepExecutorDeps => ({
     return {
       active_view_id: "board.main",
       active_anchor: "board.canvas",
-      current_resource: resource,
+      current_state_binding: resource,
       active_manifest: {
         view_id: "board.main",
-        resource_type: "board.workspace",
+        binding_type: "board.workspace",
         title: "Holographic Clue Wall",
         route_name: "view-board-main",
         route_path: "/views/board/main",
@@ -310,8 +310,8 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "tictactoe.main",
-          resource: {
-            resource_type: "tictactoe.game",
+          state_binding: {
+            binding_type: "tictactoe.game",
             title: "Flow Wait Arena",
             data: {
               cells: Array.from({ length: 25 }, () => ""),
@@ -454,9 +454,9 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "board.main",
-          resource: {
-            resource_type: "board.workspace",
-            resource_id: "board:workflow",
+          state_binding: {
+            binding_type: "board.workspace",
+            binding_label: "board:workflow",
             title: "流程白板",
             data: {
               board_id: "board:workflow",
@@ -489,9 +489,9 @@ describe("session step executor", () => {
       expect.objectContaining({
         viewId: "board.main",
         activeAnchor: "board.inspector",
-        resource: expect.objectContaining({
-          resource_type: "board.workspace",
-          resource_id: "board:workflow",
+        state_binding: expect.objectContaining({
+          binding_type: "board.workspace",
+          binding_label: "board:workflow",
         }),
       })
     );
@@ -503,7 +503,7 @@ describe("session step executor", () => {
         view_id: "board.main",
         active_anchor: "board.inspector",
         route_path: "/views/board/main",
-        resource_type: "board.workspace",
+        binding_type: "board.workspace",
         session_id: sessionId,
         step_id: "step-view-open",
         action_type: "view.open",
@@ -519,8 +519,8 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "board.main",
-          resource: {
-            resource_type: "word",
+          state_binding: {
+            binding_type: "word",
             data: {
               meaning: "wrong binding",
             },
@@ -531,7 +531,7 @@ describe("session step executor", () => {
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "board.main requires resource.resource_type to be 'board.workspace'",
+      message: "board.main requires state_binding.binding_type to be 'board.workspace'",
     });
   });
 
@@ -623,7 +623,7 @@ describe("session step executor", () => {
       expect.objectContaining({
         viewId: "board.main",
         activeAnchor: "board.canvas",
-        resource: expect.objectContaining({
+        state_binding: expect.objectContaining({
           data: expect.objectContaining({
             nodes: expect.arrayContaining([
               expect.objectContaining({
@@ -1233,7 +1233,7 @@ describe("session step executor", () => {
       data: expect.objectContaining({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource_summary: expect.objectContaining({
+        current_state_binding_summary: expect.objectContaining({
           node_count: 3,
           edge_count: 2,
         }),

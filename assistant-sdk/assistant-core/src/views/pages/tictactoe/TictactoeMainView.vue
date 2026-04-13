@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import "./tictactoeMain.css";
 
-import { type ViewCapabilityResult, type ViewResourceBinding } from "../../../runtime/view/manifest";
+import { type ViewCapabilityResult, type ViewStateBinding } from "../../../runtime/view/manifest";
 import { useViewState } from "../../../runtime/view/state";
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../../../runtime/events";
 import { emitAssistantRuntimeEvent } from "../../../runtime/runtimeEventBridge";
@@ -15,19 +15,19 @@ import {
   TICTACTOE_WIN_LENGTH,
 } from "./tictactoeMain.view";
 
-const { activeViewId, activeAnchor, activeManifest, currentResource, setActiveViewState } = useViewState();
+const { activeViewId, activeAnchor, activeManifest, currentStateBinding, setActiveViewState } = useViewState();
 
 const isActiveTictactoeView = computed(() => activeViewId.value === "tictactoe.main");
-const boardSize = computed(() => Number(currentResource.value?.data.board_size) || TICTACTOE_BOARD_SIZE);
-const currentPlayer = computed(() => String(currentResource.value?.data.current_player || ""));
-const status = computed(() => String(currentResource.value?.data.status || "playing"));
-const winner = computed(() => String(currentResource.value?.data.winner || ""));
+const boardSize = computed(() => Number(currentStateBinding.value?.data.board_size) || TICTACTOE_BOARD_SIZE);
+const currentPlayer = computed(() => String(currentStateBinding.value?.data.current_player || ""));
+const status = computed(() => String(currentStateBinding.value?.data.status || "playing"));
+const winner = computed(() => String(currentStateBinding.value?.data.winner || ""));
 const winningCells = computed(() => {
-  const cells = currentResource.value?.data.winning_cells;
+  const cells = currentStateBinding.value?.data.winning_cells;
   return Array.isArray(cells) ? cells.map((value) => Number(value)).filter(Number.isInteger) : [];
 });
 const boardCells = computed(() => {
-  const cells = currentResource.value?.data.cells;
+  const cells = currentStateBinding.value?.data.cells;
   const total = boardSize.value * boardSize.value;
   if (!Array.isArray(cells)) {
     return Array.from({ length: total }, (_, index) => ({
@@ -56,12 +56,12 @@ const statusTitle = computed(() => {
   return `轮到 ${currentPlayer.value || "X"}`;
 });
 const isBoardReady = computed(
-  () => isActiveTictactoeView.value && Boolean(currentResource.value) && Boolean(activeManifest.value)
+  () => isActiveTictactoeView.value && Boolean(currentStateBinding.value) && Boolean(activeManifest.value)
 );
 
 function applyLocalCapabilityResult(
   result: ViewCapabilityResult,
-  fallbackResource: ViewResourceBinding
+  fallbackResource: ViewStateBinding
 ): ViewCapabilityResult {
   if ("ok" in result && result.ok === false) {
     return result;
@@ -70,12 +70,12 @@ function applyLocalCapabilityResult(
   if (!currentManifest) {
     return result;
   }
-  const nextResource = result.resource || fallbackResource;
+  const nextResource = result.state_binding || fallbackResource;
   const nextAnchor = result.activeAnchor || "tictactoe.board";
   setActiveViewState({
     viewId: "tictactoe.main",
     activeAnchor: nextAnchor,
-    resource: nextResource,
+    state_binding: nextResource,
     manifest: {
       ...currentManifest,
       state_summary: buildTictactoeMainStateSummary(nextResource, nextAnchor),
@@ -84,15 +84,15 @@ function applyLocalCapabilityResult(
   return result;
 }
 
-function emitCellSelectedEvent(result: ViewCapabilityResult, resource: ViewResourceBinding) {
+function emitCellSelectedEvent(result: ViewCapabilityResult, state_binding: ViewStateBinding) {
   if ("ok" in result && result.ok === false) {
     return;
   }
   const payload = {
     view_id: "tictactoe.main",
-    resource_id: resource.resource_id || "",
-    board_size: Number(resource.data.board_size) || TICTACTOE_BOARD_SIZE,
-    win_length: Number(resource.data.win_length) || TICTACTOE_WIN_LENGTH,
+    binding_label: state_binding.binding_label || "",
+    board_size: Number(state_binding.data.board_size) || TICTACTOE_BOARD_SIZE,
+    win_length: Number(state_binding.data.win_length) || TICTACTOE_WIN_LENGTH,
     player: String(result.data?.player || ""),
     move_index: Number(result.data?.move_index),
     row: Number(result.data?.row),
@@ -119,10 +119,10 @@ function emitCellSelectedEvent(result: ViewCapabilityResult, resource: ViewResou
 }
 
 function handleCellClick(index: number) {
-  if (!isBoardReady.value || !currentResource.value) {
+  if (!isBoardReady.value || !currentStateBinding.value) {
     return;
   }
-  const baseResource = currentResource.value;
+  const baseResource = currentStateBinding.value;
   const capabilityResult = invokeTictactoeMainCapability("game.place_mark", { index }, baseResource);
   if ("ok" in capabilityResult && capabilityResult.ok === false) {
     return;
@@ -131,14 +131,14 @@ function handleCellClick(index: number) {
   if ("ok" in nextResult && nextResult.ok === false) {
     return;
   }
-  emitCellSelectedEvent(nextResult, nextResult.resource || baseResource);
+  emitCellSelectedEvent(nextResult, nextResult.state_binding || baseResource);
 }
 
 function resetBoard() {
-  if (!isBoardReady.value || !currentResource.value) {
+  if (!isBoardReady.value || !currentStateBinding.value) {
     return;
   }
-  const baseResource = currentResource.value;
+  const baseResource = currentStateBinding.value;
   const capabilityResult = invokeTictactoeMainCapability("game.reset", {}, baseResource);
   applyLocalCapabilityResult(capabilityResult, baseResource);
 }
@@ -190,7 +190,7 @@ function resetBoard() {
     <div v-else class="idle-state">
       <p class="idle-state__title">TicTacToe Arena</p>
       <p class="idle-state__hint">
-        Waiting for <code>view.open</code> with an active <code>tictactoe.game</code> resource.
+        Waiting for <code>view.open</code> with an active <code>tictactoe.game</code> state_binding.
       </p>
     </div>
   </section>

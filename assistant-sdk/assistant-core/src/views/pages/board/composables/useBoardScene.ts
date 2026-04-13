@@ -1,7 +1,7 @@
 import { computed, ref, watch, markRaw, onBeforeUnmount, type Component } from "vue";
 import { MarkerType, type Edge, type Node } from "@vue-flow/core";
 
-import { type ViewCapabilityResult, type ViewResourceBinding } from "../../../../runtime/view/manifest";
+import { type ViewCapabilityResult, type ViewStateBinding } from "../../../../runtime/view/manifest";
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../../../../runtime/events";
 import { emitAssistantRuntimeEvent } from "../../../../runtime/runtimeEventBridge";
 import { useViewState } from "../../../../runtime/view/state";
@@ -11,9 +11,9 @@ import { invokeBoardMainCapability } from "../capabilities";
 import { buildBoardMainStateSummary } from "../model/summary";
 import {
   BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
-  readBoardResourceData,
-  validateBoardResource,
+  cloneBoardStateBinding,
+  readBoardStateBindingData,
+  validateBoardStateBinding,
 } from "../model/resource";
 import {
   getOppositeHandle,
@@ -57,11 +57,11 @@ function readBoardDebugFlag(): boolean {
   }
 }
 
-function readBoardData(resource: ViewResourceBinding | null): BoardResourceData | null {
-  if (!resource || !resource.data || typeof resource.data !== "object" || Array.isArray(resource.data)) {
+function readBoardData(state_binding: ViewStateBinding | null): BoardResourceData | null {
+  if (!state_binding || !state_binding.data || typeof state_binding.data !== "object" || Array.isArray(state_binding.data)) {
     return null;
   }
-  const data = resource.data as unknown as BoardResourceData;
+  const data = state_binding.data as unknown as BoardResourceData;
   return Array.isArray(data.nodes) && Array.isArray(data.edges) ? data : null;
 }
 
@@ -235,7 +235,7 @@ function resolveEdgeHandles(
 }
 
 export function useBoardScene() {
-  const { activeViewId, activeAnchor, activeManifest, currentResource, setActiveViewState } = useViewState();
+  const { activeViewId, activeAnchor, activeManifest, currentStateBinding, setActiveViewState } = useViewState();
   const isMutating = ref(false);
   const pendingConnectSourceNodeId = ref("");
   const connectingFromNodeId = ref("");
@@ -246,7 +246,7 @@ export function useBoardScene() {
   const debugEnabled = ref(readBoardDebugFlag());
 
   const isBoardActive = computed(() => activeViewId.value === "board.main");
-  const boardData = computed(() => readBoardData(currentResource.value));
+  const boardData = computed(() => readBoardData(currentStateBinding.value));
   const nodes = computed(() => boardData.value?.nodes || []);
   const edges = computed(() => boardData.value?.edges || []);
   const selection = computed(() => boardData.value?.selection || {
@@ -314,7 +314,7 @@ export function useBoardScene() {
   watch(
     () => ({
       active: isBoardActive.value,
-      hasResource: Boolean(currentResource.value),
+      hasResource: Boolean(currentStateBinding.value),
       hasManifest: Boolean(activeManifest.value),
       hasBoardData: Boolean(boardData.value),
       anchor: activeAnchor.value,
@@ -327,9 +327,9 @@ export function useBoardScene() {
       if (!manifest) {
         return;
       }
-      const fallbackResource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
-      const rawResource = currentResource.value || fallbackResource;
-      const normalized = validateBoardResource(rawResource as unknown as Record<string, unknown>);
+      const fallbackResource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
+      const rawResource = currentStateBinding.value || fallbackResource;
+      const normalized = validateBoardStateBinding(rawResource as unknown as Record<string, unknown>);
       if ("error_code" in normalized) {
         return;
       }
@@ -337,7 +337,7 @@ export function useBoardScene() {
       setActiveViewState({
         viewId: "board.main",
         activeAnchor: nextAnchor,
-        resource: normalized,
+        state_binding: normalized,
         manifest: {
           ...manifest,
           state_summary: buildBoardMainStateSummary(normalized, nextAnchor),
@@ -418,7 +418,7 @@ export function useBoardScene() {
 
   async function applyLocalCapabilityResult(
     result: ViewCapabilityResult,
-    fallbackResource: ViewResourceBinding
+    fallbackResource: ViewStateBinding
   ): Promise<ViewCapabilityResult> {
     if ("ok" in result && result.ok === false) {
       return result;
@@ -427,12 +427,12 @@ export function useBoardScene() {
     if (!currentManifest) {
       return result;
     }
-    const nextResource = result.resource || fallbackResource;
+    const nextResource = result.state_binding || fallbackResource;
     const nextAnchor = result.activeAnchor || "board.canvas";
     setActiveViewState({
       viewId: "board.main",
       activeAnchor: nextAnchor,
-      resource: nextResource,
+      state_binding: nextResource,
       manifest: {
         ...currentManifest,
         state_summary: buildBoardMainStateSummary(nextResource, nextAnchor),
@@ -448,11 +448,11 @@ export function useBoardScene() {
       emitSelectionEvent?: boolean;
     }
   ) {
-    if (!currentResource.value || isMutating.value) {
+    if (!currentStateBinding.value || isMutating.value) {
       return;
     }
     isMutating.value = true;
-    const baseResource = currentResource.value;
+    const baseResource = currentStateBinding.value;
     try {
       const capabilityResult = await invokeBoardMainCapability(capabilityId, input, baseResource);
       const applied = await applyLocalCapabilityResult(capabilityResult, baseResource);
@@ -466,7 +466,7 @@ export function useBoardScene() {
           source: "view",
           payload: {
             view_id: "board.main",
-            resource_id: (applied.resource || baseResource).resource_id || "",
+            binding_label: (applied.state_binding || baseResource).binding_label || "",
             node_id: applied.data.node_id,
             media_type: String(applied.data.media_type || ""),
             semantic_type: String(applied.data.semantic_type || ""),
@@ -502,11 +502,11 @@ export function useBoardScene() {
   function updateStyleSettings(
     patch: Partial<BoardStyleSettings>,
   ) {
-    if (!currentResource.value || !activeManifest.value) {
+    if (!currentStateBinding.value || !activeManifest.value) {
       return;
     }
-    const nextResource = cloneBoardResource(currentResource.value);
-    const board = readBoardResourceData(nextResource);
+    const nextResource = cloneBoardStateBinding(currentStateBinding.value);
+    const board = readBoardStateBindingData(nextResource);
     board.style_settings = {
       ...boardStyleSettings.value,
       ...patch,
@@ -516,7 +516,7 @@ export function useBoardScene() {
     setActiveViewState({
       viewId: "board.main",
       activeAnchor: nextAnchor,
-      resource: nextResource,
+      state_binding: nextResource,
       manifest: {
         ...activeManifest.value,
         state_summary: buildBoardMainStateSummary(nextResource, nextAnchor),
@@ -905,7 +905,7 @@ export function useBoardScene() {
     activeManifest,
     boardData,
     capabilityTitles,
-    currentResource,
+    currentStateBinding,
     edges,
     flowEdges,
     flowNodes,
@@ -931,6 +931,6 @@ export function useBoardScene() {
     toggleBoardDebug,
     focusNode,
     togglePinNode,
-    readBoardData: () => currentResource.value ? readBoardResourceData(currentResource.value) : null,
+    readBoardData: () => currentStateBinding.value ? readBoardStateBindingData(currentStateBinding.value) : null,
   };
 }

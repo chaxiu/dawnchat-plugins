@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import {
   addBoardEdge,
@@ -14,34 +14,34 @@ import {
 export async function invokeBoardMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): Promise<ViewCapabilityResult> {
   if (capabilityId === "board.add_node") {
-    return addBoardNode(resource, input);
+    return addBoardNode(state_binding, input);
   }
   if (capabilityId === "board.update_node") {
-    return updateBoardNode(resource, input);
+    return updateBoardNode(state_binding, input);
   }
   if (capabilityId === "board.remove_node") {
-    return removeBoardNode(resource, input);
+    return removeBoardNode(state_binding, input);
   }
   if (capabilityId === "board.add_edge") {
-    return addBoardEdge(resource, input);
+    return addBoardEdge(state_binding, input);
   }
   if (capabilityId === "board.remove_edge") {
-    return removeBoardEdge(resource, input);
+    return removeBoardEdge(state_binding, input);
   }
   if (capabilityId === "board.arrange_layout") {
-    return arrangeBoardLayout(resource);
+    return arrangeBoardLayout(state_binding);
   }
   if (capabilityId === "board.pin_node") {
-    return pinBoardNode(resource, input, true);
+    return pinBoardNode(state_binding, input, true);
   }
   if (capabilityId === "board.unpin_node") {
-    return pinBoardNode(resource, input, false);
+    return pinBoardNode(state_binding, input, false);
   }
   if (capabilityId === "board.focus_node") {
-    return focusBoardNode(resource, input);
+    return focusBoardNode(state_binding, input);
   }
 
   return buildOperationError(

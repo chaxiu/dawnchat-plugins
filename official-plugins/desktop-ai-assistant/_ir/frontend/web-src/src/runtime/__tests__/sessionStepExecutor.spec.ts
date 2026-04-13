@@ -20,9 +20,9 @@ const createDeps = (): SessionStepExecutorDeps => ({
   getViewStateSnapshot: vi.fn(() => ({
     active_view_id: "word.main",
     active_anchor: "word.header",
-    current_resource: {
-      resource_type: "word",
-      resource_id: "word:assistant",
+    current_state_binding: {
+      binding_type: "word",
+      binding_label: "word:assistant",
       title: "词汇讲解",
       data: {
         word: "Assistant",
@@ -32,7 +32,7 @@ const createDeps = (): SessionStepExecutorDeps => ({
     },
     active_manifest: {
       view_id: "word.main",
-      resource_type: "word",
+      binding_type: "word",
       title: "Word Workspace",
       route_name: "view-word-main",
       route_path: "/views/word/main",
@@ -351,8 +351,8 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "tictactoe.main",
-          resource: {
-            resource_type: "tictactoe.game",
+          state_binding: {
+            binding_type: "tictactoe.game",
             title: "Flow Wait Arena",
             data: {
               cells: Array.from({ length: 25 }, () => ""),
@@ -495,9 +495,9 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "word.main",
-          resource: {
-            resource_type: "word",
-            resource_id: "word:synchronize",
+          state_binding: {
+            binding_type: "word",
+            binding_label: "word:synchronize",
             title: "词汇工作区",
             data: {
               word: "synchronize",
@@ -513,9 +513,9 @@ describe("session step executor", () => {
       expect.objectContaining({
         viewId: "word.main",
         activeAnchor: "word.meaning",
-        resource: expect.objectContaining({
-          resource_type: "word",
-          resource_id: "word:synchronize",
+        state_binding: expect.objectContaining({
+          binding_type: "word",
+          binding_label: "word:synchronize",
         }),
       })
     );
@@ -527,7 +527,7 @@ describe("session step executor", () => {
         view_id: "word.main",
         active_anchor: "word.meaning",
         route_path: "/views/word/main",
-        resource_type: "word",
+        binding_type: "word",
         session_id: sessionId,
         step_id: "step-view-open",
         action_type: "view.open",
@@ -543,8 +543,8 @@ describe("session step executor", () => {
         type: "view.open",
         payload: {
           view_id: "word.main",
-          resource: {
-            resource_type: "word",
+          state_binding: {
+            binding_type: "word",
             data: {
               meaning: "缺少单词",
             },
@@ -555,7 +555,7 @@ describe("session step executor", () => {
     expect(result).toEqual({
       ok: false,
       error_code: "invalid_view_resource",
-      message: "word.main requires resource.data.word to be a non-empty string",
+      message: "word.main requires state_binding.data.word to be a non-empty string",
     });
   });
 
@@ -646,7 +646,7 @@ describe("session step executor", () => {
       expect.objectContaining({
         viewId: "word.main",
         activeAnchor: "word.etymology",
-        resource: expect.objectContaining({
+        state_binding: expect.objectContaining({
           data: expect.objectContaining({
             etymology: ["支持富媒体呈现", "ize"],
           }),
@@ -1236,7 +1236,7 @@ describe("session step executor", () => {
       data: expect.objectContaining({
         active_view_id: "word.main",
         active_anchor: "word.header",
-        current_resource_summary: expect.objectContaining({
+        current_state_binding_summary: expect.objectContaining({
           word: "Assistant",
         }),
       }),

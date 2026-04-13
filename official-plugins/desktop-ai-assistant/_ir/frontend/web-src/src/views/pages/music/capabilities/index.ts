@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../../../../runtime/events";
 import { emitAssistantRuntimeEvent } from "../../../../runtime/runtimeEventBridge";
 import { buildOperationError } from "../../../shared/viewUtils";
@@ -41,15 +41,15 @@ function emitMusicEvent(
 
 async function playMusicNote(
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): Promise<ViewCapabilityResult> {
-  const startResult = mutatePlayNoteStart(resource, input);
+  const startResult = mutatePlayNoteStart(state_binding, input);
   if ("ok" in startResult) {
     return startResult;
   }
 
   const {
-    resource: startResource,
+    state_binding: startResource,
     normalizedNote,
     durationMs,
     gapAfterMs,
@@ -69,7 +69,7 @@ async function playMusicNote(
       "audio_context_not_running",
       "Audio context is not running, user gesture is required to enable sound.",
       {
-        resource: failedResource,
+        state_binding: failedResource,
       }
     );
   }
@@ -81,7 +81,7 @@ async function playMusicNote(
   });
   emitMusicEvent(ASSISTANT_RUNTIME_EVENT_TYPES.MUSIC_NOTE_STARTED, {
     view_id: "music.main",
-    resource_id: withRunningState.resource_id || "",
+    binding_label: withRunningState.binding_label || "",
     note: normalizedNote,
     duration_ms: durationMs,
     gap_after_ms: gapAfterMs,
@@ -107,14 +107,14 @@ async function playMusicNote(
       "audio_context_not_running",
       "Unable to play note because audio context is unavailable.",
       {
-        resource: endedResource,
+        state_binding: endedResource,
       }
     );
   }
 
   emitMusicEvent(ASSISTANT_RUNTIME_EVENT_TYPES.MUSIC_NOTE_ENDED, {
     view_id: "music.main",
-    resource_id: endedResource.resource_id || "",
+    binding_label: endedResource.binding_label || "",
     note: normalizedNote,
     duration_ms: durationMs,
   });
@@ -122,7 +122,7 @@ async function playMusicNote(
     await waitMs(gapAfterMs);
   }
   return {
-    resource: endedResource,
+    state_binding: endedResource,
     activeAnchor: "music.keyboard",
     data: {
       status: "applied",
@@ -137,27 +137,27 @@ async function playMusicNote(
 export async function invokeMusicMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): Promise<ViewCapabilityResult> {
   if (capabilityId === "music.set_instrument") {
-    return mutateSetInstrument(resource, input);
+    return mutateSetInstrument(state_binding, input);
   }
   if (capabilityId === "music.highlight_key") {
-    return mutateHighlightKey(resource, input);
+    return mutateHighlightKey(state_binding, input);
   }
   if (capabilityId === "music.play_note") {
-    return playMusicNote(input, resource);
+    return playMusicNote(input, state_binding);
   }
   if (capabilityId === "music.stop_all") {
     const engine = getPianoEngine();
     engine.stopAll();
     emitMusicEvent(ASSISTANT_RUNTIME_EVENT_TYPES.MUSIC_SEQUENCE_STOPPED, {
       view_id: "music.main",
-      resource_id: resource.resource_id || "",
+      binding_label: state_binding.binding_label || "",
       reason: "manual_stop",
     });
     return mutateStopAll(
-      mutateTransportState(resource, {
+      mutateTransportState(state_binding, {
         audioContextState: engine.getSnapshot().state,
         requiresUserGesture: engine.getSnapshot().state !== "running",
         activeNotes: [],
@@ -167,13 +167,13 @@ export async function invokeMusicMainCapability(
   if (capabilityId === "music.get_transport_state") {
     const engine = getPianoEngine();
     const snapshot = engine.getSnapshot();
-    const nextResource = mutateTransportState(resource, {
+    const nextResource = mutateTransportState(state_binding, {
       audioContextState: snapshot.state,
       requiresUserGesture: snapshot.state !== "running",
       activeNotes: snapshot.activeNotes,
     });
     return {
-      resource: nextResource,
+      state_binding: nextResource,
       activeAnchor: "music.header",
       data: {
         status: "applied",
@@ -191,7 +191,7 @@ export async function invokeMusicMainCapability(
         "music.play_phrase requires input.steps as a non-empty array"
       );
     }
-    let currentResource = resource;
+    let currentResource = state_binding;
     let played = 0;
     for (const step of rawSteps) {
       if (!step || typeof step !== "object" || Array.isArray(step)) {
@@ -204,11 +204,11 @@ export async function invokeMusicMainCapability(
       if (isFailure(stepResult)) {
         return stepResult;
       }
-      currentResource = stepResult.resource || currentResource;
+      currentResource = stepResult.state_binding || currentResource;
       played += 1;
     }
     return {
-      resource: currentResource,
+      state_binding: currentResource,
       activeAnchor: "music.keyboard",
       data: {
         status: "applied",

@@ -8,10 +8,10 @@ describe("assistant.view.describe", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: BOARD_DEFAULT_RESOURCE,
+        current_state_binding: BOARD_DEFAULT_RESOURCE,
         active_manifest: {
           view_id: "board.main",
-          resource_type: "board.workspace",
+          binding_type: "board.workspace",
           title: "Holographic Clue Wall",
           route_name: "view-board-main",
           route_path: "/views/board/main",
@@ -32,9 +32,9 @@ describe("assistant.view.describe", () => {
         status: "running" as const,
         current_task_id: "task-1",
       })),
-      getActiveResourceContextSnapshot: vi.fn(() => ({
-        resource_type: "board.workspace",
-        resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+      getActiveStateBindingContextSnapshot: vi.fn(() => ({
+        binding_type: "board.workspace",
+        binding_label: BOARD_DEFAULT_RESOURCE.binding_label,
         title: String(BOARD_DEFAULT_RESOURCE.title),
         view_id: "board.main",
         state_summary: {
@@ -58,7 +58,7 @@ describe("assistant.view.describe", () => {
         active_view_id: "board.main",
         active_anchor: "board.canvas",
         view_state_version: 4,
-        current_resource_summary: expect.objectContaining({
+        current_state_binding_summary: expect.objectContaining({
           node_count: 3,
           edge_count: 2,
           active_anchor: "board.canvas",
@@ -67,9 +67,9 @@ describe("assistant.view.describe", () => {
           status: "running",
           current_task_id: "task-1",
         }),
-        active_resource_context: expect.objectContaining({
-          resource_type: "board.workspace",
-          resource_id: BOARD_DEFAULT_RESOURCE.resource_id,
+        active_state_binding: expect.objectContaining({
+          binding_type: "board.workspace",
+          binding_label: BOARD_DEFAULT_RESOURCE.binding_label,
           view_id: "board.main",
         }),
         continuation: expect.objectContaining({
@@ -88,10 +88,10 @@ describe("assistant.view.describe", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "tictactoe.main",
         active_anchor: "tictactoe.board",
-        current_resource: null,
+        current_state_binding: null,
         active_manifest: {
           view_id: "tictactoe.main",
-          resource_type: "tictactoe.game",
+          binding_type: "tictactoe.game",
           title: "TicTacToe Arena",
           route_name: "view-tictactoe-main",
           route_path: "/views/tictactoe/main",
@@ -111,7 +111,7 @@ describe("assistant.view.describe", () => {
       getTaskProgressSnapshot: vi.fn(() => ({
         status: "idle" as const,
       })),
-      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getActiveStateBindingContextSnapshot: vi.fn(() => null),
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
@@ -127,7 +127,7 @@ describe("assistant.view.describe", () => {
       data: expect.objectContaining({
         active_view_id: "tictactoe.main",
         active_anchor: "tictactoe.board",
-        current_resource_summary: {
+        current_state_binding_summary: {
           status: "playing",
           current_player: "X",
         },
@@ -142,9 +142,9 @@ describe("assistant.view.describe", () => {
       getViewStateSnapshot: vi.fn(() => ({
         active_view_id: "board.main",
         active_anchor: "board.canvas",
-        current_resource: {
-          resource_type: "board.workspace",
-          resource_id: "board:test",
+        current_state_binding: {
+          binding_type: "board.workspace",
+          binding_label: "board:test",
           title: "Test Board",
           data: {
             board_id: "board:test",
@@ -205,7 +205,7 @@ describe("assistant.view.describe", () => {
         },
         active_manifest: {
           view_id: "board.main",
-          resource_type: "board.workspace",
+          binding_type: "board.workspace",
           title: "Holographic Clue Wall",
           route_name: "view-board-main",
           route_path: "/views/board/main",
@@ -224,7 +224,7 @@ describe("assistant.view.describe", () => {
       getTaskProgressSnapshot: vi.fn(() => ({
         status: "idle" as const,
       })),
-      getActiveResourceContextSnapshot: vi.fn(() => null),
+      getActiveStateBindingContextSnapshot: vi.fn(() => null),
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
@@ -237,7 +237,7 @@ describe("assistant.view.describe", () => {
       ok: true,
       data: expect.objectContaining({
         active_view_id: "board.main",
-        current_resource_summary: expect.objectContaining({
+        current_state_binding_summary: expect.objectContaining({
           node_count: 2,
           edge_count: 1,
           nodes_brief: [

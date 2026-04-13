@@ -77,9 +77,9 @@ describe("runtime bootstrap wiring", () => {
     viewState.restoreViewState({
       active_view_id: "board.main",
       active_anchor: "board.canvas",
-      current_resource: {
-        resource_type: "board.workspace",
-        resource_id: "board:pending",
+      current_state_binding: {
+        binding_type: "board.workspace",
+        binding_label: "board:pending",
         title: "pending resource",
         data: { board_id: "board:pending", nodes: [], edges: [] },
       },
@@ -105,7 +105,7 @@ describe("runtime bootstrap wiring", () => {
     expect(viewState.getViewStateSnapshot()).toEqual(expect.objectContaining({
       active_view_id: "",
       active_anchor: "",
-      current_resource: null,
+      current_state_binding: null,
       active_manifest: null,
     }));
   });
@@ -132,9 +132,9 @@ describe("runtime bootstrap wiring", () => {
     viewState.restoreViewState({
       active_view_id: "board.main",
       active_anchor: "board.inspector",
-      current_resource: {
-        resource_type: "board.workspace",
-        resource_id: "board:stale",
+      current_state_binding: {
+        binding_type: "board.workspace",
+        binding_label: "board:stale",
         title: "stale resource",
         data: { board_id: "board:stale", nodes: [], edges: [] },
       },
@@ -155,7 +155,7 @@ describe("runtime bootstrap wiring", () => {
     expect(viewState.getViewStateSnapshot()).toEqual(expect.objectContaining({
       active_view_id: "",
       active_anchor: "",
-      current_resource: null,
+      current_state_binding: null,
       active_manifest: null,
     }));
     expect(emitAssistantRuntimeEvent({

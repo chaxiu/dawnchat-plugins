@@ -10,7 +10,7 @@ import {
 } from "../imageExplainerMain.view";
 
 function activateView(resource = cloneImageExplainerResource(normalizeImageExplainerResource({
-  resource_type: "image.deck",
+  binding_type: "image.deck",
   data: {
     deck: {
       title: "Animal Deck",
@@ -35,7 +35,7 @@ function activateView(resource = cloneImageExplainerResource(normalizeImageExpla
   useViewState().setActiveViewState({
     viewId: "image.explainer",
     activeAnchor: "image.stage",
-    resource,
+    state_binding: resource,
     manifest: createManifestSnapshot(imageExplainerMainView, resource, "image.stage"),
   });
 }
@@ -58,7 +58,7 @@ describe("ImageExplainerMainView", () => {
 
   it("renders split-image layout and highlight overlay", () => {
     const resource = normalizeImageExplainerResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
       data: {
         deck: {
           title: "Compare Planets",

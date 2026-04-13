@@ -78,9 +78,9 @@ describe("runtime bootstrap wiring", () => {
     viewState.restoreViewState({
       active_view_id: "word.main",
       active_anchor: "word.header",
-      current_resource: {
-        resource_type: "word",
-        resource_id: "word:pending",
+      current_state_binding: {
+        binding_type: "word",
+        binding_label: "word:pending",
         title: "pending resource",
         data: { word: "pending" },
       },
@@ -106,7 +106,7 @@ describe("runtime bootstrap wiring", () => {
     expect(viewState.getViewStateSnapshot()).toEqual(expect.objectContaining({
       active_view_id: "",
       active_anchor: "",
-      current_resource: null,
+      current_state_binding: null,
       active_manifest: null,
     }));
   });
@@ -139,9 +139,9 @@ describe("runtime bootstrap wiring", () => {
     viewState.restoreViewState({
       active_view_id: "word.main",
       active_anchor: "word.meaning",
-      current_resource: {
-        resource_type: "word",
-        resource_id: "word:stale",
+      current_state_binding: {
+        binding_type: "word",
+        binding_label: "word:stale",
         title: "stale resource",
         data: { word: "stale" },
       },
@@ -162,7 +162,7 @@ describe("runtime bootstrap wiring", () => {
     expect(viewState.getViewStateSnapshot()).toEqual(expect.objectContaining({
       active_view_id: "",
       active_anchor: "",
-      current_resource: null,
+      current_state_binding: null,
       active_manifest: null,
     }));
     expect(emitAssistantRuntimeEvent({

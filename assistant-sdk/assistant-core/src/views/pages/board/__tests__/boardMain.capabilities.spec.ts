@@ -1,7 +1,7 @@
 import {
   boardMainView,
   BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
+  cloneBoardStateBinding,
 } from "../boardMain.view";
 import { invokeBoardMainCapability } from "../capabilities";
 
@@ -51,8 +51,8 @@ describe("board.main capabilities", () => {
     }, BOARD_DEFAULT_RESOURCE);
 
     expect(addResult).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
-        resource_type: "board.workspace",
+      state_binding: expect.objectContaining({
+        binding_type: "board.workspace",
         data: expect.objectContaining({
           nodes: expect.arrayContaining([
             expect.objectContaining({
@@ -76,7 +76,7 @@ describe("board.main capabilities", () => {
     const addedNodeId = String(addResult.data?.node_id || "");
     const focusResult = await invokeBoardMainCapability("board.focus_node", {
       node_id: addedNodeId,
-    }, addResult.resource!);
+    }, addResult.state_binding!);
     expect(focusResult).toEqual(expect.objectContaining({
       activeAnchor: "board.inspector",
       data: expect.objectContaining({
@@ -90,11 +90,11 @@ describe("board.main capabilities", () => {
 
     const pinResult = await invokeBoardMainCapability("board.pin_node", {
       node_id: "node-case-brief",
-    }, addResult.resource!);
+    }, addResult.state_binding!);
     if ("ok" in pinResult && pinResult.ok === false) {
       throw new Error(pinResult.message);
     }
-    const pinnedResource = pinResult.resource!;
+    const pinnedResource = pinResult.state_binding!;
     const pinnedNode = (pinnedResource.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-case-brief");
     expect(pinnedNode?.pinned).toBe(true);
@@ -109,10 +109,10 @@ describe("board.main capabilities", () => {
     if ("ok" in arrangedResult && arrangedResult.ok === false) {
       throw new Error(arrangedResult.message);
     }
-    const arrangedPinnedNode = (arrangedResult.resource!.data.nodes as Array<Record<string, unknown>>)
+    const arrangedPinnedNode = (arrangedResult.state_binding!.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-case-brief");
     expect(arrangedPinnedNode?.position).toEqual(originalPosition);
-    expect((arrangedResult.resource!.data.style_settings as Record<string, unknown>).layout_algorithm).toBe("stress");
+    expect((arrangedResult.state_binding!.data.style_settings as Record<string, unknown>).layout_algorithm).toBe("stress");
   });
 
   it("creates auto edge by default and fixed edge when handles are explicit", async () => {
@@ -128,16 +128,16 @@ describe("board.main capabilities", () => {
     if ("ok" in autoEdgeResult && autoEdgeResult.ok === false) {
       throw new Error(autoEdgeResult.message);
     }
-    const autoEdge = (autoEdgeResult.resource!.data.edges as Array<Record<string, unknown>>)
+    const autoEdge = (autoEdgeResult.state_binding!.data.edges as Array<Record<string, unknown>>)
       .find((edge) => edge.source === "node-case-brief" && edge.target === "node-web-report");
     expect(autoEdge).toEqual(expect.objectContaining({
       ports_mode: "auto",
     }));
     expect(autoEdge?.source_handle).toBeUndefined();
     expect(autoEdge?.target_handle).toBeUndefined();
-    const autoSourceNode = (autoEdgeResult.resource!.data.nodes as Array<Record<string, unknown>>)
+    const autoSourceNode = (autoEdgeResult.state_binding!.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-case-brief");
-    const autoTargetNode = (autoEdgeResult.resource!.data.nodes as Array<Record<string, unknown>>)
+    const autoTargetNode = (autoEdgeResult.state_binding!.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-web-report");
     expect(autoSourceNode?.position).toEqual(originalSourceNode?.position);
     expect(autoTargetNode?.position).toEqual(originalTargetNode?.position);
@@ -151,23 +151,23 @@ describe("board.main capabilities", () => {
     if ("ok" in fixedEdgeResult && fixedEdgeResult.ok === false) {
       throw new Error(fixedEdgeResult.message);
     }
-    const fixedEdge = (fixedEdgeResult.resource!.data.edges as Array<Record<string, unknown>>)
+    const fixedEdge = (fixedEdgeResult.state_binding!.data.edges as Array<Record<string, unknown>>)
       .find((edge) => edge.source === "node-case-brief" && edge.target === "node-web-report");
     expect(fixedEdge).toEqual(expect.objectContaining({
       ports_mode: "fixed",
       source_handle: "bottom-right",
       target_handle: "top-left",
     }));
-    const fixedSourceNode = (fixedEdgeResult.resource!.data.nodes as Array<Record<string, unknown>>)
+    const fixedSourceNode = (fixedEdgeResult.state_binding!.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-case-brief");
-    const fixedTargetNode = (fixedEdgeResult.resource!.data.nodes as Array<Record<string, unknown>>)
+    const fixedTargetNode = (fixedEdgeResult.state_binding!.data.nodes as Array<Record<string, unknown>>)
       .find((node) => node.id === "node-web-report");
     expect(fixedSourceNode?.position).toEqual(originalSourceNode?.position);
     expect(fixedTargetNode?.position).toEqual(originalTargetNode?.position);
   });
 
   it("arranges board with mindmap algorithm without breaking pin and edge semantics", async () => {
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
     const styleSettings = (resource.data as Record<string, unknown>).style_settings as Record<string, unknown>;
     styleSettings.layout_algorithm = "mindmap";
 
@@ -177,7 +177,7 @@ describe("board.main capabilities", () => {
     }
 
     expect(arrangedResult.data?.layout_mode).toBe("auto");
-    const edges = arrangedResult.resource!.data.edges as Array<Record<string, unknown>>;
+    const edges = arrangedResult.state_binding!.data.edges as Array<Record<string, unknown>>;
     expect(edges).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: "edge-case-photo",
@@ -191,7 +191,7 @@ describe("board.main capabilities", () => {
   });
 
   it("separates dense stress layout nodes to avoid overlap", async () => {
-    const resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE);
+    const resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
     const data = resource.data as Record<string, unknown>;
     const nodes = data.nodes as Array<Record<string, unknown>>;
     const edges = data.edges as Array<Record<string, unknown>>;
@@ -248,7 +248,7 @@ describe("board.main capabilities", () => {
       throw new Error(arrangedResult.message);
     }
 
-    const arrangedNodes = arrangedResult.resource!.data.nodes as Array<Record<string, unknown>>;
+    const arrangedNodes = arrangedResult.state_binding!.data.nodes as Array<Record<string, unknown>>;
     for (let i = 0; i < arrangedNodes.length; i += 1) {
       for (let j = i + 1; j < arrangedNodes.length; j += 1) {
         expect(nodesOverlap(arrangedNodes[i], arrangedNodes[j], 24)).toBe(false);

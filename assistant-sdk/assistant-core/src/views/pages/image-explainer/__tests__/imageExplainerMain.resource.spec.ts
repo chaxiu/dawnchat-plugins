@@ -6,8 +6,8 @@ import {
 describe("image.explainer resource", () => {
   it("opens image.explainer with normalized single-image payload", () => {
     const result = openImageExplainerMainView({
-      resource: {
-        resource_type: "image.deck",
+      state_binding: {
+        binding_type: "image.deck",
         title: "Volcano Deck",
         data: {
           deck: {
@@ -45,8 +45,8 @@ describe("image.explainer resource", () => {
     });
 
     expect(result).toEqual(expect.objectContaining({
-      resource: expect.objectContaining({
-        resource_type: "image.deck",
+      state_binding: expect.objectContaining({
+        binding_type: "image.deck",
         title: "Volcano Deck",
         data: expect.objectContaining({
           deck: expect.objectContaining({
@@ -72,7 +72,7 @@ describe("image.explainer resource", () => {
 
   it("rejects invalid split page image counts", () => {
     const result = validateImageExplainerResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
       data: {
         deck: {
           pages: [

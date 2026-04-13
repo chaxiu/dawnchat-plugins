@@ -69,7 +69,7 @@ describe("image.explainer capabilities", () => {
         page_count: 1,
         current_page_index: 0,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           deck: expect.objectContaining({
             title: "Ocean Deck",
@@ -90,7 +90,7 @@ describe("image.explainer capabilities", () => {
 
   it("highlights regions on the current page and clears them", async () => {
     const resource = normalizeImageExplainerResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
       data: {
         deck: {
           title: "Volcano Deck",
@@ -125,7 +125,7 @@ describe("image.explainer capabilities", () => {
       data: expect.objectContaining({
         highlight_count: 1,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           deck: expect.objectContaining({
             pages: [
@@ -146,13 +146,13 @@ describe("image.explainer capabilities", () => {
 
     const nextResource = "ok" in highlightResult && highlightResult.ok === false
       ? resource
-      : (highlightResult.resource || resource);
+      : (highlightResult.state_binding || resource);
     const cleared = await invokeImageExplainerMainCapability("image.clear_highlight", {}, nextResource);
     expect(cleared).toEqual(expect.objectContaining({
       data: expect.objectContaining({
         highlight_count: 0,
       }),
-      resource: expect.objectContaining({
+      state_binding: expect.objectContaining({
         data: expect.objectContaining({
           deck: expect.objectContaining({
             pages: [
@@ -168,7 +168,7 @@ describe("image.explainer capabilities", () => {
 
   it("reads current scene state", async () => {
     const resource = normalizeImageExplainerResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
       data: {
         deck: {
           title: "Animal Deck",

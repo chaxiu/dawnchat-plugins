@@ -6,7 +6,7 @@ export const openThenDescribeExample: ViewPlaybookExample = {
   mode: "entry",
   call: createViewCapabilityCall("view.open", {
     view_id: PLANE_MAIN_VIEW_ID,
-    resource: {},
+    state_binding: {},
     initial_anchor: "plane.stage",
   }),
   then: createViewCapabilityCall("assistant.view.describe", {

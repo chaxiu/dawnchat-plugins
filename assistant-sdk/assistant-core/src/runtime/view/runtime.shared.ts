@@ -8,11 +8,11 @@ import type {
   ViewManifestSnapshot,
   ViewOpenResult,
   ViewRegistration,
-  ViewResourceBinding,
+  ViewStateBinding,
 } from "./manifest";
 import { cloneViewInteractionHints } from "./manifest";
 import type {
-  ActiveResourceContext,
+  ActiveStateBindingContext,
   SessionContinuation,
   SessionTaskProgress,
 } from "../observation/types";
@@ -27,7 +27,7 @@ export interface ViewRuntimeDeps {
   getViewStateSnapshot: () => ViewStateSnapshot;
   getGuideStateSnapshot?: () => GuideStateSnapshot;
   getTaskProgressSnapshot?: () => SessionTaskProgress;
-  getActiveResourceContextSnapshot?: () => ActiveResourceContext | null;
+  getActiveStateBindingContextSnapshot?: () => ActiveStateBindingContext | null;
   getContinuationSnapshot?: () => SessionContinuation;
   navigateToView: (viewId: string) => Promise<void> | void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
@@ -42,12 +42,12 @@ export function toRecord(raw: unknown): Record<string, unknown> {
   return raw as Record<string, unknown>;
 }
 
-export function cloneResource(resource: ViewResourceBinding): ViewResourceBinding {
+export function cloneStateBinding(binding: ViewStateBinding): ViewStateBinding {
   return {
-    resource_type: resource.resource_type,
-    resource_id: resource.resource_id,
-    title: resource.title,
-    data: JSON.parse(JSON.stringify(resource.data)) as Record<string, unknown>,
+    binding_type: binding.binding_type,
+    binding_label: binding.binding_label,
+    title: binding.title,
+    data: JSON.parse(JSON.stringify(binding.data)) as Record<string, unknown>,
   };
 }
 
@@ -72,13 +72,13 @@ export function isOpenFailure(
 
 export function createManifestSnapshot(
   registration: ViewRegistration,
-  resource: ViewResourceBinding,
+  stateBinding: ViewStateBinding,
   activeAnchor?: string
 ): ViewManifestSnapshot {
-  const stateSummary = registration.getStateSummary(resource, activeAnchor);
+  const stateSummary = registration.getStateSummary(stateBinding, activeAnchor);
   return {
     view_id: registration.view_id,
-    resource_type: registration.resource_type,
+    binding_type: registration.binding_type,
     title: registration.title,
     route_name: registration.route.name,
     route_path: registration.route.full_path,
@@ -107,13 +107,13 @@ export function resolveActiveViewState(
 ): {
   viewId: string;
   registration: ViewRegistration;
-  resource: ViewResourceBinding;
+  stateBinding: ViewStateBinding;
   activeAnchor: string;
 } | null {
   const snapshot = deps.getViewStateSnapshot();
   const requestedViewId = typeof viewId === "string" ? viewId.trim() : "";
   const resolvedViewId = requestedViewId || snapshot.active_view_id;
-  if (!resolvedViewId || snapshot.active_view_id !== resolvedViewId || !snapshot.current_resource) {
+  if (!resolvedViewId || snapshot.active_view_id !== resolvedViewId || !snapshot.current_state_binding) {
     return null;
   }
   const registration = getViewRegistration(resolvedViewId);
@@ -123,7 +123,7 @@ export function resolveActiveViewState(
   return {
     viewId: resolvedViewId,
     registration,
-    resource: cloneResource(snapshot.current_resource),
+    stateBinding: cloneStateBinding(snapshot.current_state_binding),
     activeAnchor: snapshot.active_anchor,
   };
 }
@@ -131,15 +131,15 @@ export function resolveActiveViewState(
 export function applyViewState(
   deps: ViewRuntimeDeps,
   registration: ViewRegistration,
-  resource: ViewResourceBinding,
+  stateBinding: ViewStateBinding,
   activeAnchor?: string,
   options?: { trigger?: string; context?: SessionStepRuntimeContext }
 ): ViewManifestSnapshot {
-  const manifest = createManifestSnapshot(registration, resource, activeAnchor);
+  const manifest = createManifestSnapshot(registration, stateBinding, activeAnchor);
   deps.setActiveViewState({
     viewId: registration.view_id,
     activeAnchor,
-    resource,
+    state_binding: stateBinding,
     manifest,
   });
   deps.emitRuntimeEvent?.({
@@ -151,8 +151,8 @@ export function applyViewState(
       trigger: options?.trigger,
       view_id: registration.view_id,
       active_anchor: activeAnchor || "",
-      resource_type: resource.resource_type,
-      resource_id: resource.resource_id,
+      binding_type: stateBinding.binding_type,
+      binding_label: stateBinding.binding_label,
     },
   });
   return manifest;

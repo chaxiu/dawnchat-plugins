@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import { readCoordinatePlaneResourceData } from "../model/resource";
 import {
@@ -27,72 +27,72 @@ import {
 export async function invokeCoordinatePlaneMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): Promise<ViewCapabilityResult> {
   if (capabilityId === "plane.set_viewport") {
-    return mutateSetViewport(resource, input);
+    return mutateSetViewport(state_binding, input);
   }
   if (capabilityId === "plane.clear_scene") {
-    return mutateClearScene(resource, input);
+    return mutateClearScene(state_binding, input);
   }
   if (capabilityId === "plane.add_point") {
-    return mutateAddPoint(resource, input);
+    return mutateAddPoint(state_binding, input);
   }
   if (capabilityId === "plane.add_line") {
-    return mutateAddLine(resource, input);
+    return mutateAddLine(state_binding, input);
   }
   if (capabilityId === "plane.add_curve") {
-    return mutateAddCurve(resource, input);
+    return mutateAddCurve(state_binding, input);
   }
   if (capabilityId === "plane.add_circle") {
-    return mutateAddCircle(resource, input);
+    return mutateAddCircle(state_binding, input);
   }
   if (capabilityId === "plane.add_ellipse") {
-    return mutateAddEllipse(resource, input);
+    return mutateAddEllipse(state_binding, input);
   }
   if (capabilityId === "plane.add_polygon") {
-    return mutateAddPolygon(resource, input);
+    return mutateAddPolygon(state_binding, input);
   }
   if (capabilityId === "plane.add_arc") {
-    return mutateAddArc(resource, input);
+    return mutateAddArc(state_binding, input);
   }
   if (capabilityId === "plane.add_angle_marker") {
-    return mutateAddAngleMarker(resource, input);
+    return mutateAddAngleMarker(state_binding, input);
   }
   if (capabilityId === "plane.add_vector") {
-    return mutateAddVector(resource, input);
+    return mutateAddVector(state_binding, input);
   }
   if (capabilityId === "plane.add_annotation") {
-    return mutateAddAnnotation(resource, input);
+    return mutateAddAnnotation(state_binding, input);
   }
   if (capabilityId === "plane.show_formula_label") {
-    return mutateShowFormulaLabel(resource, input);
+    return mutateShowFormulaLabel(state_binding, input);
   }
   if (capabilityId === "plane.highlight") {
-    return mutateHighlight(resource, input);
+    return mutateHighlight(state_binding, input);
   }
   if (capabilityId === "plane.clear_highlight") {
-    return mutateClearHighlight(resource);
+    return mutateClearHighlight(state_binding);
   }
   if (capabilityId === "plane.set_style") {
-    return mutateSetStyle(resource, input);
+    return mutateSetStyle(state_binding, input);
   }
   if (capabilityId === "plane.focus_region") {
-    return mutateFocusRegion(resource, input);
+    return mutateFocusRegion(state_binding, input);
   }
   if (capabilityId === "plane.set_label") {
-    return mutateSetLabel(resource, input);
+    return mutateSetLabel(state_binding, input);
   }
   if (capabilityId === "plane.add_object") {
-    return mutateAddObject(resource, input);
+    return mutateAddObject(state_binding, input);
   }
   if (capabilityId === "plane.animate_object") {
-    return mutateAnimateObject(resource, input);
+    return mutateAnimateObject(state_binding, input);
   }
   if (capabilityId === "plane.get_scene_state") {
-    const data = readCoordinatePlaneResourceData(resource);
+    const data = readCoordinatePlaneResourceData(state_binding);
     return {
-      resource,
+      state_binding,
       activeAnchor: "plane.header",
       data: {
         status: "applied",

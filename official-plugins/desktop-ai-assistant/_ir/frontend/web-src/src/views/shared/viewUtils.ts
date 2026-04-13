@@ -1,4 +1,4 @@
-import type { ViewOperationFailure, ViewResourceBinding } from "../../runtime/view";
+import type { ViewOperationFailure, ViewStateBinding } from "../../runtime/view";
 
 export function toRecord(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -16,12 +16,12 @@ export function toStringArray(raw: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
-export function cloneViewResource(resource: ViewResourceBinding): ViewResourceBinding {
+export function cloneStateBinding(state_binding: ViewStateBinding): ViewStateBinding {
   return {
-    resource_type: resource.resource_type,
-    resource_id: resource.resource_id,
-    title: resource.title,
-    data: JSON.parse(JSON.stringify(resource.data)) as Record<string, unknown>,
+    binding_type: state_binding.binding_type,
+    binding_label: state_binding.binding_label,
+    title: state_binding.title,
+    data: JSON.parse(JSON.stringify(state_binding.data)) as Record<string, unknown>,
   };
 }
 
@@ -39,7 +39,7 @@ export function buildOperationError(
 }
 
 export function isViewOperationFailure(
-  value: ViewResourceBinding | ViewOperationFailure
+  value: ViewStateBinding | ViewOperationFailure
 ): value is ViewOperationFailure {
   return "ok" in value && value.ok === false;
 }

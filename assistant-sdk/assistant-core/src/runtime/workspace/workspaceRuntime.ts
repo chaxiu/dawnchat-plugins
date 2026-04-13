@@ -4,9 +4,8 @@ import type { SetActiveViewStateInput, ViewStateSnapshot } from "../view";
 import {
   createManifestSnapshot,
   getViewRegistration,
-  listViewRegistrations,
   type ViewRegistration,
-  type ViewResourceBinding,
+  type ViewStateBinding,
 } from "../view";
 import type { WorkspaceStore } from "./types";
 
@@ -38,22 +37,16 @@ function logWorkspaceWarn(message: string, data: Record<string, unknown>) {
   }
 }
 
-function pickDefaultStatefulSurfaceId(): string | null {
-  const list = listViewRegistrations();
-  const hit = list.find((r) => r.state_mode === "stateful" && r.persistence);
-  return hit?.view_id || null;
-}
-
 function buildInitialHead(registration: ViewRegistration): {
   persistence_version: number;
   view_id: string;
   head_payload: Record<string, unknown>;
 } {
   const persistence = registration.persistence!;
-  const resource = cloneJsonValue(registration.default_resource);
+  const stateBinding = cloneJsonValue(registration.default_state_binding);
   const activeAnchor = registration.anchors[0]?.id || "";
   const head_payload = persistence.serialize({
-    resource,
+    state_binding: stateBinding,
     activeAnchor,
   });
   return {
@@ -67,12 +60,12 @@ function isPersistableStateful(
   snapshot: ViewStateSnapshot
 ): snapshot is ViewStateSnapshot & {
   active_manifest: NonNullable<ViewStateSnapshot["active_manifest"]>;
-  current_resource: NonNullable<ViewStateSnapshot["current_resource"]>;
+  current_state_binding: NonNullable<ViewStateSnapshot["current_state_binding"]>;
 } {
   return Boolean(
     snapshot.active_view_id
     && snapshot.active_manifest
-    && snapshot.current_resource
+    && snapshot.current_state_binding
     && snapshot.active_manifest.state_mode === "stateful"
   );
 }
@@ -149,11 +142,11 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     const openResult = registration.open
       ? await registration.open({
           view_id: registration.view_id,
-          resource: deserialized.resource,
+          state_binding: deserialized.state_binding,
           initial_anchor: deserialized.activeAnchor,
         })
       : {
-          resource: deserialized.resource,
+          state_binding: deserialized.state_binding,
           activeAnchor: deserialized.activeAnchor,
         };
 
@@ -161,16 +154,20 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
       return;
     }
 
-    const resource = cloneJsonValue(openResult.resource || deserialized.resource) as ViewResourceBinding;
+    const stateBinding = cloneJsonValue(
+      "state_binding" in openResult && openResult.state_binding
+        ? openResult.state_binding
+        : deserialized.state_binding
+    ) as ViewStateBinding;
     const activeAnchor = openResult.activeAnchor
       || deserialized.activeAnchor
       || registration.anchors[0]?.id
       || "";
-    const manifest = createManifestSnapshot(registration, resource, activeAnchor);
+    const manifest = createManifestSnapshot(registration, stateBinding, activeAnchor);
     setActiveViewState({
       viewId: registration.view_id,
       activeAnchor,
-      resource,
+      state_binding: stateBinding,
       manifest,
     });
     await navigateToView(registration.view_id);
@@ -181,17 +178,19 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
       return;
     }
     try {
-      let surfaceId = await store.getLastActiveSurfaceId();
-      if (!surfaceId?.trim()) {
-        surfaceId = pickDefaultStatefulSurfaceId();
-      }
+      const surfaceId = (await store.getLastActiveSurfaceId())?.trim() || "";
       if (!surfaceId) {
+        // 冷启动不要猜测「第一个 stateful 视图」并 navigateToView（常见为 board.main），
+        // 否则欢迎页/宿主默认路由会被覆盖；由应用路由与首次 view.open 决定初始 scene。
         return;
       }
-      await store.setLastActiveSurfaceId(surfaceId);
 
       const wid = await ensureWorkspaceForSurface(surfaceId);
       if (!wid) {
+        const registration = getViewRegistration(surfaceId);
+        if (!registration?.persistence || registration.state_mode !== "stateful") {
+          await store.setLastActiveSurfaceId(null);
+        }
         return;
       }
       const head = await store.getWorkspaceHead(wid);
@@ -219,9 +218,9 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     if (!wid) {
       return;
     }
-    const resource = cloneJsonValue(snapshot.current_resource);
+    const stateBinding = cloneJsonValue(snapshot.current_state_binding);
     const activeAnchor = snapshot.active_anchor || "";
-    const head_payload = persistence.serialize({ resource, activeAnchor });
+    const head_payload = persistence.serialize({ state_binding: stateBinding, activeAnchor });
     try {
       await store.updateHead(wid, {
         persistence_version: persistence.version,
@@ -290,9 +289,9 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     if (!wid) {
       return;
     }
-    const resource = cloneJsonValue(snapshot.current_resource);
+    const stateBinding = cloneJsonValue(snapshot.current_state_binding);
     const activeAnchor = snapshot.active_anchor || "";
-    const chainPayload = persistence.serialize({ resource, activeAnchor });
+    const chainPayload = persistence.serialize({ state_binding: stateBinding, activeAnchor });
     try {
       await store.appendSnapshot(wid, {
         reason: "session_completed",
@@ -323,9 +322,9 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     if (!wid) {
       return;
     }
-    const resource = cloneJsonValue(snapshot.current_resource);
+    const stateBinding = cloneJsonValue(snapshot.current_state_binding);
     const activeAnchor = snapshot.active_anchor || "";
-    const chainPayload = persistence.serialize({ resource, activeAnchor });
+    const chainPayload = persistence.serialize({ state_binding: stateBinding, activeAnchor });
     try {
       await store.appendSnapshot(wid, {
         reason: "manual_checkpoint",

@@ -6,7 +6,7 @@ import BoardMainView from "../BoardMainView.vue";
 import {
   boardMainView,
   BOARD_DEFAULT_RESOURCE,
-  cloneBoardResource,
+  cloneBoardStateBinding,
 } from "../boardMain.view";
 
 const { emitAssistantRuntimeEvent } = vi.hoisted(() => ({
@@ -50,11 +50,11 @@ vi.mock("@vue-flow/controls", async () => {
   };
 });
 
-function activateView(resource = cloneBoardResource(BOARD_DEFAULT_RESOURCE)) {
+function activateView(resource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE)) {
   useViewState().setActiveViewState({
     viewId: "board.main",
     activeAnchor: "board.canvas",
-    resource,
+    state_binding: resource,
     manifest: createManifestSnapshot(boardMainView, resource, "board.canvas"),
   });
 }

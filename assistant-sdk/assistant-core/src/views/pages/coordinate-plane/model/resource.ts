@@ -1,11 +1,11 @@
 import type {
   ViewOpenSuccess,
   ViewOperationFailure,
-  ViewResourceBinding,
+  ViewStateBinding,
 } from "../../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
 } from "../../../shared/viewUtils";
@@ -486,22 +486,22 @@ function normalizeAnimationState(
   };
 }
 
-export const COORDINATE_PLANE_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: COORDINATE_PLANE_RESOURCE_TYPE,
-  resource_id: COORDINATE_PLANE_RESOURCE_ID,
+export const COORDINATE_PLANE_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: COORDINATE_PLANE_RESOURCE_TYPE,
+  binding_label: COORDINATE_PLANE_RESOURCE_ID,
   title: COORDINATE_PLANE_RESOURCE_TITLE,
   data: createDefaultCoordinatePlaneResourceData() as unknown as Record<string, unknown>,
 };
 
-export function cloneCoordinatePlaneResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneCoordinatePlaneResource(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
-export function readCoordinatePlaneResourceData(resource: ViewResourceBinding): CoordinatePlaneResourceData {
-  return resource.data as unknown as CoordinatePlaneResourceData;
+export function readCoordinatePlaneResourceData(state_binding: ViewStateBinding): CoordinatePlaneResourceData {
+  return state_binding.data as unknown as CoordinatePlaneResourceData;
 }
 
-export function normalizeCoordinatePlaneResource(raw: Record<string, unknown>): ViewResourceBinding {
+export function normalizeCoordinatePlaneResource(raw: Record<string, unknown>): ViewStateBinding {
   const defaults = createDefaultCoordinatePlaneResourceData();
   const rawData = raw.data && typeof raw.data === "object" && !Array.isArray(raw.data)
     ? raw.data as Record<string, unknown>
@@ -517,8 +517,8 @@ export function normalizeCoordinatePlaneResource(raw: Record<string, unknown>): 
     : defaults.highlights;
   const animationState = normalizeAnimationState(rawData.animation_state, objects);
   return {
-    resource_type: COORDINATE_PLANE_RESOURCE_TYPE,
-    resource_id: normalizeString(raw.resource_id, COORDINATE_PLANE_RESOURCE_ID) || COORDINATE_PLANE_RESOURCE_ID,
+    binding_type: COORDINATE_PLANE_RESOURCE_TYPE,
+    binding_label: normalizeString(raw.binding_label, COORDINATE_PLANE_RESOURCE_ID) || COORDINATE_PLANE_RESOURCE_ID,
     title: normalizeString(raw.title, COORDINATE_PLANE_RESOURCE_TITLE) || COORDINATE_PLANE_RESOURCE_TITLE,
     data: {
       viewport,
@@ -531,22 +531,22 @@ export function normalizeCoordinatePlaneResource(raw: Record<string, unknown>): 
 
 export function validateCoordinatePlaneResource(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
     return cloneCoordinatePlaneResource(COORDINATE_PLANE_DEFAULT_RESOURCE);
   }
-  const resourceType = normalizeString(payload.resource_type, COORDINATE_PLANE_RESOURCE_TYPE);
+  const resourceType = normalizeString(payload.binding_type, COORDINATE_PLANE_RESOURCE_TYPE);
   if (resourceType !== COORDINATE_PLANE_RESOURCE_TYPE) {
     return buildOperationError(
       "invalid_view_resource",
-      `plane.main requires resource.resource_type to be '${COORDINATE_PLANE_RESOURCE_TYPE}'`
+      `plane.main requires state_binding.binding_type to be '${COORDINATE_PLANE_RESOURCE_TYPE}'`
     );
   }
   const rawData = payload.data;
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "plane.main requires resource.data to be an object"
+      "plane.main requires state_binding.data to be an object"
     );
   }
   return normalizeCoordinatePlaneResource(payload);
@@ -554,17 +554,17 @@ export function validateCoordinatePlaneResource(
 
 export function openCoordinatePlaneMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = validateCoordinatePlaneResource(toRecord(input.resource));
+  const normalizedResource = validateCoordinatePlaneResource(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = normalizeString(input.initial_anchor);
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "plane.stage",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
       object_count: readCoordinatePlaneResourceData(normalizedResource).objects.length,
     },
   };

@@ -5,20 +5,20 @@ import {
   type ViewOperationFailure,
   type ViewPersistenceConfig,
   type ViewPersistenceStateSnapshot,
-  type ViewResourceBinding,
+  type ViewStateBinding,
 } from "../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
   toStringArray,
 } from "../../shared/viewUtils";
 import { buildWordMainStateSummary, invokeWordMainCapability } from "./wordMain.capabilities";
 
-export const WORD_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: "word",
-  resource_id: "word:assistant",
+export const WORD_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: "word",
+  binding_label: "word:assistant",
   title: "词汇讲解",
   data: {
     word: "Assistant",
@@ -27,8 +27,8 @@ export const WORD_DEFAULT_RESOURCE: ViewResourceBinding = {
   },
 };
 
-export function cloneWordResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneWordResource(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
 export function buildWordResourceId(word: string): string {
@@ -38,18 +38,18 @@ export function buildWordResourceId(word: string): string {
 
 export function normalizeWordResource(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
     return cloneWordResource(WORD_DEFAULT_RESOURCE);
   }
 
-  const resourceType = typeof payload.resource_type === "string" && payload.resource_type.trim()
-    ? payload.resource_type.trim()
+  const resourceType = typeof payload.binding_type === "string" && payload.binding_type.trim()
+    ? payload.binding_type.trim()
     : "word";
   if (resourceType !== "word") {
     return buildOperationError(
       "invalid_view_resource",
-      "word.main requires resource.resource_type to be 'word'"
+      "word.main requires state_binding.binding_type to be 'word'"
     );
   }
 
@@ -57,7 +57,7 @@ export function normalizeWordResource(
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "word.main requires resource.data to be an object"
+      "word.main requires state_binding.data to be an object"
     );
   }
 
@@ -66,7 +66,7 @@ export function normalizeWordResource(
   if (!word) {
     return buildOperationError(
       "invalid_view_resource",
-      "word.main requires resource.data.word to be a non-empty string"
+      "word.main requires state_binding.data.word to be a non-empty string"
     );
   }
 
@@ -74,7 +74,7 @@ export function normalizeWordResource(
   if (meaningInput !== undefined && typeof meaningInput !== "string") {
     return buildOperationError(
       "invalid_view_resource",
-      "word.main requires resource.data.meaning to be a string when provided"
+      "word.main requires state_binding.data.meaning to be a string when provided"
     );
   }
 
@@ -85,7 +85,7 @@ export function normalizeWordResource(
   ) {
     return buildOperationError(
       "invalid_view_resource",
-      "word.main requires resource.data.etymology to be a string array when provided"
+      "word.main requires state_binding.data.etymology to be a string array when provided"
     );
   }
 
@@ -98,13 +98,13 @@ export function normalizeWordResource(
   const title = typeof payload.title === "string" && payload.title.trim()
     ? payload.title.trim()
     : `${word} Workspace`;
-  const resourceId = typeof payload.resource_id === "string" && payload.resource_id.trim()
-    ? payload.resource_id.trim()
+  const resourceId = typeof payload.binding_label === "string" && payload.binding_label.trim()
+    ? payload.binding_label.trim()
     : buildWordResourceId(word);
 
   return {
-    resource_type: "word",
-    resource_id: resourceId,
+    binding_type: "word",
+    binding_label: resourceId,
     title,
     data: {
       word,
@@ -116,17 +116,17 @@ export function normalizeWordResource(
 
 export function openWordMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = normalizeWordResource(toRecord(input.resource));
+  const normalizedResource = normalizeWordResource(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "word.header",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
     },
   };
 }
@@ -140,12 +140,12 @@ export const wordMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 150,
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
-    resource: cloneWordResource(snapshot.resource),
+    state_binding: cloneWordResource(snapshot.state_binding),
     active_anchor: snapshot.activeAnchor || "",
   }),
   deserialize: (payload) => {
-    const rawResource = payload.resource && typeof payload.resource === "object" && !Array.isArray(payload.resource)
-      ? payload.resource as Record<string, unknown>
+    const rawResource = payload.state_binding && typeof payload.state_binding === "object" && !Array.isArray(payload.state_binding)
+      ? payload.state_binding as Record<string, unknown>
       : {};
     const rawData = rawResource.data && typeof rawResource.data === "object" && !Array.isArray(rawResource.data)
       ? rawResource.data as Record<string, unknown>
@@ -160,9 +160,9 @@ export const wordMainPersistence: ViewPersistenceConfig = {
       ? rawData.etymology.map((item) => String(item || "").trim()).filter((item) => item.length > 0)
       : JSON.parse(JSON.stringify(WORD_DEFAULT_RESOURCE.data.etymology)) as string[];
     const resource = cloneWordResource({
-      resource_type: "word",
-      resource_id: typeof rawResource.resource_id === "string" && rawResource.resource_id.trim()
-        ? rawResource.resource_id.trim()
+      binding_type: "word",
+      binding_label: typeof rawResource.binding_label === "string" && rawResource.binding_label.trim()
+        ? rawResource.binding_label.trim()
         : buildPersistenceWordResourceId(word),
       title: typeof rawResource.title === "string" && rawResource.title.trim()
         ? rawResource.title.trim()
@@ -174,7 +174,7 @@ export const wordMainPersistence: ViewPersistenceConfig = {
       },
     });
     return {
-      resource,
+      state_binding: resource,
       activeAnchor: typeof payload.active_anchor === "string" ? payload.active_anchor.trim() : "",
     };
   },
@@ -182,11 +182,11 @@ export const wordMainPersistence: ViewPersistenceConfig = {
 
 export const wordMainView = defineView({
   view_id: "word.main",
-  resource_type: "word",
+  binding_type: "word",
   title: "Word Workspace",
   component: WordMainView,
   state_mode: "stateful",
-  default_resource: WORD_DEFAULT_RESOURCE,
+  default_state_binding: WORD_DEFAULT_RESOURCE,
   anchors: [
     { id: "word.header", title: "Header", description: "Word title and overview area." },
     { id: "word.meaning", title: "Meaning", description: "Primary meaning and explanation area." },
@@ -257,8 +257,8 @@ export const wordMainView = defineView({
             function: "view.open",
             input: {
               view_id: "word.main",
-              resource: {
-                resource_type: "word",
+              state_binding: {
+                binding_type: "word",
                 data: {
                   word: "Assistant",
                 },
@@ -307,7 +307,7 @@ export const wordMainView = defineView({
   },
   persistence: wordMainPersistence,
   open: openWordMainView,
-  normalizeResource: normalizeWordResource,
+  normalizeStateBinding: normalizeWordResource,
   invokeCapability: invokeWordMainCapability,
   getStateSummary: buildWordMainStateSummary,
 });

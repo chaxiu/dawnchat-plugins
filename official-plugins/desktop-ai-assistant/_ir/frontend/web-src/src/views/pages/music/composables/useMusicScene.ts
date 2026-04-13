@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import { ASSISTANT_RUNTIME_EVENT_TYPES } from "../../../../runtime/events";
 import { emitAssistantRuntimeEvent } from "../../../../runtime/runtimeEventBridge";
 import { useViewState } from "../../../../runtime/view/state";
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view/manifest";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view/manifest";
 import { getPianoEngine } from "../audio/pianoEngine";
 import { mutateLessonMatched, mutateTransportState } from "../capabilities/mutations";
 import { cloneMusicResource, readMusicResourceData } from "../model/resource";
@@ -12,7 +12,7 @@ import { buildPianoKeyboardLayout } from "../model/keyboardLayout";
 import { logger } from "../../../../utils/logger";
 
 export function useMusicScene() {
-  const { activeViewId, activeAnchor, activeManifest, currentResource, setActiveViewState } = useViewState();
+  const { activeViewId, activeAnchor, activeManifest, currentStateBinding, setActiveViewState } = useViewState();
   const isMutating = ref(false);
   const isAudioUnlocking = ref(false);
   const capabilityError = ref("");
@@ -21,10 +21,10 @@ export function useMusicScene() {
 
   const isMusicActive = computed(() => activeViewId.value === "music.main");
   const musicData = computed(() => {
-    if (!currentResource.value) {
+    if (!currentStateBinding.value) {
       return null;
     }
-    return readMusicResourceData(currentResource.value);
+    return readMusicResourceData(currentStateBinding.value);
   });
   const activeNotes = computed(() => musicData.value?.playback.active_notes || []);
   const visualActiveNotes = computed(() => {
@@ -50,7 +50,7 @@ export function useMusicScene() {
     transientTimers.set(note, nextTimer);
   }
 
-  function applyNextResource(nextResource: ViewResourceBinding, nextAnchor?: string) {
+  function applyNextResource(nextResource: ViewStateBinding, nextAnchor?: string) {
     if (!activeManifest.value) {
       return;
     }
@@ -58,7 +58,7 @@ export function useMusicScene() {
     setActiveViewState({
       viewId: "music.main",
       activeAnchor: anchor,
-      resource: nextResource,
+      state_binding: nextResource,
       manifest: {
         ...activeManifest.value,
         state_summary: buildMusicMainStateSummary(nextResource, anchor),
@@ -73,12 +73,12 @@ export function useMusicScene() {
       || capabilityId === "music.get_transport_state";
   }
 
-  function mergeLessonStateFromLiveResource(resource: ViewResourceBinding): ViewResourceBinding {
-    const liveResource = currentResource.value;
-    if (!liveResource || liveResource.resource_type !== resource.resource_type) {
-      return resource;
+  function mergeLessonStateFromLiveResource(state_binding: ViewStateBinding): ViewStateBinding {
+    const liveResource = currentStateBinding.value;
+    if (!liveResource || liveResource.binding_type !== state_binding.binding_type) {
+      return state_binding;
     }
-    const nextResource = cloneMusicResource(resource);
+    const nextResource = cloneMusicResource(state_binding);
     const nextMusic = readMusicResourceData(nextResource);
     const liveMusic = readMusicResourceData(liveResource);
     nextMusic.lesson = {
@@ -93,19 +93,19 @@ export function useMusicScene() {
   function applyCapabilityResult(
     capabilityId: string,
     result: ViewCapabilityResult,
-    fallbackResource: ViewResourceBinding
+    fallbackResource: ViewStateBinding
   ): ViewCapabilityResult {
     if ("ok" in result && result.ok === false) {
-      const rawNextFromError = result.data?.resource as ViewResourceBinding | undefined;
+      const rawNextFromError = result.data?.state_binding as ViewStateBinding | undefined;
       const nextFromError = rawNextFromError && shouldPreserveLiveLessonState(capabilityId)
         ? mergeLessonStateFromLiveResource(rawNextFromError)
         : rawNextFromError;
-      if (nextFromError && nextFromError.resource_type === fallbackResource.resource_type) {
+      if (nextFromError && nextFromError.binding_type === fallbackResource.binding_type) {
         applyNextResource(nextFromError, "music.header");
       }
       return result;
     }
-    const rawNextResource = result.resource || fallbackResource;
+    const rawNextResource = result.state_binding || fallbackResource;
     const nextResource = shouldPreserveLiveLessonState(capabilityId)
       ? mergeLessonStateFromLiveResource(rawNextResource)
       : rawNextResource;
@@ -116,15 +116,15 @@ export function useMusicScene() {
   async function runCapability(
     capabilityId: string,
     input: Record<string, unknown>,
-    baseResourceOverride?: ViewResourceBinding
+    baseResourceOverride?: ViewStateBinding
   ) {
-    if ((!currentResource.value && !baseResourceOverride) || isMutating.value) {
+    if ((!currentStateBinding.value && !baseResourceOverride) || isMutating.value) {
       return;
     }
     capabilityError.value = "";
     isMutating.value = true;
     try {
-      const baseResource = baseResourceOverride || currentResource.value;
+      const baseResource = baseResourceOverride || currentStateBinding.value;
       if (!baseResource) {
         return;
       }
@@ -140,7 +140,7 @@ export function useMusicScene() {
   }
 
   async function playNoteFromUser(note: string) {
-    if (!currentResource.value) {
+    if (!currentStateBinding.value) {
       return;
     }
     const lessonTargetNote = musicData.value?.lesson.highlighted_note || "";
@@ -148,25 +148,25 @@ export function useMusicScene() {
       note,
       lesson_target_note: lessonTargetNote,
       active_anchor: activeAnchor.value || "",
-      resource_id: currentResource.value.resource_id || "",
+      binding_label: currentStateBinding.value.binding_label || "",
     });
     emitAssistantRuntimeEvent({
       type: ASSISTANT_RUNTIME_EVENT_TYPES.MUSIC_KEY_PRESSED,
       source: "view",
       payload: {
         view_id: "music.main",
-        resource_id: currentResource.value.resource_id || "",
+        binding_label: currentStateBinding.value.binding_label || "",
         note,
         source: "user",
       },
     });
     if (lessonTargetNote && lessonTargetNote === note) {
-      const nextResource = mutateLessonMatched(currentResource.value, { note });
+      const nextResource = mutateLessonMatched(currentStateBinding.value, { note });
       applyNextResource(nextResource, activeAnchor.value || "music.keyboard");
       logger.info("music_lesson_note_matched_emit", {
         note,
         expected_note: lessonTargetNote,
-        resource_id: nextResource.resource_id || "",
+        binding_label: nextResource.binding_label || "",
         waiting_for_match: nextResource.data && typeof nextResource.data === "object"
           ? (nextResource.data as Record<string, unknown>).lesson
             && typeof (nextResource.data as Record<string, unknown>).lesson === "object"
@@ -179,7 +179,7 @@ export function useMusicScene() {
         source: "view",
         payload: {
           view_id: "music.main",
-          resource_id: nextResource.resource_id || "",
+          binding_label: nextResource.binding_label || "",
           note,
           expected_note: lessonTargetNote,
           source: "user",
@@ -229,10 +229,10 @@ export function useMusicScene() {
 
   const engine = getPianoEngine();
   const unsubscribe = engine.subscribe((snapshot) => {
-    if (!isMusicActive.value || !currentResource.value || !activeManifest.value) {
+    if (!isMusicActive.value || !currentStateBinding.value || !activeManifest.value) {
       return;
     }
-    const nextResource = mutateTransportState(currentResource.value, {
+    const nextResource = mutateTransportState(currentStateBinding.value, {
       audioContextState: snapshot.state,
       requiresUserGesture: snapshot.state !== "running",
       activeNotes: snapshot.activeNotes,

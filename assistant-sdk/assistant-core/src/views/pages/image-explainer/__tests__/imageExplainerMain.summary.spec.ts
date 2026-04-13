@@ -7,7 +7,7 @@ import {
 describe("image.explainer summary", () => {
   it("builds summary with current page layout and highlight counts", () => {
     const resource = normalizeImageExplainerResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
       title: "Animal Deck",
       data: {
         deck: {

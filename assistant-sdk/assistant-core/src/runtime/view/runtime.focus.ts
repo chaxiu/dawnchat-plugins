@@ -36,7 +36,7 @@ export function createViewFocusHandler(deps: ViewRuntimeDeps): ViewActionHandler
         message: `Anchor not found: ${anchor}`,
       };
     }
-    const manifest = applyViewState(deps, activeState.registration, activeState.resource, anchor, {
+    const manifest = applyViewState(deps, activeState.registration, activeState.stateBinding, anchor, {
       trigger: "view.focus",
       context,
     });

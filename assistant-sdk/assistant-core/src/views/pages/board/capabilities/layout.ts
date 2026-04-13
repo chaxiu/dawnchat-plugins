@@ -1,11 +1,11 @@
-import type { ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewStateBinding } from "../../../../runtime/view";
 import {
   createBrowserElkLayoutEngine,
   type ElkLayoutResult,
 } from "../adapters/elk";
 import {
-  cloneBoardResource,
-  readBoardResourceData,
+  cloneBoardStateBinding,
+  readBoardStateBindingData,
 } from "../model/resource";
 import type {
   BoardEdge,
@@ -360,18 +360,18 @@ function resolveNodeOverlaps(
 }
 
 export async function arrangeBoardResourceLayout(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   options?: {
     preservePinned?: boolean;
   }
-): Promise<ViewResourceBinding> {
-  const nextResource = cloneBoardResource(resource);
+): Promise<ViewStateBinding> {
+  const nextResource = cloneBoardStateBinding(state_binding);
   if (!isBoardResourceData(nextResource.data)) {
     return nextResource;
   }
 
   const preservePinned = options?.preservePinned !== false;
-  const board = readBoardResourceData(nextResource);
+  const board = readBoardStateBindingData(nextResource);
   const nodes = board.nodes;
   const edges = board.edges.filter((edge) =>
     nodes.some((node) => node.id === edge.source) && nodes.some((node) => node.id === edge.target)

@@ -4,19 +4,19 @@ import { useViewState } from "../../../../runtime/view/state";
 import { readCoordinatePlaneResourceData } from "../model/resource";
 
 export function useCoordinatePlaneScene() {
-  const { activeViewId, currentResource } = useViewState();
+  const { activeViewId, currentStateBinding } = useViewState();
 
   const isCoordinatePlaneActive = computed(() => activeViewId.value === "plane.main");
   const scene = computed(() => {
-    if (!currentResource.value || !isCoordinatePlaneActive.value) {
+    if (!currentStateBinding.value || !isCoordinatePlaneActive.value) {
       return null;
     }
-    return readCoordinatePlaneResourceData(currentResource.value);
+    return readCoordinatePlaneResourceData(currentStateBinding.value);
   });
-  const stageTitle = computed(() => currentResource.value?.title || "Coordinate Lab");
+  const stageTitle = computed(() => currentStateBinding.value?.title || "Coordinate Lab");
 
   return {
-    currentResource,
+    currentStateBinding,
     isCoordinatePlaneActive,
     scene,
     stageTitle,

@@ -6,9 +6,9 @@ export interface SessionTaskProgress {
   summary?: string;
 }
 
-export interface ActiveResourceContext {
-  resource_type: string;
-  resource_id?: string;
+export interface ActiveStateBindingContext {
+  binding_type: string;
+  binding_label?: string;
   title?: string;
   view_id: string;
   state_summary: Record<string, unknown>;

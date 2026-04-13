@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import {
   BOARD_DEFAULT_NODE_SIZE,
@@ -15,8 +15,8 @@ import {
   type BoardSemanticType,
 } from "../model/types";
 import {
-  cloneBoardResource,
-  readBoardResourceData,
+  cloneBoardStateBinding,
+  readBoardStateBindingData,
 } from "../model/resource";
 import {
   getOppositeHandle,
@@ -62,8 +62,8 @@ function readTags(raw: unknown): string[] {
     .map((item) => item.slice(0, BOARD_TAG_LENGTH_LIMIT));
 }
 
-function readNode(resource: ViewResourceBinding, nodeId: string): BoardNode | null {
-  return readBoardResourceData(resource).nodes.find((node) => node.id === nodeId) || null;
+function readNode(state_binding: ViewStateBinding, nodeId: string): BoardNode | null {
+  return readBoardStateBindingData(state_binding).nodes.find((node) => node.id === nodeId) || null;
 }
 
 function readHandleSide(raw: unknown): BoardHandleSide | undefined {
@@ -117,7 +117,7 @@ function nextSelectionForNode(nodeId: string) {
 }
 
 export async function addBoardNode(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): Promise<ViewCapabilityResult> {
   const title = trimText(input.title, BOARD_TITLE_LIMIT);
@@ -128,18 +128,18 @@ export async function addBoardNode(
     );
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   const node = buildDefaultNode(input, board.nodes.length);
   board.nodes = [...board.nodes, node];
   board.selection = nextSelectionForNode(node.id);
 
-  const shouldAutoLayout = Boolean(readBoardResourceData(nextResource).style_settings.auto_layout_on_add);
+  const shouldAutoLayout = Boolean(readBoardStateBindingData(nextResource).style_settings.auto_layout_on_add);
   const arranged = (node.pinned || !shouldAutoLayout)
     ? nextResource
     : await arrangeBoardResourceLayout(nextResource, { preservePinned: true });
   return {
-    resource: arranged,
+    state_binding: arranged,
     activeAnchor: "board.canvas",
     data: {
       status: "applied",
@@ -150,7 +150,7 @@ export async function addBoardNode(
 }
 
 export function updateBoardNode(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const nodeId = trimText(input.node_id, 64);
@@ -161,13 +161,13 @@ export function updateBoardNode(
     );
   }
 
-  const existing = readNode(resource, nodeId);
+  const existing = readNode(state_binding, nodeId);
   if (!existing) {
     return buildOperationError("board_node_not_found", `Board node not found: ${nodeId}`);
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   const nextPosition = readNodePosition(input.position);
   let positionChanged = false;
 
@@ -209,7 +209,7 @@ export function updateBoardNode(
     input.data === undefined;
 
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: isPureDrag ? "board.canvas" : "board.inspector",
     data: {
       status: "applied",
@@ -219,7 +219,7 @@ export function updateBoardNode(
 }
 
 export async function removeBoardNode(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): Promise<ViewCapabilityResult> {
   const nodeId = trimText(input.node_id, 64);
@@ -229,12 +229,12 @@ export async function removeBoardNode(
       "board.remove_node requires input.node_id to be a non-empty string"
     );
   }
-  if (!readNode(resource, nodeId)) {
+  if (!readNode(state_binding, nodeId)) {
     return buildOperationError("board_node_not_found", `Board node not found: ${nodeId}`);
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   board.nodes = board.nodes.filter((node) => node.id !== nodeId);
   board.edges = board.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
   const fallbackFocusedNodeId = board.nodes[0]?.id || "";
@@ -250,7 +250,7 @@ export async function removeBoardNode(
     ? await arrangeBoardResourceLayout(nextResource, { preservePinned: true })
     : nextResource;
   return {
-    resource: arranged,
+    state_binding: arranged,
     activeAnchor: "board.canvas",
     data: {
       status: "applied",
@@ -260,7 +260,7 @@ export async function removeBoardNode(
 }
 
 export async function addBoardEdge(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): Promise<ViewCapabilityResult> {
   const sourceNodeId = trimText(input.source_node_id, 64);
@@ -277,13 +277,13 @@ export async function addBoardEdge(
       "board.add_edge requires different source_node_id and target_node_id"
     );
   }
-  if (!readNode(resource, sourceNodeId) || !readNode(resource, targetNodeId)) {
+  if (!readNode(state_binding, sourceNodeId) || !readNode(state_binding, targetNodeId)) {
     return buildOperationError(
       "board_node_not_found",
       `Board nodes must exist before adding an edge: ${sourceNodeId} -> ${targetNodeId}`
     );
   }
-  const existingEdge = readBoardResourceData(resource).edges.find((edge) =>
+  const existingEdge = readBoardStateBindingData(state_binding).edges.find((edge) =>
     edge.source === sourceNodeId && edge.target === targetNodeId
   );
   if (existingEdge) {
@@ -293,8 +293,8 @@ export async function addBoardEdge(
     );
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   const sourceNode = readNode(nextResource, sourceNodeId);
   const targetNode = readNode(nextResource, targetNodeId);
   if (!sourceNode || !targetNode) {
@@ -321,7 +321,7 @@ export async function addBoardEdge(
   };
   board.edges = [...board.edges, edge];
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "board.canvas",
     data: {
       status: "applied",
@@ -331,7 +331,7 @@ export async function addBoardEdge(
 }
 
 export function removeBoardEdge(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const edgeId = trimText(input.edge_id, 64);
@@ -341,17 +341,17 @@ export function removeBoardEdge(
       "board.remove_edge requires input.edge_id to be a non-empty string"
     );
   }
-  const existing = readBoardResourceData(resource).edges.find((edge) => edge.id === edgeId);
+  const existing = readBoardStateBindingData(state_binding).edges.find((edge) => edge.id === edgeId);
   if (!existing) {
     return buildOperationError("board_edge_not_found", `Board edge not found: ${edgeId}`);
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   board.edges = board.edges.filter((edge) => edge.id !== edgeId);
   board.selection.selected_edge_ids = board.selection.selected_edge_ids.filter((item) => item !== edgeId);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "board.canvas",
     data: {
       status: "applied",
@@ -360,20 +360,20 @@ export function removeBoardEdge(
   };
 }
 
-export async function arrangeBoardLayout(resource: ViewResourceBinding): Promise<ViewCapabilityResult> {
-  const arranged = await arrangeBoardResourceLayout(resource, { preservePinned: true });
+export async function arrangeBoardLayout(state_binding: ViewStateBinding): Promise<ViewCapabilityResult> {
+  const arranged = await arrangeBoardResourceLayout(state_binding, { preservePinned: true });
   return {
-    resource: arranged,
+    state_binding: arranged,
     activeAnchor: "board.canvas",
     data: {
       status: "applied",
-      layout_mode: readBoardResourceData(arranged).layout_mode,
+      layout_mode: readBoardStateBindingData(arranged).layout_mode,
     },
   };
 }
 
 export function pinBoardNode(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>,
   pinned: boolean
 ): ViewCapabilityResult {
@@ -384,17 +384,17 @@ export function pinBoardNode(
       `board.${pinned ? "pin_node" : "unpin_node"} requires input.node_id to be a non-empty string`
     );
   }
-  if (!readNode(resource, nodeId)) {
+  if (!readNode(state_binding, nodeId)) {
     return buildOperationError("board_node_not_found", `Board node not found: ${nodeId}`);
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   board.nodes = board.nodes.map((node) => node.id === nodeId ? { ...node, pinned } : node);
   board.layout_mode = board.nodes.some((node) => node.pinned) ? "mixed" : "auto";
   board.selection = nextSelectionForNode(nodeId);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "board.inspector",
     data: {
       status: "applied",
@@ -405,22 +405,22 @@ export function pinBoardNode(
 }
 
 export function focusBoardNode(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const nodeId = typeof input.node_id === "string" ? input.node_id.trim() : "";
   
   if (!nodeId) {
     // If empty node_id is provided, interpret as deselecting all nodes
-    const nextResource = cloneBoardResource(resource);
-    const board = readBoardResourceData(nextResource);
+    const nextResource = cloneBoardStateBinding(state_binding);
+    const board = readBoardStateBindingData(nextResource);
     board.selection = {
       selected_node_ids: [],
       selected_edge_ids: [],
       focused_node_id: "",
     };
     return {
-      resource: nextResource,
+      state_binding: nextResource,
       activeAnchor: "board.canvas",
       data: {
         status: "applied",
@@ -429,16 +429,16 @@ export function focusBoardNode(
     };
   }
 
-  const targetNode = readNode(resource, nodeId);
+  const targetNode = readNode(state_binding, nodeId);
   if (!targetNode) {
     return buildOperationError("board_node_not_found", `Board node not found: ${nodeId}`);
   }
 
-  const nextResource = cloneBoardResource(resource);
-  const board = readBoardResourceData(nextResource);
+  const nextResource = cloneBoardStateBinding(state_binding);
+  const board = readBoardStateBindingData(nextResource);
   board.selection = nextSelectionForNode(nodeId);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "board.inspector",
     data: {
       status: "applied",

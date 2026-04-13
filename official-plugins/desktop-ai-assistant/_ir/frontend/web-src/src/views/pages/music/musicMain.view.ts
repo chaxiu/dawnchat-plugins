@@ -27,11 +27,11 @@ export { MUSIC_NOTE_RANGE, MUSIC_SUPPORTED_NOTES } from "./model/notes";
 
 export const musicMainView = defineView({
   view_id: "music.main",
-  resource_type: "music.piano",
+  binding_type: "music.piano",
   title: "AI Piano Stage",
   component: MusicMainView,
   state_mode: "stateful",
-  default_resource: MUSIC_DEFAULT_RESOURCE,
+  default_state_binding: MUSIC_DEFAULT_RESOURCE,
   anchors: [
     { id: "music.header", title: "Header", description: "Scene intro, transport info, and quick controls." },
     { id: "music.keyboard", title: "Keyboard", description: "Playable piano keys across four octaves (C3-B6)." },
@@ -201,7 +201,7 @@ export const musicMainView = defineView({
             function: "view.open",
             input: {
               view_id: "music.main",
-              resource: {},
+              state_binding: {},
               initial_anchor: "music.header",
             },
           },
@@ -367,7 +367,7 @@ export const musicMainView = defineView({
   },
   persistence: musicMainPersistence,
   open: openMusicMainView,
-  normalizeResource: validateMusicResource,
+  normalizeStateBinding: validateMusicResource,
   invokeCapability: async (capabilityId, input, resource) => {
     const { invokeMusicMainCapability } = await import("./capabilities");
     return invokeMusicMainCapability(capabilityId, input, resource);

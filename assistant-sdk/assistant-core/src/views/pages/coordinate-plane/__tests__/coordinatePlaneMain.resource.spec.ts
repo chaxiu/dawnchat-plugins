@@ -8,7 +8,7 @@ import {
 describe("plane.main resource", () => {
   it("normalizes viewport defaults and scene data", () => {
     const resource = normalizeCoordinatePlaneResource({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       title: "Physics Lab",
       data: {
         viewport: {
@@ -67,7 +67,7 @@ describe("plane.main resource", () => {
     });
 
     expect(resource).toEqual(expect.objectContaining({
-      resource_type: "plane.scene",
+      binding_type: "plane.scene",
       title: "Physics Lab",
       data: expect.objectContaining({
         viewport: expect.objectContaining({
@@ -117,7 +117,7 @@ describe("plane.main resource", () => {
 
   it("rejects invalid resource types", () => {
     const result = validateCoordinatePlaneResource({
-      resource_type: "image.deck",
+      binding_type: "image.deck",
     });
 
     expect(result).toEqual(expect.objectContaining({
@@ -127,11 +127,11 @@ describe("plane.main resource", () => {
   });
 
   it("opens with default anchor and default resource", () => {
-    const result = openCoordinatePlaneMainView({ resource: {} });
+    const result = openCoordinatePlaneMainView({ state_binding: {} });
 
     expect(result).toEqual(expect.objectContaining({
       activeAnchor: "plane.stage",
-      resource: COORDINATE_PLANE_DEFAULT_RESOURCE,
+      state_binding: COORDINATE_PLANE_DEFAULT_RESOURCE,
     }));
   });
 });

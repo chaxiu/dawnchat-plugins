@@ -1,13 +1,13 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../runtime/view";
 import { buildOperationError, toStringArray } from "../../shared/viewUtils";
 import { cloneWordResource } from "./wordMain.view";
 
 export function invokeWordMainCapability(
   capabilityId: string,
   input: Record<string, unknown>,
-  resource: ViewResourceBinding
+  state_binding: ViewStateBinding
 ): ViewCapabilityResult {
-  const nextResource = cloneWordResource(resource);
+  const nextResource = cloneWordResource(state_binding);
   if (capabilityId === "highlight_meaning") {
     return {
       activeAnchor: "word.meaning",
@@ -31,7 +31,7 @@ export function invokeWordMainCapability(
       etymology: [...previousItems, ...items],
     };
     return {
-      resource: nextResource,
+      state_binding: nextResource,
       activeAnchor: "word.etymology",
       data: {
         status: "applied",
@@ -50,7 +50,7 @@ export function invokeWordMainCapability(
     }
     nextResource.title = title;
     return {
-      resource: nextResource,
+      state_binding: nextResource,
       activeAnchor: "word.header",
       data: {
         status: "applied",
@@ -64,12 +64,12 @@ export function invokeWordMainCapability(
   );
 }
 
-export function buildWordMainStateSummary(resource: ViewResourceBinding, activeAnchor?: string) {
-  const word = String(resource.data.word || "").trim();
-  const meaning = String(resource.data.meaning || "").trim();
-  const etymology = toStringArray(resource.data.etymology);
+export function buildWordMainStateSummary(state_binding: ViewStateBinding, activeAnchor?: string) {
+  const word = String(state_binding.data.word || "").trim();
+  const meaning = String(state_binding.data.meaning || "").trim();
+  const etymology = toStringArray(state_binding.data.etymology);
   return {
-    resource_title: resource.title || "",
+    resource_title: state_binding.title || "",
     word,
     has_meaning: Boolean(meaning),
     etymology_count: etymology.length,

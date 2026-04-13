@@ -1,16 +1,16 @@
-import type { ViewDescribeOptions, ViewResourceBinding } from "../../../../runtime/view";
-import { readBoardResourceData } from "./resource";
+import type { ViewDescribeOptions, ViewStateBinding } from "../../../../runtime/view";
+import { readBoardStateBindingData } from "./resource";
 
 function normalizeTitleKey(title: string): string {
   return title.trim().toLowerCase();
 }
 
 export function buildBoardMainStateSummary(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   activeAnchor?: string,
   options: ViewDescribeOptions = {}
 ) {
-  const board = readBoardResourceData(resource);
+  const board = readBoardStateBindingData(state_binding);
   const maxNodes = typeof options.max_nodes === "number" ? Math.max(1, Math.trunc(options.max_nodes)) : 20;
   const maxEdges = typeof options.max_edges === "number" ? Math.max(1, Math.trunc(options.max_edges)) : 20;
   const nodes = Array.isArray(board.nodes) ? board.nodes : [];
@@ -37,7 +37,7 @@ export function buildBoardMainStateSummary(
     return accumulator;
   }, {});
   return {
-    resource_title: resource.title || "",
+    resource_title: state_binding.title || "",
     board_id: typeof board.board_id === "string" ? board.board_id : "",
     node_count: nodes.length,
     edge_count: edges.length,

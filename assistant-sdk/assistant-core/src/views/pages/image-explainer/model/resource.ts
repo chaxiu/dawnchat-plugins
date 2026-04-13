@@ -1,11 +1,11 @@
 import type {
   ViewOpenSuccess,
   ViewOperationFailure,
-  ViewResourceBinding,
+  ViewStateBinding,
 } from "../../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
 } from "../../../shared/viewUtils";
@@ -107,22 +107,22 @@ function validatePages(pages: ImageExplainerPage[]): ViewOperationFailure | null
   return null;
 }
 
-export const IMAGE_EXPLAINER_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: IMAGE_EXPLAINER_RESOURCE_TYPE,
-  resource_id: IMAGE_EXPLAINER_RESOURCE_ID,
+export const IMAGE_EXPLAINER_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: IMAGE_EXPLAINER_RESOURCE_TYPE,
+  binding_label: IMAGE_EXPLAINER_RESOURCE_ID,
   title: IMAGE_EXPLAINER_RESOURCE_TITLE,
   data: createDefaultImageExplainerResourceData() as unknown as Record<string, unknown>,
 };
 
-export function cloneImageExplainerResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneImageExplainerResource(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
-export function readImageExplainerResourceData(resource: ViewResourceBinding): ImageExplainerResourceData {
-  return resource.data as unknown as ImageExplainerResourceData;
+export function readImageExplainerResourceData(state_binding: ViewStateBinding): ImageExplainerResourceData {
+  return state_binding.data as unknown as ImageExplainerResourceData;
 }
 
-export function normalizeImageExplainerResource(raw: Record<string, unknown>): ViewResourceBinding {
+export function normalizeImageExplainerResource(raw: Record<string, unknown>): ViewStateBinding {
   const defaults = createDefaultImageExplainerResourceData();
   const rawData = raw.data && typeof raw.data === "object" && !Array.isArray(raw.data)
     ? raw.data as Record<string, unknown>
@@ -135,8 +135,8 @@ export function normalizeImageExplainerResource(raw: Record<string, unknown>): V
     : defaults.deck.pages;
   const maxPageIndex = Math.max(0, pages.length - 1);
   return {
-    resource_type: IMAGE_EXPLAINER_RESOURCE_TYPE,
-    resource_id: normalizeString(raw.resource_id, IMAGE_EXPLAINER_RESOURCE_ID) || IMAGE_EXPLAINER_RESOURCE_ID,
+    binding_type: IMAGE_EXPLAINER_RESOURCE_TYPE,
+    binding_label: normalizeString(raw.binding_label, IMAGE_EXPLAINER_RESOURCE_ID) || IMAGE_EXPLAINER_RESOURCE_ID,
     title: normalizeString(raw.title, IMAGE_EXPLAINER_RESOURCE_TITLE) || IMAGE_EXPLAINER_RESOURCE_TITLE,
     data: {
       deck: {
@@ -152,22 +152,22 @@ export function normalizeImageExplainerResource(raw: Record<string, unknown>): V
 
 export function validateImageExplainerResource(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
     return cloneImageExplainerResource(IMAGE_EXPLAINER_DEFAULT_RESOURCE);
   }
-  const resourceType = normalizeString(payload.resource_type, IMAGE_EXPLAINER_RESOURCE_TYPE);
+  const resourceType = normalizeString(payload.binding_type, IMAGE_EXPLAINER_RESOURCE_TYPE);
   if (resourceType !== IMAGE_EXPLAINER_RESOURCE_TYPE) {
     return buildOperationError(
       "invalid_view_resource",
-      `image.explainer requires resource.resource_type to be '${IMAGE_EXPLAINER_RESOURCE_TYPE}'`
+      `image.explainer requires state_binding.binding_type to be '${IMAGE_EXPLAINER_RESOURCE_TYPE}'`
     );
   }
   const rawData = payload.data;
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "image.explainer requires resource.data to be an object"
+      "image.explainer requires state_binding.data to be an object"
     );
   }
   const normalized = normalizeImageExplainerResource(payload);
@@ -181,17 +181,17 @@ export function validateImageExplainerResource(
 
 export function openImageExplainerMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = validateImageExplainerResource(toRecord(input.resource));
+  const normalizedResource = validateImageExplainerResource(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "image.stage",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
       current_page_index: readImageExplainerResourceData(normalizedResource).deck.current_page_index,
     },
   };

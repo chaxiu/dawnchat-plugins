@@ -54,7 +54,7 @@ function activateView(resource = cloneMusicResource(MUSIC_DEFAULT_RESOURCE)) {
   useViewState().setActiveViewState({
     viewId: "music.main",
     activeAnchor: "music.keyboard",
-    resource,
+    state_binding: resource,
     manifest: createManifestSnapshot(musicMainView, resource, "music.keyboard"),
   });
 }
@@ -127,7 +127,7 @@ describe("MusicMainView", () => {
         source: "user",
       }),
     }));
-    expect(useViewState().currentResource.value?.data).toEqual(expect.objectContaining({
+    expect(useViewState().currentStateBinding.value?.data).toEqual(expect.objectContaining({
       lesson: expect.objectContaining({
         highlighted_note: "",
         waiting_for_match: false,
@@ -156,7 +156,7 @@ describe("MusicMainView", () => {
     const clickPromise = wrapper.find('.piano-key[data-note="C3"]').trigger("click");
     await Promise.resolve();
 
-    const nextResource = cloneMusicResource(useViewState().currentResource.value!);
+    const nextResource = cloneMusicResource(useViewState().currentStateBinding.value!);
     (nextResource.data.lesson as Record<string, unknown>).highlighted_note = "D4";
     (nextResource.data.lesson as Record<string, unknown>).waiting_for_match = true;
     (nextResource.data.lesson as Record<string, unknown>).prompt_text = "请先弹 D4";
@@ -169,7 +169,7 @@ describe("MusicMainView", () => {
     await clickPromise;
     await nextTick();
 
-    expect(useViewState().currentResource.value?.data).toEqual(expect.objectContaining({
+    expect(useViewState().currentStateBinding.value?.data).toEqual(expect.objectContaining({
       lesson: expect.objectContaining({
         highlighted_note: "D4",
         waiting_for_match: true,

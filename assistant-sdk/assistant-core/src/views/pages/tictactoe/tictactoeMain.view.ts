@@ -6,11 +6,11 @@ import {
   type ViewOperationFailure,
   type ViewPersistenceConfig,
   type ViewPersistenceStateSnapshot,
-  type ViewResourceBinding,
+  type ViewStateBinding,
 } from "../../../runtime/view/manifest";
 import {
   buildOperationError,
-  cloneViewResource,
+  cloneStateBinding,
   isViewOperationFailure,
   toRecord,
 } from "../../shared/viewUtils";
@@ -46,9 +46,9 @@ export interface TicTacToeResourceData {
   winning_cells: number[];
 }
 
-export const TICTACTOE_DEFAULT_RESOURCE: ViewResourceBinding = {
-  resource_type: "tictactoe.game",
-  resource_id: "tictactoe:neon-grid",
+export const TICTACTOE_DEFAULT_RESOURCE: ViewStateBinding = {
+  binding_type: "tictactoe.game",
+  binding_label: "tictactoe:neon-grid",
   title: "Neon Grid",
   data: {
     board_size: TICTACTOE_BOARD_SIZE,
@@ -63,15 +63,15 @@ export const TICTACTOE_DEFAULT_RESOURCE: ViewResourceBinding = {
   } satisfies TicTacToeResourceData,
 };
 
-export function cloneTictactoeResource(resource: ViewResourceBinding): ViewResourceBinding {
-  return cloneViewResource(resource);
+export function cloneTictactoeStateBinding(state_binding: ViewStateBinding): ViewStateBinding {
+  return cloneStateBinding(state_binding);
 }
 
 export function createDefaultTictactoeData(): TicTacToeResourceData {
   return JSON.parse(JSON.stringify(TICTACTOE_DEFAULT_RESOURCE.data)) as TicTacToeResourceData;
 }
 
-export function normalizeTictactoeResource(raw: Record<string, unknown>): ViewResourceBinding {
+export function normalizeTictactoeStateBinding(raw: Record<string, unknown>): ViewStateBinding {
   const defaults = createDefaultTictactoeData();
   const rawData = raw.data && typeof raw.data === "object" && !Array.isArray(raw.data)
     ? raw.data as Record<string, unknown>
@@ -117,10 +117,10 @@ export function normalizeTictactoeResource(raw: Record<string, unknown>): ViewRe
     : [];
 
   return {
-    resource_type: "tictactoe.game",
-    resource_id: typeof raw.resource_id === "string" && raw.resource_id.trim()
-      ? raw.resource_id.trim()
-      : String(TICTACTOE_DEFAULT_RESOURCE.resource_id || "tictactoe:neon-grid"),
+    binding_type: "tictactoe.game",
+    binding_label: typeof raw.binding_label === "string" && raw.binding_label.trim()
+      ? raw.binding_label.trim()
+      : String(TICTACTOE_DEFAULT_RESOURCE.binding_label || "tictactoe:neon-grid"),
     title: typeof raw.title === "string" && raw.title.trim()
       ? raw.title.trim()
       : String(TICTACTOE_DEFAULT_RESOURCE.title || "Neon Grid"),
@@ -138,20 +138,20 @@ export function normalizeTictactoeResource(raw: Record<string, unknown>): ViewRe
   };
 }
 
-export function validateTictactoeResource(
+export function validateTictactoeStateBinding(
   payload: Record<string, unknown>
-): ViewResourceBinding | ViewOperationFailure {
+): ViewStateBinding | ViewOperationFailure {
   if (Object.keys(payload).length === 0) {
-    return cloneTictactoeResource(TICTACTOE_DEFAULT_RESOURCE);
+    return cloneTictactoeStateBinding(TICTACTOE_DEFAULT_RESOURCE);
   }
 
-  const resourceType = typeof payload.resource_type === "string" && payload.resource_type.trim()
-    ? payload.resource_type.trim()
+  const resourceType = typeof payload.binding_type === "string" && payload.binding_type.trim()
+    ? payload.binding_type.trim()
     : "tictactoe.game";
   if (resourceType !== "tictactoe.game") {
     return buildOperationError(
       "invalid_view_resource",
-      "tictactoe.main requires resource.resource_type to be 'tictactoe.game'"
+      "tictactoe.main requires state_binding.binding_type to be 'tictactoe.game'"
     );
   }
 
@@ -159,26 +159,26 @@ export function validateTictactoeResource(
   if (rawData !== undefined && (!rawData || typeof rawData !== "object" || Array.isArray(rawData))) {
     return buildOperationError(
       "invalid_view_resource",
-      "tictactoe.main requires resource.data to be an object"
+      "tictactoe.main requires state_binding.data to be an object"
     );
   }
 
-  return normalizeTictactoeResource(payload);
+  return normalizeTictactoeStateBinding(payload);
 }
 
 export function openTictactoeMainView(payload: Record<string, unknown>): ViewOpenSuccess | ViewOperationFailure {
   const input = toRecord(payload);
-  const normalizedResource = validateTictactoeResource(toRecord(input.resource));
+  const normalizedResource = validateTictactoeStateBinding(toRecord(input.state_binding));
   if (isViewOperationFailure(normalizedResource)) {
     return normalizedResource;
   }
   const initialAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
   return {
-    resource: normalizedResource,
+    state_binding: normalizedResource,
     activeAnchor: initialAnchor || "tictactoe.board",
     data: {
       status: "applied",
-      resource_id: normalizedResource.resource_id || "",
+      binding_label: normalizedResource.binding_label || "",
     },
   };
 }
@@ -187,15 +187,15 @@ export const tictactoeMainPersistence: ViewPersistenceConfig = {
   version: 1,
   debounce_ms: 120,
   serialize: (snapshot: ViewPersistenceStateSnapshot) => ({
-    resource: cloneTictactoeResource(snapshot.resource),
+    state_binding: cloneTictactoeStateBinding(snapshot.state_binding),
     active_anchor: snapshot.activeAnchor || "",
   }),
   deserialize: (payload) => {
-    const rawResource = payload.resource && typeof payload.resource === "object" && !Array.isArray(payload.resource)
-      ? payload.resource as Record<string, unknown>
+    const rawResource = payload.state_binding && typeof payload.state_binding === "object" && !Array.isArray(payload.state_binding)
+      ? payload.state_binding as Record<string, unknown>
       : {};
     return {
-      resource: normalizeTictactoeResource(rawResource),
+      state_binding: normalizeTictactoeStateBinding(rawResource),
       activeAnchor: typeof payload.active_anchor === "string" ? payload.active_anchor.trim() : "",
     };
   },
@@ -203,13 +203,13 @@ export const tictactoeMainPersistence: ViewPersistenceConfig = {
 
 export const tictactoeMainView = defineView({
   view_id: "tictactoe.main",
-  resource_type: "tictactoe.game",
+  binding_type: "tictactoe.game",
   title: "TicTacToe Arena",
   component: TictactoeMainView,
   render_mode: "shadow-dom",
   style_texts: [tictactoeMainCssText],
   state_mode: "stateful",
-  default_resource: TICTACTOE_DEFAULT_RESOURCE,
+  default_state_binding: TICTACTOE_DEFAULT_RESOURCE,
   anchors: [
     { id: "tictactoe.header", title: "Header", description: "Game title and current round status." },
     { id: "tictactoe.board", title: "Board", description: "The 5x5 board area." },
@@ -271,7 +271,7 @@ export const tictactoeMainView = defineView({
             function: "view.open",
             input: {
               view_id: "tictactoe.main",
-              resource: {},
+              state_binding: {},
               initial_anchor: "tictactoe.board",
             },
           },
@@ -313,7 +313,7 @@ export const tictactoeMainView = defineView({
             plugin_id: "<plugin_id>",
             event_types: ["assistant.game.tictactoe.cell_selected"],
             match: {
-              resource_id: "<resource_id>",
+              binding_label: "<resource_id>",
             },
           },
         },
@@ -366,7 +366,7 @@ export const tictactoeMainView = defineView({
   },
   persistence: tictactoeMainPersistence,
   open: openTictactoeMainView,
-  normalizeResource: validateTictactoeResource,
+  normalizeStateBinding: validateTictactoeStateBinding,
   invokeCapability: invokeTictactoeMainCapability,
   getStateSummary: buildTictactoeMainStateSummary,
 });

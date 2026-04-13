@@ -1,8 +1,9 @@
 import { getViewRegistration } from "./registry";
 import type { UiCapabilityHandler, UiCapabilityRegistration } from "../capabilities";
+import type { ViewStateBinding } from "./manifest";
 import {
   applyViewState,
-  cloneResource,
+  cloneStateBinding,
   hasAnchor,
   isOpenFailure,
   toRecord,
@@ -15,7 +16,7 @@ function buildViewOpenSchema(): Record<string, unknown> {
     type: "object",
     properties: {
       view_id: { type: "string" },
-      resource: { type: "object" },
+      state_binding: { type: "object" },
       initial_anchor: { type: "string" },
     },
     required: ["view_id"],
@@ -43,23 +44,25 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
     }
     let openResult:
       | Awaited<ReturnType<NonNullable<typeof registration.open>>>
-      | Awaited<ReturnType<NonNullable<typeof registration.normalizeResource>>>
-      | { resource: ReturnType<typeof cloneResource> };
+      | Awaited<ReturnType<NonNullable<typeof registration.normalizeStateBinding>>>
+      | { state_binding: ReturnType<typeof cloneStateBinding> };
     if (registration.open) {
       openResult = await registration.open(input);
-    } else if (registration.normalizeResource) {
-      const normalized = await registration.normalizeResource(toRecord(input.resource));
-      openResult = "resource_type" in normalized ? { resource: normalized } : normalized;
+    } else if (registration.normalizeStateBinding) {
+      const normalized = await registration.normalizeStateBinding(toRecord(input.state_binding));
+      openResult = "ok" in normalized && normalized.ok === false
+        ? normalized
+        : { state_binding: normalized as ViewStateBinding };
     } else {
-      openResult = { resource: cloneResource(registration.default_resource) };
+      openResult = { state_binding: cloneStateBinding(registration.default_state_binding) };
     }
     if (isOpenFailure(openResult)) {
       return openResult;
     }
-    const resource = cloneResource(
-      "resource" in openResult && openResult.resource
-        ? openResult.resource
-        : registration.default_resource
+    const stateBinding = cloneStateBinding(
+      "state_binding" in openResult && openResult.state_binding
+        ? openResult.state_binding
+        : registration.default_state_binding
     );
     const requestedAnchor = typeof input.initial_anchor === "string" ? input.initial_anchor.trim() : "";
     const activeAnchor =
@@ -74,7 +77,7 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         message: `Anchor not found: ${activeAnchor}`,
       };
     }
-    const manifest = applyViewState(deps, registration, resource, activeAnchor, {
+    const manifest = applyViewState(deps, registration, stateBinding, activeAnchor, {
       trigger: "view.open",
       context,
     });
@@ -86,7 +89,7 @@ export function createViewOpenHandler(deps: ViewRuntimeDeps): ViewActionHandler 
         view_id: viewId,
         active_anchor: activeAnchor,
         route_path: registration.route.full_path,
-        resource_type: resource.resource_type,
+        binding_type: stateBinding.binding_type,
         manifest,
         ...("data" in openResult ? toRecord(openResult.data) : {}),
       },
@@ -108,7 +111,7 @@ export function createViewOpenCapabilityRegistration(
   return {
     definition: {
       name: "view.open",
-      description: "Open one registered assistant view and bind its resource payload.",
+      description: "Open one registered assistant view and bind its state binding payload.",
       input_schema: buildViewOpenSchema(),
     },
     handler,

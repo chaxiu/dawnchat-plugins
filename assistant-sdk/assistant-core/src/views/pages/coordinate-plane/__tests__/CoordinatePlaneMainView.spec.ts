@@ -48,7 +48,7 @@ class ResizeObserverMock {
 }
 
 function activateView(resource = cloneCoordinatePlaneResource(normalizeCoordinatePlaneResource({
-  resource_type: "plane.scene",
+  binding_type: "plane.scene",
   title: "Traffic Distance Demo",
   data: {
     viewport: {
@@ -89,7 +89,7 @@ function activateView(resource = cloneCoordinatePlaneResource(normalizeCoordinat
   useViewState().setActiveViewState({
     viewId: "plane.main",
     activeAnchor: "plane.stage",
-    resource,
+    state_binding: resource,
     manifest: createManifestSnapshot(coordinatePlaneMainView, resource, "plane.stage"),
   });
 }

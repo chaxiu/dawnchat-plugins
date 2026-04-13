@@ -1,10 +1,10 @@
-import type { ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewStateBinding } from "../../../../runtime/view";
 import { readMusicResourceData } from "./resource";
 
-export function buildMusicMainStateSummary(resource: ViewResourceBinding, activeAnchor?: string) {
-  const music = readMusicResourceData(resource);
+export function buildMusicMainStateSummary(state_binding: ViewStateBinding, activeAnchor?: string) {
+  const music = readMusicResourceData(state_binding);
   return {
-    resource_title: resource.title || "",
+    resource_title: state_binding.title || "",
     instrument: music.instrument,
     volume: music.volume,
     is_playing: music.playback.is_playing,

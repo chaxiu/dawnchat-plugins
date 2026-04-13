@@ -3,7 +3,7 @@ export {
   type RuntimeObservationStoreDeps,
 } from "./store";
 export type {
-  ActiveResourceContext,
+  ActiveStateBindingContext,
   SessionContinuation,
   SessionPendingWait,
   SessionTaskProgress,

@@ -1,4 +1,4 @@
-import type { ViewCapabilityResult, ViewResourceBinding } from "../../../../runtime/view";
+import type { ViewCapabilityResult, ViewStateBinding } from "../../../../runtime/view";
 import { buildOperationError } from "../../../shared/viewUtils";
 import {
   cloneImageExplainerResource,
@@ -90,7 +90,7 @@ function normalizePage(raw: unknown, index: number): ImageExplainerPage | null {
 }
 
 export function mutateSetPages(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const rawPages = Array.isArray(input.pages) ? input.pages : null;
@@ -109,7 +109,7 @@ export function mutateSetPages(
       "image.set_pages requires each page to use single layout with one image or split layout with two images"
     );
   }
-  const nextResource = cloneImageExplainerResource(resource);
+  const nextResource = cloneImageExplainerResource(state_binding);
   const deck = readImageExplainerResourceData(nextResource).deck;
   deck.pages = normalizedPages;
   deck.title = normalizeString(input.title) || deck.title;
@@ -118,7 +118,7 @@ export function mutateSetPages(
     ? 0
     : Math.trunc(clampNumber(input.current_page_index, 0, 0, maxPageIndex));
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "image.stage",
     data: {
       status: "applied",
@@ -129,7 +129,7 @@ export function mutateSetPages(
 }
 
 export function mutateShowPage(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const pageIndex = input.page_index;
@@ -139,7 +139,7 @@ export function mutateShowPage(
       "image.show_page requires input.page_index as a number"
     );
   }
-  const nextResource = cloneImageExplainerResource(resource);
+  const nextResource = cloneImageExplainerResource(state_binding);
   const deck = readImageExplainerResourceData(nextResource).deck;
   if (pageIndex < 0 || pageIndex >= deck.pages.length) {
     return buildOperationError(
@@ -149,7 +149,7 @@ export function mutateShowPage(
   }
   deck.current_page_index = Math.trunc(pageIndex);
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "image.stage",
     data: {
       status: "applied",
@@ -160,7 +160,7 @@ export function mutateShowPage(
 }
 
 export function mutateSetTitle(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
   const title = normalizeString(input.title);
@@ -170,12 +170,12 @@ export function mutateSetTitle(
       "image.set_title requires input.title"
     );
   }
-  const nextResource = cloneImageExplainerResource(resource);
+  const nextResource = cloneImageExplainerResource(state_binding);
   const deck = readImageExplainerResourceData(nextResource).deck;
   deck.title = title;
   nextResource.title = title;
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "image.header",
     data: {
       status: "applied",
@@ -185,10 +185,10 @@ export function mutateSetTitle(
 }
 
 export function mutateHighlightRegion(
-  resource: ViewResourceBinding,
+  state_binding: ViewStateBinding,
   input: Record<string, unknown>
 ): ViewCapabilityResult {
-  const nextResource = cloneImageExplainerResource(resource);
+  const nextResource = cloneImageExplainerResource(state_binding);
   const deck = readImageExplainerResourceData(nextResource).deck;
   const currentPage = deck.pages[deck.current_page_index];
   if (!currentPage) {
@@ -209,7 +209,7 @@ export function mutateHighlightRegion(
   }
   currentPage.highlights = highlights;
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "image.stage",
     data: {
       status: "applied",
@@ -219,15 +219,15 @@ export function mutateHighlightRegion(
   };
 }
 
-export function mutateClearHighlight(resource: ViewResourceBinding): ViewCapabilityResult {
-  const nextResource = cloneImageExplainerResource(resource);
+export function mutateClearHighlight(state_binding: ViewStateBinding): ViewCapabilityResult {
+  const nextResource = cloneImageExplainerResource(state_binding);
   const deck = readImageExplainerResourceData(nextResource).deck;
   const currentPage = deck.pages[deck.current_page_index];
   if (currentPage) {
     currentPage.highlights = [];
   }
   return {
-    resource: nextResource,
+    state_binding: nextResource,
     activeAnchor: "image.stage",
     data: {
       status: "applied",

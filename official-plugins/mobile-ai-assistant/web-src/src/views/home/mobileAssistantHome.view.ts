@@ -6,12 +6,12 @@ export const MOBILE_ASSISTANT_HOME_VIEW_ID = "mobile.assistant.home";
 
 export const mobileAssistantHomeView = defineView({
   view_id: MOBILE_ASSISTANT_HOME_VIEW_ID,
-  resource_type: "mobile.assistant.workspace",
+  binding_type: "mobile.assistant.workspace",
   title: "Assistant workspace",
   component: MobileAssistantHomeView,
   state_mode: "lightweight",
-  default_resource: {
-    resource_type: "mobile.assistant.workspace",
+  default_state_binding: {
+    binding_type: "mobile.assistant.workspace",
     title: "Assistant workspace",
     data: {
       section: "home",
@@ -34,9 +34,9 @@ export const mobileAssistantHomeView = defineView({
     recommended_mode: "direct_capability",
     decision_rule: "Stay on the home view for overview or onboarding. Switch to another scene with view.open before requesting scene-specific state or actions.",
   },
-  getStateSummary: (resource, activeAnchor) => ({
-    title: resource.title || "Assistant workspace",
+  getStateSummary: (stateBinding, activeAnchor) => ({
+    title: stateBinding.title || "Assistant workspace",
     active_anchor: activeAnchor || "workspace.hero",
-    section: resource.data.section || "home",
+    section: stateBinding.data.section || "home",
   }),
 });

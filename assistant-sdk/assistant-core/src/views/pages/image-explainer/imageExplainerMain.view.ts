@@ -26,12 +26,12 @@ export * from "./model/types";
 
 export const imageExplainerMainView = defineView({
   view_id: "image.explainer",
-  resource_type: "image.deck",
+  binding_type: "image.deck",
   title: "AI Visual Explainer",
   component: ImageExplainerMainView,
   render_mode: "shadow-dom",
   state_mode: "stateful",
-  default_resource: IMAGE_EXPLAINER_DEFAULT_RESOURCE,
+  default_state_binding: IMAGE_EXPLAINER_DEFAULT_RESOURCE,
   anchors: [
     { id: "image.header", title: "Title", description: "Floating title for the current explanation page." },
     { id: "image.stage", title: "Stage", description: "Single-image or split-image stage with overlay highlights." },
@@ -209,7 +209,7 @@ export const imageExplainerMainView = defineView({
             function: "view.open",
             input: {
               view_id: "image.explainer",
-              resource: {},
+              state_binding: {},
               initial_anchor: "image.stage",
             },
           },
@@ -395,7 +395,7 @@ export const imageExplainerMainView = defineView({
     ],
   },
   persistence: imageExplainerMainPersistence,
-  normalizeResource: validateImageExplainerResource,
+  normalizeStateBinding: validateImageExplainerResource,
   open: openImageExplainerMainView,
   invokeCapability: invokeImageExplainerMainCapability,
   getStateSummary: buildImageExplainerMainStateSummary,
