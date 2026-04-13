@@ -92,6 +92,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f assistant-workspace/bun.lock
           test -f official-plugins/desktop-ai-assistant/_ir/frontend/web-src/bun.lock
           test -f official-plugins/desktop-hello-world/_ir/frontend/web-src/bun.lock
           test -f official-plugins/desktop-starter/_ir/frontend/web-src/bun.lock

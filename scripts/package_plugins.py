@@ -18,9 +18,17 @@ import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, NamedTuple
 from zipfile import ZIP_DEFLATED, ZipFile
 from zipfile import ZipInfo
+
+
+class WebBuildPlan(NamedTuple):
+    install_cmd: list[str]
+    build_cmd: list[str]
+    install_cwd: Path
+    build_cwd: Path
+    manager_label: str
 
 
 EXCLUDE_DIRS = {
@@ -313,7 +321,43 @@ def _is_dangling_symlink(path: Path) -> bool:
     return path.is_symlink() and not path.exists()
 
 
-def _resolve_web_package_manager(web_src: Path) -> tuple[list[str], list[str], str]:
+def _package_json_uses_assistant_workspace_deps(package_json: dict[str, Any]) -> bool:
+    """True when package.json pins @dawnchat assistant SDK packages via workspace:*."""
+    for section_name in ("dependencies", "devDependencies", "optionalDependencies"):
+        section = package_json.get(section_name)
+        if not isinstance(section, dict):
+            continue
+        for dep_name, spec in section.items():
+            if not isinstance(dep_name, str) or not isinstance(spec, str):
+                continue
+            if spec.strip() != "workspace:*":
+                continue
+            if dep_name.startswith("@dawnchat/assistant") or dep_name == "@dawnchat/host-orchestration-sdk":
+                return True
+    return False
+
+
+def _find_assistant_workspace_root(web_src: Path) -> Path | None:
+    """Locate dawnchat-plugins/assistant-workspace by walking parents from web-src."""
+    for base in web_src.parents:
+        candidate = base / "assistant-workspace"
+        pkg_path = candidate / "package.json"
+        if not pkg_path.is_file():
+            continue
+        try:
+            data = _read_json(pkg_path)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("name") != "@dawnchat/assistant-workspace":
+            continue
+        workspaces = data.get("workspaces")
+        if not isinstance(workspaces, list) or not workspaces:
+            continue
+        return candidate.resolve()
+    return None
+
+
+def _resolve_web_build_plan(web_src: Path) -> WebBuildPlan:
     pnpm_lock = web_src / "pnpm-lock.yaml"
     bun_lock = web_src / "bun.lock"
     bun_lockb = web_src / "bun.lockb"
@@ -325,56 +369,89 @@ def _resolve_web_package_manager(web_src: Path) -> tuple[list[str], list[str], s
     npm = shutil.which("npm")
     yarn = shutil.which("yarn")
 
+    package_json: dict[str, Any] | None = None
+    pkg_path = web_src / "package.json"
+    if pkg_path.is_file():
+        package_json = _read_json(pkg_path)
+
+    use_assistant_ws = bool(package_json and _package_json_uses_assistant_workspace_deps(package_json))
+    assistant_ws_root = _find_assistant_workspace_root(web_src) if use_assistant_ws else None
+    if use_assistant_ws and assistant_ws_root is None:
+        raise RuntimeError(
+            f"{web_src} uses workspace:* @dawnchat assistant SDK dependencies but "
+            "assistant-workspace/ was not found (expected a parent directory to contain "
+            "assistant-workspace/package.json named @dawnchat/assistant-workspace)."
+        )
+
+    def bun_plan(default_label: str) -> WebBuildPlan:
+        assert bun is not None
+        install_cwd = assistant_ws_root if use_assistant_ws else web_src
+        mgr = "bun(assistant-workspace)" if use_assistant_ws else default_label
+        return WebBuildPlan(
+            install_cmd=[bun, "install"],
+            build_cmd=[bun, "run", "build"],
+            install_cwd=install_cwd,
+            build_cwd=web_src,
+            manager_label=mgr,
+        )
+
     if bun_lock.exists() or bun_lockb.exists():
         if not bun:
             raise RuntimeError(f"bun.lock exists but bun not found for {web_src}")
-        return (
-            [bun, "install"],
-            [bun, "run", "build"],
-            "bun(lockfile)",
-        )
+        return bun_plan("bun(lockfile)")
     if pnpm_lock.exists():
+        if use_assistant_ws:
+            raise RuntimeError(
+                f"{web_src}: @dawnchat assistant SDK workspace:* dependencies require Bun and "
+                "dawnchat-plugins/assistant-workspace; remove pnpm-lock.yaml or migrate the template."
+            )
         if not pnpm:
             raise RuntimeError(f"pnpm-lock.yaml exists but pnpm not found for {web_src}")
-        return (
-            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
-            [pnpm, "run", "build"],
-            "pnpm(lockfile)",
+        return WebBuildPlan(
+            install_cmd=[pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+            build_cmd=[pnpm, "run", "build"],
+            install_cwd=web_src,
+            build_cwd=web_src,
+            manager_label="pnpm(lockfile)",
         )
     if npm_lock.exists():
         if not npm:
             raise RuntimeError(f"package-lock.json exists but npm not found for {web_src}")
-        return (
-            [npm, "install"],
-            [npm, "run", "build"],
-            "npm(lockfile)",
+        return WebBuildPlan(
+            install_cmd=[npm, "install"],
+            build_cmd=[npm, "run", "build"],
+            install_cwd=web_src,
+            build_cwd=web_src,
+            manager_label="npm(lockfile)",
         )
     if yarn_lock.exists():
         if not yarn:
             raise RuntimeError(f"yarn.lock exists but yarn not found for {web_src}")
-        return (
-            [yarn, "install"],
-            [yarn, "build"],
-            "yarn(lockfile)",
+        return WebBuildPlan(
+            install_cmd=[yarn, "install"],
+            build_cmd=[yarn, "build"],
+            install_cwd=web_src,
+            build_cwd=web_src,
+            manager_label="yarn(lockfile)",
         )
 
     if pnpm:
-        return (
-            [pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
-            [pnpm, "run", "build"],
-            "pnpm(fallback)",
+        return WebBuildPlan(
+            install_cmd=[pnpm, "install", "--ignore-workspace", "--no-frozen-lockfile"],
+            build_cmd=[pnpm, "run", "build"],
+            install_cwd=web_src,
+            build_cwd=web_src,
+            manager_label="pnpm(fallback)",
         )
     if bun:
-        return (
-            [bun, "install"],
-            [bun, "run", "build"],
-            "bun(fallback)",
-        )
+        return bun_plan("bun(fallback)")
     if npm:
-        return (
-            [npm, "install"],
-            [npm, "run", "build"],
-            "npm(fallback)",
+        return WebBuildPlan(
+            install_cmd=[npm, "install"],
+            build_cmd=[npm, "run", "build"],
+            install_cwd=web_src,
+            build_cwd=web_src,
+            manager_label="npm(fallback)",
         )
 
     raise RuntimeError(f"No package manager found for {web_src}")
@@ -390,17 +467,19 @@ def _build_web_assets(plugin_dir: Path) -> None:
     if not web_src.exists():
         return
 
-    install_cmd, build_cmd, manager_label = _resolve_web_package_manager(web_src)
-    print(f"[web-build] {plugin_dir.name}: manager={manager_label}")
-    print(f"[web-build] {plugin_dir.name}: install={' '.join(install_cmd)}")
-    print(f"[web-build] {plugin_dir.name}: build={' '.join(build_cmd)}")
+    plan = _resolve_web_build_plan(web_src)
+    print(f"[web-build] {plugin_dir.name}: manager={plan.manager_label}")
+    print(
+        f"[web-build] {plugin_dir.name}: install(cwd={plan.install_cwd})={' '.join(plan.install_cmd)}"
+    )
+    print(f"[web-build] {plugin_dir.name}: build(cwd={plan.build_cwd})={' '.join(plan.build_cmd)}")
 
     subprocess.run(
-        install_cmd,
-        cwd=web_src,
+        plan.install_cmd,
+        cwd=plan.install_cwd,
         check=True,
     )
-    subprocess.run(build_cmd, cwd=web_src, check=True)
+    subprocess.run(plan.build_cmd, cwd=plan.build_cwd, check=True)
 
 
 def _iter_packable_files(

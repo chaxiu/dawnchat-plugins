@@ -68,8 +68,9 @@ python scripts/package_plugins.py \
 
 1. 扫描 `official-plugins/*/manifest.json`
 2. 对 Web 插件自动构建 `web-src`（仅保留运行所需产物）
-3. 打包并上传 `*.dawnchat`
-4. 上传 `plugins.json` 到同一 Release
+3. 若 `web-src/package.json` 使用 `workspace:*` 引用 `@dawnchat/assistant-*` / `@dawnchat/host-orchestration-sdk`（例如 `mobile-ai-assistant`、`web-ai-assistant`），`bun install` 在仓库根下的 `assistant-workspace/` 执行以解析 workspace，随后在对应 `web-src` 执行 `bun run build`
+4. 打包并上传 `*.dawnchat`
+5. 上传 `plugins.json` 到同一 Release
 
 ### IWP Runtime Pack 同步
 
