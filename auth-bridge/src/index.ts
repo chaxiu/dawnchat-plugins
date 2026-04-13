@@ -1,6 +1,8 @@
 export const DESKTOP_AUTH_PROTOCOL_VERSION = '1'
 export const DESKTOP_AUTH_CLIENT = 'desktop'
 export const DESKTOP_AUTH_REDIRECT_URI = 'dawnchat://auth/callback'
+/** Official Android / iOS host deep link callback (must match app manifest / Info.plist). */
+export const MOBILE_AUTH_REDIRECT_URI = 'com.dawnchat.app://auth/callback'
 export const DESKTOP_AUTH_DEFAULT_NEXT = '/app/workbench'
 export const DESKTOP_AUTH_DEFAULT_BRIDGE_PATH = '/desktop-auth/bridge'
 export const DESKTOP_AUTH_DEFAULT_BRIDGE_BASE_URL = `https://dawnchat.com${DESKTOP_AUTH_DEFAULT_BRIDGE_PATH}`
@@ -69,13 +71,19 @@ export const normalizeProvider = (value: unknown): OAuthProvider | undefined => 
   return undefined
 }
 
+/** Allowed OAuth return targets for the desktop-auth bridge (desktop deep link, mobile deep link, or https). */
 export const isSafeDesktopRedirectUri = (value: unknown): value is string => {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return false
   }
   try {
     const parsed = new URL(value)
-    return parsed.protocol === 'dawnchat:' || parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    return (
+      parsed.protocol === 'dawnchat:' ||
+      parsed.protocol === 'com.dawnchat.app:' ||
+      parsed.protocol === 'http:' ||
+      parsed.protocol === 'https:'
+    )
   } catch {
     return false
   }
