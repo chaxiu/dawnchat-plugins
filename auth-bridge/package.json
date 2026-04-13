@@ -2,6 +2,11 @@
   "name": "@dawnchat/auth-bridge",
   "version": "0.2.1",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chaxiu/dawnchat-plugins",
+    "directory": "auth-bridge"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
