@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.web-starter-vue",
   "name": "Web Starter Vue",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "app_type": "web",
   "description": "Pure web starter template powered by Vue 3 and Vite",
   "author": "DawnChat Team",
