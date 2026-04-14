@@ -29,6 +29,6 @@
     "vitest": "^4.1.4"
   },
   "dependencies": {
-    "@dawnchat/host-orchestration-sdk": "file:../host-orchestration-sdk"
+    "@dawnchat/host-orchestration-sdk": "workspace:*"
   }
 }

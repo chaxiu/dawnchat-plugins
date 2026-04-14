@@ -9,7 +9,7 @@
       "name": "@dawnchat/assistant-app-sdk",
       "version": "0.1.0",
       "dependencies": {
-        "@dawnchat/host-orchestration-sdk": "file:../host-orchestration-sdk",
+        "@dawnchat/host-orchestration-sdk": "workspace:*",
       },
       "devDependencies": {
         "@types/node": "^24.6.1",
@@ -1065,8 +1065,6 @@
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "@babel/helper-create-class-features-plugin/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
-
-    "@dawnchat/assistant-app-sdk/@dawnchat/host-orchestration-sdk": ["@dawnchat/host-orchestration-sdk@file:../assistant-sdk/host-orchestration-sdk", { "dependencies": { "ai": "^6.0.154" }, "devDependencies": { "@types/node": "^24.6.1", "typescript": "^5.9.3", "vite": "^7.3.1", "vite-plugin-dts": "^4.5.4", "vitest": "^4.1.4" } }],
 
     "@rushstack/ts-command-line/argparse": ["argparse@1.0.10", "", { "dependencies": { "sprintf-js": "~1.0.2" } }, "sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg=="],
 
