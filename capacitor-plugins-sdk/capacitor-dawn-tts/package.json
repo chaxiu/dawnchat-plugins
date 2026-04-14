@@ -1,0 +1,13 @@
+{
+  "name": "@dawnchat/capacitor-dawn-tts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dawn-tts.ts",
+  "exports": {
+    ".": "./dawn-tts.ts"
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

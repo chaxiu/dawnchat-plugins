@@ -21,7 +21,8 @@
   gap: 0;
 }
 
-.board-shell {
+/* Prefixed ttt-* to avoid colliding with board.main's .board-shell in global style.css (Shadow DOM + shared bundle). */
+.ttt-board-shell {
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -41,7 +42,7 @@
   min-height: 0;
 }
 
-.board-shell::after {
+.ttt-board-shell::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -49,7 +50,7 @@
   background: linear-gradient(120deg, transparent, rgba(56, 189, 248, 0.08), transparent);
 }
 
-.board-shell[data-anchor="active"] {
+.ttt-board-shell[data-anchor="active"] {
   border-color: rgba(45, 212, 191, 0.42);
   box-shadow:
     inset 0 1px 0 rgba(226, 232, 240, 0.12),
@@ -57,7 +58,7 @@
     0 20px 70px rgba(15, 23, 42, 0.35);
 }
 
-.board-shell__head {
+.ttt-board-shell__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -65,19 +66,19 @@
   flex-wrap: wrap;
 }
 
-.board-shell__intro {
+.ttt-board-shell__intro {
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.board-shell__title {
+.ttt-board-shell__title {
   display: block;
   font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   font-weight: 700;
   color: #f8fafc;
 }
 
-.board-shell__desc {
+.ttt-board-shell__desc {
   margin: 8px 0 0;
   max-width: 42ch;
   color: #94a3b8;
@@ -85,7 +86,7 @@
   line-height: 1.55;
 }
 
-.board-shell__status {
+.ttt-board-shell__status {
   margin: 10px 0 0;
   font-size: 0.88rem;
   font-weight: 600;

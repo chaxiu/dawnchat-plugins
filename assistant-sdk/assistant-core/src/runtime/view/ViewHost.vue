@@ -31,6 +31,7 @@ const BASE_SHADOW_STYLE = `
   width: 100%;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   color: var(--text-primary, inherit);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -50,6 +51,7 @@ const BASE_SHADOW_STYLE = `
   width: 100%;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -289,6 +291,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   display: block;
 }
 </style>

@@ -148,16 +148,16 @@ function resetBoard() {
   <section class="view-root" data-view-id="tictactoe.main">
     <div v-if="isBoardReady" class="arena">
       <section
-        class="board-shell"
+        class="ttt-board-shell"
         :data-anchor="activeAnchor === 'tictactoe.board' ? 'active' : 'inactive'"
       >
-        <div class="board-shell__head">
-          <div class="board-shell__intro">
-            <strong class="board-shell__title">井字棋</strong>
-            <p class="board-shell__desc">
+        <div class="ttt-board-shell__head">
+          <div class="ttt-board-shell__intro">
+            <strong class="ttt-board-shell__title">井字棋</strong>
+            <p class="ttt-board-shell__desc">
               点击格子轮流落子；本地状态会更新，并同步发出 runtime 事件。
             </p>
-            <p class="board-shell__status" aria-live="polite">{{ statusTitle }}</p>
+            <p class="ttt-board-shell__status" aria-live="polite">{{ statusTitle }}</p>
           </div>
           <button type="button" class="reset-btn" @click="resetBoard">
             重新开始

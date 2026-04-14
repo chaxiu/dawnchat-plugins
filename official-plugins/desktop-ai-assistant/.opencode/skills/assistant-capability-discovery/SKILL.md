@@ -17,15 +17,15 @@ metadata:
 
 ## Mandatory Rules
 
-- Read `dawnchat.ui.runtime.info` first when runtime freshness is uncertain.
-- Never invoke any Assistant UI function before capability list succeeds.
+- **Order:** Have a **`plugin_id`** first (`manifest.json` → `id` in `desktop-ai-assistant`, unless the host supplies another canonical id). Optionally call `dawnchat.ui.runtime.info` with that id when freshness is uncertain, then call `dawnchat.ui.capabilities.list`. Do **not** assume `runtime.info` can run without `plugin_id`.
+- Never invoke any Assistant UI function before capability list succeeds (for discovery flows).
 - Never infer payload fields that are absent from schema.
 - Keep a deterministic capability summary for downstream skills.
 - Treat `dawnchat.ui.capabilities.list` as the assistant feature-scene catalog, not as the raw runtime handler registry.
 - Treat top-level `view.open` as the stable page entry capability returned by the current assistant contract.
 - Do not treat `view.focus`, `guide.*`, or internal `assistant.session_step_*` handlers as scene catalog entries.
-- When the task depends on page semantics, anchors, resource state, interaction hints, task progress, or continuation state, recommend `assistant.view.describe`.
-- Treat `capabilities[].capability_id` as the external identifier for `view.capability.invoke`.
+- **Require** `assistant.view.describe` after `view.open` when the plan includes **write** `view.capability.invoke` or `session.start` steps that depend on live page/state binding; **recommend** describe for read-only tasks that still need anchors or continuation. `assistant.view.list` does not replace describe for dynamic state.
+- Treat `capabilities[].capability_id` as the external identifier for `view.capability.invoke`; keep it **outside** `input`, never nested inside `input`.
 - Treat `capability_invoke_contract` as the lightweight packaging guide for `view_id + capability_id + input`.
 
 ## Output Contract
@@ -48,12 +48,13 @@ metadata:
 
 For a wait-aware guided task, the default follow-up sequence should usually be:
 
-1. `dawnchat.ui.capabilities.list`
-2. `view.open`
-3. `assistant.view.describe`
-4. `dawnchat.ui.session.start`
-5. `dawnchat.ui.event.wait`
-6. `dawnchat.ui.session.wait_for_end`
+1. Resolve `plugin_id` from `manifest.json` → `id` (or host); optionally `dawnchat.ui.runtime.info` with that id.
+2. `dawnchat.ui.capabilities.list`
+3. `view.open`
+4. `assistant.view.describe` (**before** writes / state-dependent session steps)
+5. `dawnchat.ui.session.start`
+6. `dawnchat.ui.event.wait`
+7. `dawnchat.ui.session.wait_for_end`
 
 Short single-step tasks may stop earlier after `view.open` and use direct `view.capability.invoke` calls instead of `session.start`.
-When they do, prefer the exact `capability_id` returned by discovery/describe and keep business fields inside `payload.input`.
+When they do, call `assistant.view.describe` first if the invoke is a **write**; prefer the exact `capability_id` returned by discovery/describe and keep **only** business fields inside `payload.input` (`capability_id` stays next to `input`, not inside it).

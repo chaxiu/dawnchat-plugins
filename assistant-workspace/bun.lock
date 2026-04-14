@@ -81,6 +81,13 @@
         "vitest": "^4.1.4",
       },
     },
+    "../capacitor-plugins-sdk/capacitor-dawn-tts": {
+      "name": "@dawnchat/capacitor-dawn-tts",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "@capacitor/core": ">=8.0.0",
+      },
+    },
     "../official-plugins/desktop-ai-assistant/_ir/frontend/web-src": {
       "name": "desktop-ai-assistant-vue-web",
       "version": "0.1.0",
@@ -122,9 +129,11 @@
         "@capacitor/core": "^8.2.0",
         "@capacitor/haptics": "^8.0.1",
         "@capgo/capacitor-flash": "^8.0.21",
+        "@capgo/native-audio": "^8.3.4",
         "@dawnchat/assistant-app-sdk": "workspace:*",
         "@dawnchat/assistant-chat-ui": "workspace:*",
         "@dawnchat/assistant-core": "workspace:*",
+        "@dawnchat/capacitor-dawn-tts": "workspace:*",
         "@dawnchat/host-orchestration-sdk": "workspace:*",
         "@ionic/vue": "^8.8.1",
         "@ionic/vue-router": "^8.8.1",
@@ -253,6 +262,8 @@
 
     "@capgo/capacitor-flash": ["@capgo/capacitor-flash@8.0.24", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-1skOnkMmJafmUuVRu0Z7uCy6ZzJqUsxQ+g5/HiMp3VGulXy7huGFlUWfvwHYw6jT+nQuX7l0YAvOlEnX1Pmnlg=="],
 
+    "@capgo/native-audio": ["@capgo/native-audio@8.3.16", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-NkZmp+EDVQagqgBZRmY6hA+jTfveKvDw55I+Tbigy6cG53x7r9l3q3BBYF5iPtwR+JA0tjpnt43sAqhMtVFjYQ=="],
+
     "@csstools/color-helpers": ["@csstools/color-helpers@5.1.0", "", {}, "sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA=="],
 
     "@csstools/css-calc": ["@csstools/css-calc@2.1.4", "", { "peerDependencies": { "@csstools/css-parser-algorithms": "^3.0.5", "@csstools/css-tokenizer": "^3.0.4" } }, "sha512-3N8oaj+0juUw/1H3YwmDDJXCgTB1gKU6Hc/bB502u9zR0q2vd786XJH9QfrKIEgFlZmhZiq6epXl4rHqhzsIgQ=="],
@@ -268,6 +279,8 @@
     "@dawnchat/assistant-chat-ui": ["@dawnchat/assistant-chat-ui@workspace:../assistant-sdk/assistant-chat-ui"],
 
     "@dawnchat/assistant-core": ["@dawnchat/assistant-core@workspace:../assistant-sdk/assistant-core"],
+
+    "@dawnchat/capacitor-dawn-tts": ["@dawnchat/capacitor-dawn-tts@workspace:../capacitor-plugins-sdk/capacitor-dawn-tts"],
 
     "@dawnchat/host-orchestration-sdk": ["@dawnchat/host-orchestration-sdk@workspace:../assistant-sdk/host-orchestration-sdk"],
 

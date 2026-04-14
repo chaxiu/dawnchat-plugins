@@ -349,6 +349,9 @@ function handlePaneClick() {
 
 .board-root {
   width: 100%;
+  max-width: 100%;
+  /* 列向 flex 子项默认 min-width:auto，宽画布（Vue Flow）会抬高最小宽度，导致在 iframe/分栏内无法铺满 */
+  min-width: 0;
   /* 嵌套在分栏 / iframe / flex 宿主内时用父级高度，避免 100dvh 按顶层视口计量导致右侧工作区撑不满或溢出 */
   height: 100%;
   min-height: 0;
@@ -385,6 +388,8 @@ function handlePaneClick() {
   position: relative;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   background: var(--board-canvas-base);
 }
 

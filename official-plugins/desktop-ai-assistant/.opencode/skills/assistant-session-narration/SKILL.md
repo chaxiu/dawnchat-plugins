@@ -17,13 +17,15 @@ metadata:
 
 ## Rules
 
+- Use **`plugin_id`** from **`manifest.json` → `id`** (this workspace) for every `dawnchat.ui.*` call unless the host injects another canonical id; `runtime.info` only **validates** with that same id.
 - Use host tools for session orchestration:
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.session.status`
   - `dawnchat.ui.event.wait`
   - `dawnchat.ui.session.wait_for_end`
-- Before planning a view-aware session, inspect current page state with:
+- **Before** planning a view-aware session that includes **write** steps (`view.capability.invoke` with write capabilities, or state-dependent logic), **must** inspect current page state with:
   - `dawnchat.ui.capability.invoke(function=assistant.view.describe)`
+  after the relevant `view.open`. Do not rely on `assistant.view.list` alone for live board/binding state.
 - If `assistant.view.describe` reports `continuation.pending_wait`, treat it as lightweight continuation metadata only.
 - `dawnchat.ui.session.start` payload does not include `idempotency_key`.
 - Do not include `steps[].narration`; narration/voice instructions belong in `action.payload`.
@@ -32,16 +34,17 @@ metadata:
 - If action details evolve, update plugin capability handlers only.
 - Treat `view.open` as a top-level capability for page entry.
 - Treat `view.focus` and `guide.*` as step action namespaces, not top-level capability names.
-- Get the registered view list, anchors, route entry, resource contract, and view capability contract from `assistant.view.describe`.
+- Get the registered view list, anchors, route entry, state binding envelope (`state_bindings` / `default_state_binding`), and view capability contract from `assistant.view.describe`.
 - The current guide action implementations live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
 
 ## Recommended Flow
 
 - Standard wait-aware template:
+  - resolve `plugin_id` (`manifest.json` → `id`); optional `dawnchat.ui.runtime.info`
   - `dawnchat.ui.capabilities.list`
   - `view.open`
-  - `assistant.view.describe`
+  - `assistant.view.describe` (required before steps that mutate view state)
   - `dawnchat.ui.session.start`
   - `dawnchat.ui.event.wait`
   - `dawnchat.ui.session.wait_for_end`
@@ -59,6 +62,34 @@ metadata:
   }
 }
 ```
+
+- **Invalid (do not emit):** putting `capability_id` or `view_id` **inside** `input`—they must stay siblings of `input` under `payload`.
+
+- **Tic-tac-toe-shaped example** (narration then move; two steps; **`dawnchat.ui.session.start` also requires `plugin_id` at tool args**—fragment below is only `steps`; adjust payloads to match `assistant.view.contract`):
+
+```json
+{
+  "steps": [
+    {
+      "action": {
+        "type": "guide.narrate",
+        "payload": { "text": "Placing your mark on the board." }
+      }
+    },
+    {
+      "action": {
+        "type": "view.capability.invoke",
+        "payload": {
+          "view_id": "tictactoe.main",
+          "capability_id": "game.place_mark",
+          "input": { "index": 6 }
+        }
+      }
+    }
+  ]
+}
+```
+
 - For page-first tasks:
   - call `dawnchat.ui.capabilities.list`
   - call `dawnchat.ui.capability.invoke(function=view.open)`
@@ -90,7 +121,7 @@ metadata:
 
 - Every step has `action.type`.
 - `action.payload` remains an object and is treated as plugin-owned.
-- `view.capability.invoke` uses `capability_id` and wraps business parameters inside `input`.
+- `view.capability.invoke` uses `capability_id` at **`payload` root** next to `input`; **`capability_id` is not** inside `input`.
 - If a step needs voice, voice fields are inside `action.payload` and executed by plugin runtime.
 - If the task depends on page structure, base the step plan on `assistant.view.describe` instead of guessing anchors or capability input.
 - Do not let stale continuation state override a new task plan.

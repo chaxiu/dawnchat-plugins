@@ -5,6 +5,7 @@
   "// workspace purpose": "Assistant source workspace for SDK packages and assistant templates. Runtime plugin installs still happen after backend rewrite in user plugin directories.",
   "workspaces": [
     "../assistant-sdk/*",
+    "../capacitor-plugins-sdk/*",
     "../official-plugins/desktop-ai-assistant/_ir/frontend/web-src",
     "../official-plugins/web-ai-assistant/web-src",
     "../official-plugins/mobile-ai-assistant/web-src"

@@ -1,5 +1,11 @@
 # Skills Index
 
+## Global invariants
+
+- **`plugin_id`:** In the `desktop-ai-assistant` workspace, read **`manifest.json` → `id`** and use that string for every `dawnchat.ui.*` call unless the host injects another canonical id. **`dawnchat.ui.runtime.info` requires `plugin_id`**—it validates host/preview state; it does **not** discover an id from nothing.
+- **`view.capability.invoke`:** Keep `view_id` and `capability_id` at the **payload root** next to `input`; never nest them inside `input`.
+- **Writes:** After `view.open`, call **`assistant.view.describe`** before any **write** `view.capability.invoke` or before state-dependent `session.start` steps.
+
 ## Available Skills
 
 - `assistant-intent-router`: Classify user request and choose Capability-First or Self-Evolving path.
@@ -11,7 +17,7 @@
 - `assistant-session-narration`: Build session.start payloads with stable narration.text and plugin action passthrough.
 - `assistant-wait-continuation-handoff`: Continue from `continuation.pending_wait` and `flow.wait` boundaries without replaying stale setup steps.
 - `assistant-evolution-implement`: Add or modify UI capabilities through code changes.
-- `assistant-new-view-authoring`: Add a brand new view using the standard contract/resource/capabilities/registration split.
+- `assistant-new-view-authoring`: Add a brand new view using the standard contract/state_binding/capabilities/registration split.
 - `assistant-evolution-verify`: Enforce typecheck/unit/build and runtime capability checks.
 - `assistant-reference-scene-eval`: Validate the `word.main` reference scene, `assistant.view.describe`, and error recovery flow.
 - `assistant-delivery-report`: Produce delivery notes with capability changes and validation status.
@@ -33,7 +39,7 @@
 
 ## Continuation Notes
 
-- Treat `assistant.view.describe` as the page and runtime observation entrypoint.
+- Treat `assistant.view.describe` as the page and runtime observation entrypoint; **required** before page mutations when state matters.
 - If continuation state is reported, inspect `continuation` first.
 - Use `continuation.pending_wait` to decide whether a follow-up `dawnchat.ui.event.wait(...)` or `dawnchat.ui.session.wait_for_end(session_id)` is more appropriate than a fresh session.
 - If `continuation.pending_wait` exists, prefer `assistant-wait-continuation-handoff` and a short wait-aware continuation instead of replaying the whole prior sequence.

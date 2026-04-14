@@ -252,24 +252,29 @@ export const tictactoeMainView = defineView({
   interaction_hints: {
     interaction_intent: "Best for validating the default wait-aware orchestration path across view.open, session.start, runtime events, event.wait, and session.wait_for_end.",
     recommended_mode: "session_start",
-    decision_rule: "This is a wait-heavy scene. Default to session.start plus event.wait for round progression instead of relying on direct mutations.",
+    decision_rule:
+      "This is a wait-heavy scene. Default to session.start plus event.wait for round progression instead of relying on direct mutations. "
+      + "For event.wait match.binding_label, use the value from the latest assistant.view.describe active_state_binding.binding_label "
+      + "(not legacy resource_id naming).",
     wait_strategy: {
       preferred_tools: [
         "dawnchat.ui.event.wait",
         "dawnchat.ui.session.wait_for_end",
       ],
-      rule: "Start event.wait while the user may act. Use session.wait_for_end as a follow-up lifecycle observer, not as a replacement for runtime event waiting.",
+      rule:
+        "Start event.wait while the user may act. Use session.wait_for_end as a follow-up lifecycle observer, not as a replacement for runtime event waiting. "
+        + "Align match.binding_label with assistant.view.describe output; default board label is often tictactoe:neon-grid.",
     },
     examples: [
       {
-        name: "open_then_describe",
+        name: "open_then_describe_manifest_plugin_id",
         mode: "entry",
         call: {
           tool: "dawnchat.ui.capability.invoke",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             function: "view.open",
-            input: {
+            payload: {
               view_id: "tictactoe.main",
               state_binding: {},
               initial_anchor: "tictactoe.board",
@@ -279,9 +284,9 @@ export const tictactoeMainView = defineView({
         then: {
           tool: "dawnchat.ui.capability.invoke",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             function: "assistant.view.describe",
-            input: {
+            payload: {
               view_id: "tictactoe.main",
             },
           },
@@ -293,7 +298,7 @@ export const tictactoeMainView = defineView({
         call: {
           tool: "dawnchat.ui.session.start",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             steps: [
               {
                 id: "narrate-turn",
@@ -310,10 +315,10 @@ export const tictactoeMainView = defineView({
         then: {
           tool: "dawnchat.ui.event.wait",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             event_types: ["assistant.game.tictactoe.cell_selected"],
             match: {
-              binding_label: "<resource_id>",
+              binding_label: "tictactoe:neon-grid",
             },
           },
         },
@@ -324,7 +329,7 @@ export const tictactoeMainView = defineView({
         call: {
           tool: "dawnchat.ui.session.start",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             steps: [
               {
                 id: "place-mark",
@@ -345,8 +350,43 @@ export const tictactoeMainView = defineView({
         then: {
           tool: "dawnchat.ui.session.wait_for_end",
           payload: {
-            plugin_id: "<plugin_id>",
+            plugin_id: "<plugin_id_from_manifest_json_id>",
             session_id: "<session_id>",
+          },
+        },
+      },
+      {
+        name: "describe_before_place_mark_write_path",
+        mode: "session_start",
+        call: {
+          tool: "dawnchat.ui.capability.invoke",
+          payload: {
+            plugin_id: "<plugin_id_from_manifest_json_id>",
+            function: "assistant.view.describe",
+            payload: {
+              view_id: "tictactoe.main",
+            },
+          },
+        },
+        then: {
+          tool: "dawnchat.ui.session.start",
+          payload: {
+            plugin_id: "<plugin_id_from_manifest_json_id>",
+            steps: [
+              {
+                id: "place-mark-after-describe",
+                action: {
+                  type: "view.capability.invoke",
+                  payload: {
+                    view_id: "tictactoe.main",
+                    capability_id: "game.place_mark",
+                    input: {
+                      index: 6,
+                    },
+                  },
+                },
+              },
+            ],
           },
         },
       },

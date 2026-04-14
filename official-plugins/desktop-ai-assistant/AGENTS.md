@@ -11,125 +11,95 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 - Expand capabilities through safe code evolution when existing functions cannot satisfy requests.
 - Keep outputs concise, accurate, and directly actionable.
 
-## Operating Modes
+## Operating modes
 
-- Capability-First Mode: reuse existing UI capabilities first.
-- Self-Evolving Mode: add or update capability code only when required.
+- **Capability-First:** reuse existing UI capabilities before changing code.
+- **Self-Evolving:** add or update capability code only when required.
 
-## Mandatory MCP Call Sequence
+## Agent main path (read this first)
 
-- Always call `dawnchat.ui.runtime.info` before making runtime recovery decisions.
-- Always call `dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)` before scene selection or runtime planning.
-- Always call `dawnchat.ui.capability.invoke(function=assistant.view.list)` before choosing a view scene.
-- Invoke UI functions only via `dawnchat.ui.capability.invoke`.
-- Never assume function names or payload fields without listing current capabilities.
-- For view-first tasks, prefer `dawnchat.ui.capability.invoke(function=view.open)` for page entry, then call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` before planning page-local mutations or session actions.
-- Treat `assistant.runtime.bootstrap` as the global runtime guide: use it to learn startup order, wait/session rules, and global tool contracts.
-- Treat `assistant.view.list` as the assistant feature-scene catalog: use it to see which view-based scenes the current assistant can provide.
-- Treat `assistant.view.describe` as the lightweight active-scene state surface only.
-- Treat `assistant.view.contract` as the detailed source for one view's schema, events, examples, and scene-specific rules.
-- Treat `task_progress`, `active_resource_context`, and `continuation` as the only supported runtime observation fields.
-- Treat stateful view persistence as an internal view/runtime concern; do not expose persistence payloads through `assistant.view.describe`.
-- Treat `continuation` as a planning hint for the next `dawnchat.ui.session.start`, `dawnchat.ui.event.wait`, or `dawnchat.ui.session.wait_for_end`, not as an instruction to auto-replay old steps.
-- Prefer direct capability invoke for single-step page entry, reads, or mutations; use session tools only when the task needs ordered multi-step guide/view orchestration.
-- For guided narration flows, prefer host session tools:
-  - `dawnchat.ui.session.start`
-  - `dawnchat.ui.session.status`
-  - `dawnchat.ui.session.stop`
-  - `dawnchat.ui.event.wait`
-  - `dawnchat.ui.session.wait_for_end`
-- In session steps, keep voice/narration data inside `steps[].action.payload` only.
-- Treat `steps[].action.payload` as opaque plugin payload and do not hardcode internal fields at host side.
-- `dawnchat.ui.session.start` no longer uses `idempotency_key`.
-- When `session_busy` is returned, query `session.status` or stop active session before starting a new one.
+Work in this order; **`assistant.runtime.bootstrap`** is the canonical guide for global rules, recommended flow, and tool examples.
 
-## Runtime Recovery Policy
+```mermaid
+flowchart LR
+  pluginId[plugin_id]
+  runtimeInfo[runtime.info]
+  bootstrapNode[bootstrap]
+  sceneWork[list_open_describe]
+  pluginId --> runtimeInfo --> bootstrapNode --> sceneWork
+```
 
-- Runtime mode is usually HMR preview, not full production build mode.
-- If UI does not reflect recent code edits, execute this fixed sequence:
-  1. call `dawnchat.ui.runtime.info`
-  2. call `dawnchat.ui.capability.invoke(function=assistant.view.list)`
-  3. call `dawnchat.ui.runtime.refresh`
-  4. if still stale, call `dawnchat.ui.runtime.restart` (dev-session restart)
-  5. verify `python_sidecar.state=running` in runtime info when Python MCP is required
-  6. re-run capabilities list and one capability invoke for verification
-- Do not default to full rebuild before running the recovery sequence above.
+1. **`plugin_id`**
+   - In this workspace, use **`manifest.json` → top-level `id`** for every `dawnchat.ui.*` call unless the host session injects another authoritative id.
+   - Never infer `plugin_id` from folder names or path shapes; on `plugin_not_found`, re-read `manifest.json` and the host plugin list.
 
-## Capability Rules
+2. **`dawnchat.ui.runtime.info`**
+   - Call with the same `plugin_id` to confirm the host recognizes the plugin and to read preview/HMR/MCP diagnostics.
+   - This call **does not** discover `plugin_id` from nothing.
 
-- Capability names should be stable and namespaced.
-- Every capability must expose a clear `input_schema`.
-- Capability handlers must return structured result payloads with explicit success/failure.
-- Newly added feature scenes must become discoverable through `assistant.view.list` immediately after HMR.
-- Keep `view.open` assistant-facing and discoverable as the stable top-level page entry capability. Treat `view.focus`, `guide.*`, and internal `assistant.session_step_*` handlers as runtime execution details rather than the main scene catalog.
-- Do not reintroduce legacy direct card capabilities such as `assistant.render_card` or `assistant.clear_cards`.
-- Keep top-level capabilities small and stable. Put page-local mutations behind `view.capability.invoke` and expose page semantics through `assistant.view.describe`.
-- Prefer view-embedded interaction hints over adding a dedicated skill for every single view. Skills should stay cross-view and reusable.
-- Runtime observation must stay lightweight and must not automatically take over the current UI.
-- Stateful view persistence currently uses a Dexie-backed runtime adapter that stores stable metadata plus a JSON `payload` blob.
-- The runtime bootstrap entry lives in `_ir/frontend/web-src/src/runtime/bootstrap/`.
-- The current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
-- The current reference view registration lives in `_ir/frontend/web-src/src/views/pages/word/wordMainViewRegistration.ts`.
-- The current guide action definitions live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
-- The current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
+3. **`dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)`**
+   - Parse the result (responses may be wrapped in nested `ok` / `data`; normalize until you see `bootstrap` or equivalent).
+   - Apply **`bootstrap.global_rules`**, **`bootstrap.recommended_flow`**, and **`bootstrap.tools`** before improvising call order.
+   - Default cold-start order (same intent as `bootstrap.startup_sequence`): `assistant.runtime.bootstrap` → `assistant.view.list` → `view.open` → `assistant.view.describe` (skip steps that are not needed for the task, but do not skip describe before writes).
 
-## Evolution Guardrails (MVP)
+4. **Typical scene flow (after bootstrap)**
+   - **`assistant.view.list`** — pick a scene / view and read catalog metadata.
+   - **`view.open`** — enter the target page (`state_binding` + optional `initial_anchor` per contract).
+   - **`assistant.view.describe`** — **before any write** or before steps that depend on live binding/board/cells; `view.list` is **not** a substitute for live state.
 
-- Allowed edit scope:
-  - `_ir/frontend/web-src/src/**`
-  - `_ir/frontend/web-src/package.json`
-  - `_ir/backend/**`
-  - `_ir/python/**`
-- Keep architecture clean: no temporary wrappers, no duplicated orchestration paths.
-- Do not alter host-level routing/protocol contracts from this plugin workspace.
+## After bootstrap: when to use which tool
 
-## Execution Policy
+| Need | Tool |
+|------|------|
+| Global rules, startup order, payload examples | `assistant.runtime.bootstrap` (already in main path) |
+| Choose or compare scenes | `assistant.view.list` |
+| Enter a scene | `view.open` |
+| Live page state, anchors, `active_state_binding`, summaries, continuation | `assistant.view.describe` |
+| Schema, examples, interaction hints for **one** view | `assistant.view.contract` |
+| Ordered multi-step guide + view + flow | `dawnchat.ui.session.start` |
+| Next move depends on a runtime event | `dawnchat.ui.event.wait` |
+| Observe session lifecycle / terminal state | `dawnchat.ui.session.wait_for_end` (not a substitute for `event.wait`) |
+| Inspect or stop a session | `dawnchat.ui.session.status` / `dawnchat.ui.session.stop` |
 
-- Standard orchestration template for wait-aware tasks:
-  1. call `dawnchat.ui.capability.invoke(function=assistant.runtime.bootstrap)`
-  2. call `dawnchat.ui.capability.invoke(function=assistant.view.list)`
-  3. call `dawnchat.ui.capability.invoke(function=view.open)` when the task needs to enter a view scene
-  4. call `dawnchat.ui.capability.invoke(function=assistant.view.describe)` when current page state or continuation matters
-  5. call `dawnchat.ui.capability.invoke(function=assistant.view.contract)` only when the task needs schema, examples, or scene-specific rules
-  6. call `dawnchat.ui.session.start` when the task needs ordered `view.* + guide.*` execution
-  7. call `dawnchat.ui.event.wait` when the next move depends on a runtime signal
-  8. call `dawnchat.ui.session.wait_for_end` when the next move depends on the prior session becoming terminal
-  9. use `dawnchat.ui.session.status` or `dawnchat.ui.session.stop` only when explicit inspection or interruption control is needed
-- For Rich Display tasks:
-  - first read runtime bootstrap
-  - then list views
-  - use the returned scene catalog to choose the best view-level feature
-  - then enter the target page with `view.open`
-  - then inspect page state with `assistant.view.describe` whenever the task depends on page semantics, anchors, or resource state
-  - only call `assistant.view.contract` when schema, examples, or scene-specific rules are needed
-  - then prefer a single direct capability invoke when one step is enough
-  - switch to `session.start` only when the task needs ordered `view.* + guide.*` execution
-- For View-First tasks:
-  - enter the target page via `view.open`
-  - inspect current page via `assistant.view.describe`
-  - inspect scene schema or examples via `assistant.view.contract` only when needed
-  - inspect `task_progress`, `active_resource_context`, and `continuation` only when they matter to the current task
-  - use `view.focus` for anchor changes inside session-driven runtime action sequences only
-  - use `view.capability.invoke` for page-local mutations
-  - use `guide.*` only for narration, tip, and overlay card expression
-- For Continuation-Aware tasks:
-  - inspect current state via `assistant.view.describe`
-  - if `continuation.pending_wait` exists, prefer the dedicated `assistant-wait-continuation-handoff` skill instead of replaying the whole prior sequence
-  - when `continuation.pending_wait` exists and the next move depends on a runtime signal, prefer `dawnchat.ui.event.wait` with explicit `event_types` and `match`
-  - when the caller needs to know whether the prior session has actually finished, use `dawnchat.ui.session.wait_for_end`
-  - if `continuation.last_completed_step_index` exists, treat earlier steps as progress hints and avoid blindly re-sending obviously completed setup steps
-  - do not let stale continuation override a clearer current-page intent
-- For Self-Evolving tasks:
-  - update code minimally
-  - install dependencies only when needed
-  - prefer new view registrations, page-local capabilities, or describe surface updates over adding broad top-level capabilities
-  - register new capability with schema and handler only when page-local mutation cannot fit existing runtime structure
-  - re-run capability listing to confirm discoverability
-  - prefer backward-compatible payload changes when possible
+**Describe-before-write:** after the relevant `view.open`, call **`assistant.view.describe`** before any **write** `view.capability.invoke` or before `session.start` steps that depend on live state (`binding_label`, board cells, etc.). Skipping describe is high risk unless the path is provably read-only.
 
-## Payload Cheatsheet
+**Continuation:** treat `continuation` as a planning hint for the next `session.start`, `event.wait`, or `session.wait_for_end` — not as an instruction to replay stale steps. For heavy continuation recovery, prefer the **`assistant-wait-continuation-handoff`** skill.
 
-- `view.capability.invoke` inside `session.start.steps[].action` uses:
+## Host tool shape: `dawnchat.ui.capability.invoke`
+
+The host expects **`plugin_id`**, **`function`**, and optional **`payload`** (object). Do **not** put the inner capability arguments under a top-level **`input`** on this tool.
+
+Example (`view.open`):
+
+```json
+{
+  "plugin_id": "<plugin_id>",
+  "function": "view.open",
+  "payload": {
+    "view_id": "<view_id>",
+    "state_binding": {},
+    "initial_anchor": "<anchor_id>"
+  }
+}
+```
+
+**Legacy naming:** some catalog or older payloads may still show `resource` instead of `state_binding`. Prefer **`state_binding`**; follow `assistant.view.list` / `assistant.view.contract` for the live field names.
+
+## Session and wait invariants
+
+- Invoke UI functions through **`dawnchat.ui.capability.invoke`** unless the tool is explicitly `session.*` or `event.wait`.
+- Prefer **direct** `capability.invoke` for single-step entry, reads, or simple mutations; use **`session.start`** only for ordered multi-step orchestration.
+- **`dawnchat.ui.session.start`** does not use `idempotency_key`.
+- Keep voice/narration inside **`steps[].action.payload`**; treat that payload as opaque at the host.
+- On **`session_busy`**, use `session.status` or `session.stop` before starting another session.
+- Primary observation fields from describe: **`task_progress`**, **`active_state_binding`**, **`current_state_binding_summary`**, **`continuation`** (legacy logs may still say `active_resource_context`).
+- Do not treat runtime observation as durable truth; stateful persistence is a view/runtime concern and is not re-exposed wholesale through describe.
+
+## Payload cheatsheet
+
+**A. Host `dawnchat.ui.capability.invoke`** — use **`payload`** as above.
+
+**B. `view.capability.invoke` inside `session.start.steps[].action`:**
 
 ```json
 {
@@ -144,49 +114,54 @@ These rules apply to the `desktop-ai-assistant` template workspace only.
 }
 ```
 
-- Rules:
-  - use `capability_id`, not `capability`
-  - use the value returned by `assistant.view.contract` or `assistant.view.list`
-  - put business parameters inside `payload.input`, not at the top level
+- Use **`capability_id`**, not `capability`.
+- Put **only** business parameters inside **`payload.input`**; keep `view_id` and `capability_id` as siblings of `input` at the action payload root.
+- **Invalid:** nesting `view_id` / `capability_id` inside `input`, or duplicating identifiers.
 
-- If a task depends on both a runtime event and session completion:
-  - do not block on `session.wait_for_end` first and only then start `event.wait`
-  - make the `event.wait` observation window overlap with the period in which the user may act
-  - use `session.wait_for_end` as a parallel or follow-up lifecycle observer, not as a replacement for `event.wait`
+**Event + session:** if both a runtime event and session completion matter, do not serialize `session.wait_for_end` as a stand-in for `event.wait`; overlap or parallelize observation as appropriate.
 
-## Prompt and Rules Policy
+## Runtime recovery policy
 
-- This plugin relies on workspace-scoped `AGENTS.md` and `.opencode/skills`.
-- Shared host rules may be excluded by manifest policy.
-- Keep this document and skill docs aligned with actual capability behavior.
-- Keep formal workflow skills and evaluation skills separate. Use evaluation skills only for self-check, trial, and acceptance verification.
-- For brand new view work, prefer the dedicated `assistant-new-view-authoring` skill and keep `assistant-evolution-implement` as the broader evolution wrapper.
-- For continuation-heavy recovery work, prefer the dedicated `assistant-wait-continuation-handoff` skill.
-- Python sidecar MCP is available via host-injected `dawnchat_plugin_python`.
-- Always validate sidecar runtime state before relying on Python tool calls.
-- Keep role framing aligned with DawnChat Assistant, not a narrow single-domain persona.
+Preview is usually HMR, not a full production build. If the UI is stale after edits (same `plugin_id` as `manifest.json` unless the host overrides):
 
-## Media Policy
+1. `dawnchat.ui.runtime.info`
+2. `dawnchat.ui.capability.invoke(function=assistant.view.list)`
+3. `dawnchat.ui.runtime.refresh`
+4. If still stale: `dawnchat.ui.runtime.restart` (dev session)
+5. If Python MCP is required: confirm `python_sidecar.state=running` in runtime info
+6. Re-list capabilities and invoke one capability to verify
 
-- Do not pass local absolute paths to iframe UI as render source.
-- Use web-accessible URLs or brokered asset references for media rendering.
+Do not jump to a full rebuild before this sequence.
 
-## Verification
+## Capability rules (plugin authors)
 
-- Minimum verification before delivery:
-  - frontend `typecheck`
-  - frontend `test:unit`
-  - frontend `build`
-  - backend `typecheck`
-  - backend `test:unit`
-- Verify at least one end-to-end capability flow:
-  - list capabilities
-  - invoke one capability
-  - confirm expected UI result
+- Capabilities are stable and namespaced; each exposes a clear **`input_schema`** and structured success/failure.
+- New scenes must appear in **`assistant.view.list`** after HMR.
+- Keep **`view.open`** as the top-level page entry; treat `view.focus`, `guide.*`, and `assistant.session_step_*` as runtime execution details, not the main catalog.
+- Do not reintroduce legacy card-only capabilities such as `assistant.render_card` / `assistant.clear_cards`.
+- Prefer page-local mutations via **`view.capability.invoke`** and scene semantics via **`assistant.view.describe`**.
+- Prefer view-embedded **interaction hints** over a new skill per view.
 
-## Delivery Checklist
+## Evolution guardrails (MVP)
 
-- Updated or added capabilities are discoverable and documented.
-- Payload schemas match runtime behavior.
-- Test and build commands pass for changed scope.
-- Notes include what was changed, what was verified, and remaining risks.
+- Allowed edit scope: `_ir/frontend/web-src/src/**`, `_ir/frontend/web-src/package.json`, `_ir/backend/**`, `_ir/python/**`.
+- No duplicated orchestration paths; do not change host-level routing/protocol contracts from this workspace.
+
+## Prompt, skills, and media
+
+- This plugin uses workspace **`AGENTS.md`** and **`.opencode/skills`**; keep them aligned with runtime behavior.
+- Separate workflow skills from evaluation skills (evaluation = self-check / acceptance only).
+- New view work: **`assistant-new-view-authoring`**; broader evolution: **`assistant-evolution-implement`**.
+- Python sidecar is available via host-injected `dawnchat_plugin_python`; validate sidecar state before relying on Python tools.
+- **Media:** do not pass local absolute paths to the iframe UI as render sources; use web-accessible URLs or brokered assets.
+
+## Verification and delivery
+
+- Before delivery: frontend `typecheck`, `test:unit`, `build`; backend `typecheck`, `test:unit` when backend changed.
+- Smoke at least one flow: list capabilities → invoke one → confirm UI outcome.
+- Delivery notes: what changed, what was verified, remaining risks.
+
+## Implementation reference (optional)
+
+- Bootstrap data and describe schemas: `assistant-core` view runtime (e.g. `runtime.describe.ts`).
+- Desktop wiring: `_ir/frontend/web-src/src/runtime/bootstrap/`, `view/registry.ts`, guide runtime/actions, `cards/registry.ts`, reference registration e.g. `views/pages/word/wordMainViewRegistration.ts`.

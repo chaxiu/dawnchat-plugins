@@ -87,7 +87,7 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "assistant.runtime.bootstrap",
-          input: {},
+          payload: {},
         },
       },
       list_views: {
@@ -96,7 +96,7 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "assistant.view.list",
-          input: {},
+          payload: {},
         },
       },
       open_view: {
@@ -105,7 +105,7 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "view.open",
-          input: {
+          payload: {
             view_id: "<view_id>",
             state_binding: {},
             initial_anchor: "<anchor_id>",
@@ -118,7 +118,8 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "assistant.view.describe",
-          input: {
+          payload: {
+            view_id: "<view_id_optional>",
             max_nodes: 20,
             max_edges: 20,
           },
@@ -130,7 +131,7 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "assistant.view.contract",
-          input: {
+          payload: {
             view_id: "<view_id>",
           },
         },
@@ -141,7 +142,7 @@ function buildRuntimeBootstrapData() {
         payload_example: {
           plugin_id: "<plugin_id>",
           function: "assistant.workspace_checkpoint",
-          input: {},
+          payload: {},
         },
       },
       session_start: {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { IonPage } from "@ionic/vue";
+import { IonContent, IonPage } from "@ionic/vue";
 
 import AssistantChatPage from "../views/chat/AssistantChatPage.vue";
 
@@ -17,8 +17,6 @@ function closeMobileChat() {
 
 <template>
   <ion-page>
-    <!-- No ion-content: its shadow scroll/main layers still composite duplicate "ghost" UI over the
-         workspace in plugin preview (Chrome/Safari). Shell fills ion-page with a plain flex host. -->
     <div class="mobile-assistant-shell-root">
       <div class="assistant-shell" :data-mobile-chat-open="isMobileChatOpen">
         <button
@@ -50,9 +48,15 @@ function closeMobileChat() {
         </aside>
 
         <section class="workspace-column">
-          <div class="workspace-body">
-            <RouterView />
-          </div>
+          <ion-content
+            class="workspace-ion-content"
+            :scroll-y="false"
+            :fullscreen="true"
+          >
+            <div class="workspace-body">
+              <RouterView />
+            </div>
+          </ion-content>
         </section>
       </div>
     </div>
@@ -75,6 +79,7 @@ function closeMobileChat() {
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
   gap: 0;
@@ -102,7 +107,6 @@ function closeMobileChat() {
   background: var(--bg-primary);
   position: relative;
   z-index: 0;
-  contain: paint;
 }
 
 .chat-column__body {
@@ -120,23 +124,31 @@ function closeMobileChat() {
 .workspace-column {
   min-width: 0;
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Opaque paint so the chat column never shows through compositing/backdrop bugs. */
   background: var(--bg-secondary);
-  isolation: isolate;
+}
+
+.workspace-ion-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  --background: var(--bg-secondary);
 }
 
 .workspace-body {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
-  isolation: isolate;
 }
 
 .ghost-button {
@@ -169,7 +181,8 @@ function closeMobileChat() {
     right: 0;
     bottom: 0;
     z-index: 20;
-    max-height: min(80vh, 800px);
+    max-height: min(88vh, 800px);
+    padding-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
     border-right: none;
     border-top: 1px solid var(--border);
     border-top-left-radius: 20px;
@@ -203,9 +216,9 @@ function closeMobileChat() {
     min-width: 0;
   }
 
-  /* Fixed inset = dock peek height: avoids layout jump when sheet opens/closes; expanded sheet may still overlay below. */
-  .workspace-body {
-    padding-bottom: var(--assistant-chat-dock-peek-height, 120px);
+  /* Reserve space for the dock peek so the workspace does not jump when the sheet opens. */
+  .workspace-ion-content {
+    --padding-bottom: var(--assistant-chat-dock-peek-height, 120px);
   }
 
   .chat-backdrop {

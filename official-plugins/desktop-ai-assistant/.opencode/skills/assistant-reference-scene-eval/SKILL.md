@@ -22,7 +22,7 @@ metadata:
 ## Required context
 
 - Assistant scene discovery comes from `dawnchat.ui.capabilities.list`.
-- Registered view contract details, route entry, anchors, capability contract, resource contract, and current page state come from `assistant.view.describe`.
+- Registered view contract details, route entry, anchors, capability contract, state binding envelope (`state_bindings` / `default_state_binding`), and current page state come from `assistant.view.describe`.
 - Current view registry lives in `_ir/frontend/web-src/src/runtime/view/registry.ts`.
 - Current guide actions live in `_ir/frontend/web-src/src/runtime/guide/runtime.ts` and `_ir/frontend/web-src/src/runtime/guide/actions.ts`.
 - Current guide card types live in `_ir/frontend/web-src/src/cards/registry.ts`.
@@ -42,7 +42,7 @@ metadata:
     - `requested_view`
     - `active_view_id`
     - `active_anchor`
-    - `current_resource`
+    - `current_state_binding`
     - `guide_state`
 - Step 3: success path checks
   - open `word.main`
@@ -53,7 +53,7 @@ metadata:
   - run a guide expression step such as `guide.narrate` or `guide.card.show`
 - Step 4: continuation visibility checks
   - confirm `assistant.view.describe` exposes `task_progress`
-  - confirm `assistant.view.describe` exposes `active_resource_context`
+  - confirm `assistant.view.describe` exposes `active_state_binding` (legacy alias `active_resource_context` may still appear in older payloads)
   - confirm `assistant.view.describe` exposes `continuation`
 - Step 5: failure path checks
   - send an invalid anchor
@@ -65,8 +65,8 @@ metadata:
 
 - `dawnchat.ui.capabilities.list` returns `word.main` in the scene catalog.
 - `dawnchat.ui.capabilities.list` exposes `view.open` as the page entry capability.
-- `assistant.view.describe` returns resource contract and capability contract for `word.main`.
-- top-level `view.open` with a valid word resource succeeds.
+- `assistant.view.describe` returns state binding definitions and capability contract for `word.main`.
+- top-level `view.open` with a valid `state_binding` for the word scene succeeds.
 - `view.focus(word.meaning)` updates active anchor to `word.meaning`.
 - `view.capability.invoke` with `payload.capability_id=append_etymology` updates the etymology list and active anchor.
 - `view.capability.invoke` with `payload.capability_id=set_title` updates the page title.
@@ -74,7 +74,7 @@ metadata:
 - minimal runtime observation fields are discoverable without taking over the page.
 - `continuation` remains lightweight observation metadata, not an auto-restore instruction.
 - invalid input returns stable errors such as:
-  - `invalid_view_resource`
+  - `invalid_view_resource` (legacy error code name for rejected `view.open` state binding)
   - `invalid_view_capability_input`
   - `anchor_not_found`
   - `view_capability_not_found`

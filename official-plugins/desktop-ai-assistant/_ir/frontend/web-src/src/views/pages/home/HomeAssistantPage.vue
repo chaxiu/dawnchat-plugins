@@ -53,6 +53,7 @@ const isImmersiveView = computed(() =>
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
 }
 .page-shell--welcome {
   padding: 0;
@@ -64,8 +65,19 @@ const isImmersiveView = computed(() =>
   position: relative;
   flex: 1 1 100%;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
+}
+/* RouterView 渲染的根节点需参与拉伸，否则 board / word 等仅随内容宽度收缩 */
+.view-stage > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
 }
 .view-stage :deep(.assistant-welcome) {
   flex: 1;

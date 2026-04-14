@@ -86,5 +86,15 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* 列向 flex 下子项默认 min-width:auto，会按内容最小宽度收缩，导致视图区无法铺满 iframe 宽度 */
+  min-width: 0;
+  width: 100%;
+}
+/* RouterView 根节点（如 page-shell）需参与拉伸，避免仅依赖子组件 width:100% 在 iframe 下不稳定 */
+.shell-stage > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 </style>
