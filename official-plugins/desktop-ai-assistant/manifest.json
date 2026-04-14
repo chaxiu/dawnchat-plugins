@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.desktop-ai-assistant",
   "name": "Desktop AI Assistant",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "app_type": "desktop",
   "description": "Self-evolving AI assistant template powered by Vue and Bun backend",
   "author": "DawnChat Team",
