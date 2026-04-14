@@ -13,8 +13,8 @@
   "scripts": {
     "build:sdk": "bun run --filter @dawnchat/assistant-core build && bun run --filter @dawnchat/host-orchestration-sdk build && bun run --filter @dawnchat/assistant-app-sdk build && bun run --filter @dawnchat/assistant-chat-ui build",
     "verify:sdk": "bun run --filter @dawnchat/assistant-core typecheck && bun run --filter @dawnchat/assistant-core test && bun run --filter @dawnchat/assistant-core build && bun run --filter @dawnchat/host-orchestration-sdk typecheck && bun run --filter @dawnchat/host-orchestration-sdk test && bun run --filter @dawnchat/host-orchestration-sdk build && bun run --filter @dawnchat/assistant-app-sdk typecheck && bun run --filter @dawnchat/assistant-app-sdk test && bun run --filter @dawnchat/assistant-app-sdk build && bun run --filter @dawnchat/assistant-chat-ui typecheck && bun run --filter @dawnchat/assistant-chat-ui test && bun run --filter @dawnchat/assistant-chat-ui build",
-    "build:templates": "bun run --cwd ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src build && bun run --cwd ../official-plugins/web-ai-assistant/web-src build && bun run --cwd ../official-plugins/mobile-ai-assistant/web-src build",
-    "verify:templates": "bun run verify:sdk && bun run --cwd ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src verify && bun run --cwd ../official-plugins/web-ai-assistant/web-src verify && bun run --cwd ../official-plugins/mobile-ai-assistant/web-src verify",
+    "build:templates": "bun run --filter desktop-ai-assistant-vue-web build && bun run --filter web-ai-assistant-vue-web build && bun run --filter mobile-ai-assistant-ionic-web build",
+    "verify:templates": "bun run verify:sdk && bun run --filter desktop-ai-assistant-vue-web verify && bun run --filter web-ai-assistant-vue-web verify && bun run --filter mobile-ai-assistant-ionic-web verify",
     "verify": "bun run verify:templates"
   }
 }
