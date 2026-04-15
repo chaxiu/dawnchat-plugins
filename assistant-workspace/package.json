@@ -19,7 +19,7 @@
     "template:desktop:build": "bun x vite build --configLoader bundle --config ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src/vite.config.ts ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src",
     "template:desktop:preview": "bun x vite preview --configLoader bundle --config ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src/vite.config.ts ../official-plugins/desktop-ai-assistant/_ir/frontend/web-src",
     "template:mobile:dev": "bun x vite --configLoader bundle --config ../official-plugins/mobile-ai-assistant/web-src/vite.config.ts ../official-plugins/mobile-ai-assistant/web-src",
-    "template:mobile:vue-tsc": "cd ../official-plugins/mobile-ai-assistant/web-src && vue-tsc -b",
+    "template:mobile:vue-tsc": "cd ../official-plugins/mobile-ai-assistant/web-src && vue-tsc --noEmit",
     "template:mobile:vite-build": "bun x vite build --configLoader bundle --config ../official-plugins/mobile-ai-assistant/web-src/vite.config.ts ../official-plugins/mobile-ai-assistant/web-src",
     "template:mobile:build": "bun run template:mobile:vue-tsc && bun run template:mobile:vite-build",
     "template:mobile:preview": "bun x vite preview --configLoader bundle --config ../official-plugins/mobile-ai-assistant/web-src/vite.config.ts ../official-plugins/mobile-ai-assistant/web-src",
