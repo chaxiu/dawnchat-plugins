@@ -91,7 +91,14 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     }
   };
 
-  async function ensureWorkspaceForSurface(surfaceId: string): Promise<string | null> {
+  async function ensureWorkspaceForSurface(
+    surfaceId: string,
+    preferredHead?: {
+      persistence_version: number;
+      view_id: string;
+      head_payload: Record<string, unknown>;
+    }
+  ): Promise<string | null> {
     const registration = getViewRegistration(surfaceId);
     if (!registration?.persistence || registration.state_mode !== "stateful") {
       return null;
@@ -103,7 +110,7 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
         return wid;
       }
     }
-    const initial = buildInitialHead(registration);
+    const initial = preferredHead ?? buildInitialHead(registration);
     wid = crypto.randomUUID();
     try {
       await store.createWorkspaceWithHead({
@@ -214,19 +221,21 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     if (!registration || !persistence) {
       return;
     }
-    const wid = await ensureWorkspaceForSurface(surfaceId);
-    if (!wid) {
-      return;
-    }
     const stateBinding = cloneJsonValue(snapshot.current_state_binding);
     const activeAnchor = snapshot.active_anchor || "";
     const head_payload = persistence.serialize({ state_binding: stateBinding, activeAnchor });
+    const head_record = {
+      persistence_version: persistence.version,
+      view_id: registration.view_id,
+      head_payload: cloneJsonValue(head_payload) as Record<string, unknown>,
+    };
+    // 新建 workspace 时若先用 buildInitialHead（anchors[0]）再 updateHead，慢机器上读 head 可能卡在中间态；创建时直接写入当前快照。
+    const wid = await ensureWorkspaceForSurface(surfaceId, head_record);
+    if (!wid) {
+      return;
+    }
     try {
-      await store.updateHead(wid, {
-        persistence_version: persistence.version,
-        view_id: registration.view_id,
-        head_payload: cloneJsonValue(head_payload) as Record<string, unknown>,
-      });
+      await store.updateHead(wid, head_record);
       await store.setLastActiveSurfaceId(surfaceId);
     } catch (e) {
       logWorkspaceWarn("updateHead failed", {
@@ -251,7 +260,7 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     const debounceMs = registration?.persistence?.debounce_ms ?? 250;
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      void flushHeadFromSnapshot(snapshot).catch((e) => {
+      void flushHeadFromSnapshot(getViewStateSnapshot()).catch((e) => {
         logWorkspaceWarn("debounced head flush failed", { error: String(e) });
       });
     }, debounceMs);
