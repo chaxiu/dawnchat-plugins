@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "bun x --bun vite",
-    "build": "vue-tsc -b && bun x --bun vite build",
-    "preview": "bun x --bun vite preview",
+    "dev": "bun x vite",
+    "build": "vue-tsc -b && bun x vite build",
+    "preview": "bun x vite preview",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "verify": "bun run typecheck && bun run test && bun run build"
