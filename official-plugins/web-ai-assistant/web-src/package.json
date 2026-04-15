@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "bun x vite --configLoader runner",
-    "build": "bun x vite build --configLoader runner",
-    "preview": "bun x vite preview --configLoader runner",
+    "dev": "cd ../../../assistant-workspace && bun run template:web:dev",
+    "build": "cd ../../../assistant-workspace && bun run template:web:build",
+    "preview": "cd ../../../assistant-workspace && bun run template:web:preview",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "vitest run",
     "verify": "bun run typecheck && bun run test:unit && bun run build"
