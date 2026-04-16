@@ -44,6 +44,20 @@ TAR_EXCLUDES = [
 ]
 
 
+def _find_builtin_frontend_index_html(web_src: Path) -> Path | None:
+    """
+    Vite default: web-src/dist/index.html.
+    Desktop _ir templates often set build.outDir to ../web → _ir/frontend/web/index.html.
+    """
+    direct = web_src / "dist" / "index.html"
+    if direct.is_file():
+        return direct
+    sibling_web = web_src.parent / "web" / "index.html"
+    if sibling_web.is_file():
+        return sibling_web
+    return None
+
+
 def _validate_builtin_dists(repo_root: Path) -> None:
     missing: list[str] = []
     for tid in BUILTIN_TEMPLATE_IDS:
@@ -55,9 +69,12 @@ def _validate_builtin_dists(repo_root: Path) -> None:
         if not pkg.is_file():
             missing.append(f"{tid}: no {pkg.relative_to(repo_root)}")
             continue
-        dist = web_src / "dist"
-        if not (dist / "index.html").is_file():
-            missing.append(f"{tid}: expected {dist.relative_to(repo_root)}/index.html")
+        idx = _find_builtin_frontend_index_html(web_src)
+        if idx is None:
+            missing.append(
+                f"{tid}: no built index.html under {web_src.relative_to(repo_root)}/dist/ "
+                f"or {web_src.parent.relative_to(repo_root)}/web/ (run vite build first)"
+            )
     if missing:
         raise SystemExit(
             "sidecar-embed validation failed (run package_plugins.py first):\n"
