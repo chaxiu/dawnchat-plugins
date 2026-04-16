@@ -146,10 +146,14 @@ def main() -> int:
     _validate_builtin_dists(repo_root)
     _assistant_sdk_dist_dirs(repo_root)
     _capacitor_sdk_dist(repo_root)
+    ab_src = repo_root / "auth-bridge" / "src"
+    if not ab_src.is_dir():
+        raise SystemExit(f"missing DawnChat frontend alias target: {ab_src.relative_to(repo_root)}")
 
     # assistant-workspace: required by DawnChat main CI (bun verify / build:assistant-sdk-for-host),
     # excluded from runtime sidecar copy but needed when replacing git clone.
-    paths: list[str] = ["sdk", "assistant-sdk", "capacitor-plugins-sdk", "assistant-workspace"]
+    # auth-bridge: apps/frontend vite.config.ts aliases @dawnchat/auth-bridge -> dawnchat-plugins/auth-bridge/src
+    paths: list[str] = ["sdk", "assistant-sdk", "capacitor-plugins-sdk", "assistant-workspace", "auth-bridge"]
     opencode = repo_root / ".opencode"
     if opencode.is_dir():
         paths.append(".opencode")
