@@ -19,6 +19,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from plugin_manifest_paths import resolve_frontend_web_src  # type: ignore[import-not-found]
+
 
 # Must match build.sh prepare_builtin_desktop_template template_ids.
 BUILTIN_TEMPLATE_IDS = [
@@ -42,25 +44,18 @@ TAR_EXCLUDES = [
 ]
 
 
-def _web_src_dir(template_id: str) -> Path:
-    if template_id == "desktop-starter":
-        return Path("official-plugins") / template_id / "_ir" / "frontend" / "web-src"
-    return Path("official-plugins") / template_id / "web-src"
-
-
-def _dist_dir(template_id: str) -> Path:
-    return _web_src_dir(template_id) / "dist"
-
-
 def _validate_builtin_dists(repo_root: Path) -> None:
     missing: list[str] = []
     for tid in BUILTIN_TEMPLATE_IDS:
-        base = repo_root / _web_src_dir(tid)
-        pkg = base / "package.json"
+        plugin_dir = repo_root / "official-plugins" / tid
+        web_src = resolve_frontend_web_src(plugin_dir)
+        if web_src is None:
+            web_src = plugin_dir / "web-src"
+        pkg = web_src / "package.json"
         if not pkg.is_file():
             missing.append(f"{tid}: no {pkg.relative_to(repo_root)}")
             continue
-        dist = repo_root / _dist_dir(tid)
+        dist = web_src / "dist"
         if not (dist / "index.html").is_file():
             missing.append(f"{tid}: expected {dist.relative_to(repo_root)}/index.html")
     if missing:
@@ -95,7 +90,7 @@ def _capacitor_sdk_dist(repo_root: Path) -> None:
     if not (cap / "package.json").is_file():
         raise SystemExit(f"missing {cap}")
     # May be dist or minimal TS payload per package_plugins / build.sh.
-    pkg = __import__("json").loads((cap / "package.json").read_text(encoding="utf-8"))
+    pkg = json.loads((cap / "package.json").read_text(encoding="utf-8"))
     if (cap / "dist").is_dir():
         return
     # Minimal file copy packages: at least one entry target must exist.

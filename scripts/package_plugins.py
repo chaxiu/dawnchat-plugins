@@ -22,6 +22,8 @@ from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 from zipfile import ZipInfo
 
+from plugin_manifest_paths import resolve_frontend_web_src  # type: ignore[import-not-found]
+
 
 @dataclass(frozen=True)
 class WebBuildPlan:
@@ -470,7 +472,9 @@ def _build_web_assets(plugin_dir: Path) -> None:
     manifest = _read_json(plugin_dir / "manifest.json")
     ui = manifest.get("ui") or {}
     ui_type = str(ui.get("type") or "").strip().lower()
-    web_src = plugin_dir / "web-src"
+    web_src = resolve_frontend_web_src(plugin_dir)
+    if web_src is None:
+        web_src = plugin_dir / "web-src"
     if ui_type != "web" and not web_src.exists():
         return
     if not web_src.exists():
