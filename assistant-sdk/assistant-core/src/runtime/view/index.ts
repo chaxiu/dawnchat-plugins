@@ -20,7 +20,40 @@ export {
   createViewDescribeCapabilityRegistration,
   createViewListCapabilityRegistration,
 } from "./runtime.describe";
-export { createViewOpenCapabilityRegistration } from "./runtime.open";
+export {
+  applyViewOpenFromInput,
+  createViewOpenCapabilityRegistration,
+  openAssistantViewFromShell,
+} from "./runtime.open";
+export {
+  ASSISTANT_LAUNCHER_ROUTE,
+  ASSISTANT_SPLASH_ROUTE,
+  ASSISTANT_WELCOME_ROUTE,
+} from "./assistantNavigationRoutes";
+export {
+  getLauncherContentExitFullPath,
+  goBackFromAssistantLauncher,
+  hasLauncherBackTarget,
+  installAssistantLauncherNavigation,
+  launcherContentExitFullPath,
+  normalizeAssistantNavKey,
+  resetLauncherContentExitForTests,
+} from "./launcherNavigation";
+export type { InstallAssistantLauncherNavigationOptions } from "./launcherNavigation";
+export {
+  LAUNCHER_FAB_STORAGE_VERSION,
+  launcherFabPixelsToRatios,
+  launcherFabRatiosToPixels,
+  launcherFabStorageKey,
+  parseLauncherFabPosition,
+} from "./launcherFabPosition";
+export type { LauncherFabPositionV1 } from "./launcherFabPosition";
+export {
+  filterRegistrationsForLauncher,
+  resolveLauncherIconComponent,
+} from "./launcherResolve";
+export { default as AssistantLauncherPage } from "../../views/pages/launcher/AssistantLauncherPage.vue";
+export { default as AssistantLauncherFab } from "../../views/shared/AssistantLauncherFab.vue";
 export { useViewState, type SetActiveViewStateInput, type ViewStateSnapshot } from "./state";
 export {
   getDefaultCoreViewRegistration,

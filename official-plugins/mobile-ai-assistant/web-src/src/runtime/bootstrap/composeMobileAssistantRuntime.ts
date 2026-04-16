@@ -1,5 +1,5 @@
 import { composeAssistantCoreRuntime, type AssistantHostAdapter } from "@dawnchat/assistant-core";
-import { listViewRegistrations } from "@dawnchat/assistant-core/view";
+import { ASSISTANT_LAUNCHER_ROUTE, listViewRegistrations } from "@dawnchat/assistant-core/view";
 
 import { router } from "../../router";
 import { ROUTE_PATHS } from "../../router/routes";
@@ -37,7 +37,7 @@ function getAllowedNavPathSet(): Set<string> {
     return cachedAllowedNavPaths;
   }
   const allowed = new Set<string>();
-  allowed.add(normalizeNavPath(ROUTE_PATHS.welcome));
+  allowed.add(normalizeNavPath(ASSISTANT_LAUNCHER_ROUTE));
   for (const registration of listViewRegistrations()) {
     allowed.add(normalizeNavPath(registration.route.full_path));
   }

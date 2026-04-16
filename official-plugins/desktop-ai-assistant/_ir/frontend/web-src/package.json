@@ -23,6 +23,7 @@
     "dexie": "^4.2.1",
     "elkjs": "^0.11.1",
     "jsxgraph": "^1.12.2",
+    "lucide-vue-next": "^0.544.0",
     "soundfont-player": "^0.12.0",
     "vue": "^3.5.22",
     "vue-router": "^4.6.4"

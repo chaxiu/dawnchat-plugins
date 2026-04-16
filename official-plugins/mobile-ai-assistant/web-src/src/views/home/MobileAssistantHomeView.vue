@@ -55,9 +55,9 @@ const sampleViews = computed(() =>
       <h2 class="home-h2">Navigation</h2>
       <ul class="home-links">
         <li>
-          <RouterLink class="home-link" :to="ROUTE_PATHS.welcome">
-            <span class="home-link__title">Idle — orb welcome</span>
-            <span class="home-link__id">{{ ROUTE_PATHS.welcome }}</span>
+          <RouterLink class="home-link" :to="ROUTE_PATHS.launcher">
+            <span class="home-link__title">App launcher</span>
+            <span class="home-link__id">{{ ROUTE_PATHS.launcher }}</span>
           </RouterLink>
         </li>
         <li v-for="registration in sampleViews" :key="registration.view_id">

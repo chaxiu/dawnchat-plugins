@@ -8,8 +8,8 @@ import { useGuideState } from "../../../runtime/guide/state";
 const route = useRoute();
 const { currentCard, activeTip, narrationState } = useGuideState();
 
-/** 独立欢迎路由：全屏沉浸式，不挤在业务视图的空态里 */
-const isAssistantWelcome = computed(() => route.name === "assistant-welcome");
+/** 原 welcome / splash 路由已移除；保留计算属性以便将来恢复独立全屏页时复用 padding 逻辑。 */
+const isAssistantWelcome = computed(() => false);
 const isImmersiveView = computed(() =>
   route.name === "view-board-main"
   || route.path.includes("/views/board/main")

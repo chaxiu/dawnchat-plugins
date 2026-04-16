@@ -1,3 +1,4 @@
+import { installAssistantLauncherNavigation } from "@dawnchat/assistant-core/view";
 import { createApp } from "vue";
 import { IonicVue } from "@ionic/vue";
 import App from "./App.vue";
@@ -24,6 +25,8 @@ import "./style.css";
 const app = createApp(App);
 app.use(IonicVue);
 app.use(router);
+
+installAssistantLauncherNavigation(router);
 
 void router.isReady().then(() => {
   app.mount("#app");

@@ -8,14 +8,13 @@ vi.mock("../runtime/bootstrap", () => ({
   uninstallAssistantRuntimeCapabilities: () => {},
 }));
 
-vi.mock("@dawnchat/assistant-chat-ui", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@dawnchat/assistant-chat-ui")>();
+vi.mock("@dawnchat/assistant-core/view", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@dawnchat/assistant-core/view")>();
   return {
     ...actual,
-    AssistantAiOrb: defineComponent({
-      name: "AssistantAiOrbStub",
-      template:
-        '<section class="dc-ai-orb" data-testid="assistant-welcome-orb-stub"></section>',
+    AssistantLauncherFab: defineComponent({
+      name: "AssistantLauncherFabStub",
+      template: "<span data-testid=\"launcher-fab-stub\" />",
     }),
   };
 });
@@ -25,7 +24,6 @@ import { useGuideState } from "../runtime/guide/state";
 import { useSessionVisualState } from "../runtime/session/visualState";
 import { useViewState } from "../runtime/view";
 import HomeAssistantPage from "../views/pages/home/HomeAssistantPage.vue";
-import AssistantWelcomePage from "../views/pages/welcome/AssistantWelcomePage.vue";
 import WordMainView from "../views/pages/word/WordMainView.vue";
 
 describe("app router shell", () => {
@@ -61,18 +59,23 @@ describe("app router shell", () => {
     useViewState().clearViewState();
     useSessionVisualState().setSessionIdle();
 
+    const LauncherStub = defineComponent({
+      name: "LauncherStub",
+      template: '<div data-testid="launcher-page-stub">Launcher</div>',
+    });
+
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
-        { path: "/", redirect: "/views/welcome" },
+        { path: "/", redirect: "/views/launcher" },
         {
           path: "/views",
           component: HomeAssistantPage,
           children: [
             {
-              path: "welcome",
-              name: "assistant-welcome",
-              component: AssistantWelcomePage,
+              path: "launcher",
+              name: "assistant-launcher",
+              component: LauncherStub,
             },
             {
               path: "word/main",
@@ -92,14 +95,14 @@ describe("app router shell", () => {
       },
     });
 
-    expect(wrapper.find('[data-testid="assistant-welcome-orb-stub"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="launcher-page-stub"]').exists()).toBe(true);
 
     await router.push({ name: "view-word-main" });
     await router.isReady();
     await nextTick();
     expect(router.currentRoute.value.name).toBe("view-word-main");
 
-    expect(wrapper.find('[data-testid="assistant-welcome-orb-stub"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="launcher-page-stub"]').exists()).toBe(false);
     vi.restoreAllMocks();
     (globalThis as any).Path2D = originalPath2D;
   });

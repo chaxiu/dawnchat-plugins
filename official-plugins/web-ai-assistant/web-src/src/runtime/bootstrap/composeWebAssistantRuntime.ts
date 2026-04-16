@@ -8,7 +8,6 @@ import { webAssistantViewRegistryProvider } from "../viewRegistry";
 function isInternalAssistantRoute(routePath: string): boolean {
   return (
     routePath === "/" ||
-    routePath === "/welcome" ||
     routePath === "/views" ||
     routePath.startsWith("/views/")
   );

@@ -2,6 +2,9 @@
 import { computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 
+import { AssistantLauncherFab } from "@dawnchat/assistant-core/view";
+import { getAssistantPersistenceScope } from "@dawnchat/assistant-core/persistence";
+
 import {
   installAssistantRuntimeCapabilities,
   uninstallAssistantRuntimeCapabilities,
@@ -9,6 +12,7 @@ import {
 import { ASSISTANT_UI_LAYER_PAGE } from "./runtime/assistantUiLayout";
 
 let registeredCapabilityNames: string[] = [];
+const fabPersistenceScope = getAssistantPersistenceScope();
 const route = useRoute();
 const shellStageStyle = computed(() => ({
   zIndex: ASSISTANT_UI_LAYER_PAGE,
@@ -37,7 +41,10 @@ onUnmounted(() => {
     <div v-if="!isImmersiveRoute" class="aurora aurora-a"></div>
     <div v-if="!isImmersiveRoute" class="aurora aurora-b"></div>
     <section class="shell-stage" :style="shellStageStyle">
-      <RouterView />
+      <div class="shell-stage__viewport">
+        <RouterView />
+      </div>
+      <AssistantLauncherFab :persistence-scope="fabPersistenceScope" />
     </section>
   </main>
 </template>
@@ -90,8 +97,19 @@ onUnmounted(() => {
   min-width: 0;
   width: 100%;
 }
-/* RouterView 根节点（如 page-shell）需参与拉伸，避免仅依赖子组件 width:100% 在 iframe 下不稳定 */
-.shell-stage > * {
+/**
+ * 仅让「主视口」参与 flex 拉伸；Launcher FAB 作为兄弟节点不得套用 `flex:1`，
+ * 否则与 RouterView 平分高度会导致沉浸式页面（如钢琴）出现大面积黑屏。
+ */
+.shell-stage__viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.shell-stage__viewport > * {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;

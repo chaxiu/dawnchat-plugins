@@ -1,10 +1,13 @@
 import { createRouter, createWebHashHistory } from "@ionic/vue-router";
 import type { RouteRecordRaw } from "vue-router";
-import { RegisteredViewRoute, listViewRegistrations } from "@dawnchat/assistant-core/view";
+import {
+  AssistantLauncherPage,
+  RegisteredViewRoute,
+  listViewRegistrations,
+} from "@dawnchat/assistant-core/view";
 
 import MobileAssistantShell from "../layouts/MobileAssistantShell.vue";
 import ViewsShell from "../views/ViewsShell.vue";
-import MobileAssistantWelcomePage from "../views/welcome/MobileAssistantWelcomePage.vue";
 import { installMobileAssistantViewRegistry } from "../runtime/viewRegistry";
 import { ROUTE_PATHS } from "./routes";
 
@@ -30,17 +33,19 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        redirect: ROUTE_PATHS.welcome,
-      },
-      {
-        path: "welcome",
-        name: "mobile-assistant-welcome",
-        component: MobileAssistantWelcomePage,
+        redirect: ROUTE_PATHS.launcher,
       },
       {
         path: "views",
         component: ViewsShell,
-        children: viewRoutes,
+        children: [
+          {
+            path: "launcher",
+            name: "mobile-assistant-launcher",
+            component: AssistantLauncherPage,
+          },
+          ...viewRoutes,
+        ],
       },
     ],
   },

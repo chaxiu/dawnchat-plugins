@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
 
+import { AssistantLauncherFab } from "@dawnchat/assistant-core/view";
+
 import {
   installAssistantRuntimeCapabilities,
   uninstallAssistantRuntimeCapabilities,
 } from "./runtime/bootstrap";
+import { getWebAssistantIdentity } from "./runtime/assistantIdentity";
 import { installWebAssistantViewRegistry } from "./runtime/viewRegistry";
 
 /**
@@ -15,6 +18,7 @@ import { installWebAssistantViewRegistry } from "./runtime/viewRegistry";
 installWebAssistantViewRegistry();
 
 let registeredCapabilityNames: string[] = [];
+const fabPersistenceScope = getWebAssistantIdentity().persistenceScope;
 
 onMounted(() => {
   registeredCapabilityNames = installAssistantRuntimeCapabilities();
@@ -28,4 +32,5 @@ onUnmounted(() => {
 
 <template>
   <RouterView />
+  <AssistantLauncherFab :persistence-scope="fabPersistenceScope" />
 </template>

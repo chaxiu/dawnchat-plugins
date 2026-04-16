@@ -43,6 +43,7 @@ export default defineConfig({
       // dependencies that point outside the plugin project tree.
       external: [
         "vue",
+        "vue-router",
       ],
       output: {
         assetFileNames: (assetInfo) => {
