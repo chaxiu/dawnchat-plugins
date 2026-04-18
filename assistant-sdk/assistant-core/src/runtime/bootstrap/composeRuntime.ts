@@ -6,10 +6,16 @@ import { useSessionVisualState } from "../session/visualState";
 import { getAssistantPersistenceScope } from "../persistence/scope";
 import {
   createDexieWorkspaceStore,
-  createWorkspaceCheckpointCapabilityRegistration,
+  createWorkspaceCapabilityRegistrations,
   createWorkspacePersistenceRuntime,
   type WorkspaceStore,
 } from "../workspace";
+import {
+  createDexieTaskStore,
+  createTaskCapabilityRegistrations,
+  createTaskRuntime,
+  type TaskStore,
+} from "../task";
 import { installAssistantRuntimeEnvironment, type AssistantRuntimeEnvironment } from "../environment";
 import {
   createRuntimeBootstrapCapabilityRegistration,
@@ -17,9 +23,9 @@ import {
   createViewDescribeCapabilityRegistration,
   createViewListCapabilityRegistration,
   createViewOpenCapabilityRegistration,
-  getViewRegistration,
   useViewState,
 } from "../view";
+import { getViewRegistration } from "../view/registry";
 import { createRuntimeObservationStore } from "../observation";
 import { getAssistantRouteNavigator } from "../hostAdapter";
 import { postAssistantRuntimeEventToHost } from "../runtimeEventBridge";
@@ -38,6 +44,10 @@ export interface ComposeAssistantCoreRuntimeOptions {
    * with the resolved scope (Tauri/Capacitor WebView IndexedDB is the typical default).
    */
   workspaceStore?: WorkspaceStore;
+  /** Optional task persistence backend. When omitted, core uses Dexie task storage. */
+  taskStore?: TaskStore;
+  /** Overrides persistenceScope when both are set */
+  taskScope?: string;
   /** When true, append session_completed snapshot on last session step (requires total_steps) */
   workspaceSnapshotOnSessionEnd?: boolean;
 }
@@ -68,6 +78,9 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
   const scope = (options?.workspaceScope || options?.persistenceScope || "").trim()
     || getAssistantPersistenceScope();
   const workspaceStore = options?.workspaceStore ?? createDexieWorkspaceStore(scope);
+  const taskScope = (options?.taskScope || options?.workspaceScope || options?.persistenceScope || "").trim()
+    || getAssistantPersistenceScope();
+  const taskStore = options?.taskStore ?? createDexieTaskStore(taskScope);
   const {
     setCurrentCard,
     scheduleDismissCurrentCard,
@@ -93,6 +106,10 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
     setActiveViewState,
     navigateToView,
     snapshotOnSessionEnd,
+  });
+  const taskRuntime = createTaskRuntime({
+    store: taskStore,
+    openWorkspace: workspaceRuntime.openWorkspace,
   });
   const sessionLifecycleHooks = createSessionLifecycleHooks({
     observationStore,
@@ -153,6 +170,7 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
       getTaskProgressSnapshot: observationStore.getTaskProgressSnapshot,
       getActiveStateBindingContextSnapshot: observationStore.getActiveStateBindingContextSnapshot,
       getContinuationSnapshot: observationStore.getContinuationSnapshot,
+      getActiveWorkspaceSnapshot: workspaceRuntime.getCurrentWorkspace,
       navigateToView,
     }),
     createViewContractCapabilityRegistration({
@@ -164,7 +182,8 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
       getContinuationSnapshot: observationStore.getContinuationSnapshot,
       navigateToView,
     }),
-    createWorkspaceCheckpointCapabilityRegistration(workspaceRuntime),
+    ...createWorkspaceCapabilityRegistrations(workspaceRuntime),
+    ...createTaskCapabilityRegistrations(taskRuntime),
   ];
 
   setCardDismissObserver(({ reason, card }) => {
@@ -195,6 +214,7 @@ export function composeAssistantCoreRuntime(options?: ComposeAssistantCoreRuntim
     emitRuntimeEvent,
     persistenceRuntime,
     workspaceRuntime,
+    taskRuntime,
   };
 }
 

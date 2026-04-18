@@ -1,13 +1,15 @@
 import { watch, type WatchStopHandle } from "vue";
 
 import type { SetActiveViewStateInput, ViewStateSnapshot } from "../view";
-import {
-  createManifestSnapshot,
-  getViewRegistration,
-  type ViewRegistration,
-  type ViewStateBinding,
-} from "../view";
-import type { WorkspaceStore } from "./types";
+import { createManifestSnapshot } from "../view/runtime.shared";
+import { getViewRegistration } from "../view/registry";
+import type { ViewRegistration, ViewStateBinding } from "../view/manifest";
+import type {
+  WorkspaceCurrentContext,
+  WorkspaceMeta,
+  WorkspaceSnapshotSummary,
+  WorkspaceStore,
+} from "./types";
 
 export interface WorkspacePersistenceRuntimeOptions {
   store: WorkspaceStore;
@@ -54,6 +56,13 @@ function buildInitialHead(registration: ViewRegistration): {
     view_id: registration.view_id,
     head_payload: cloneJsonValue(head_payload) as Record<string, unknown>,
   };
+}
+
+function toPositiveInteger(raw?: number): number | undefined {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) {
+    return undefined;
+  }
+  return Math.trunc(raw);
 }
 
 function isPersistableStateful(
@@ -348,6 +357,171 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     }
   };
 
+  const openWorkspace = async (surfaceId: string, workspaceId: string) => {
+    const trimmedSurfaceId = surfaceId.trim();
+    const trimmedWorkspaceId = workspaceId.trim();
+    if (!trimmedSurfaceId || !trimmedWorkspaceId) {
+      return;
+    }
+    try {
+      const head = await store.getWorkspaceHead(trimmedWorkspaceId);
+      if (!head) {
+        return;
+      }
+      const resolvedSurfaceId = head.surface_id?.trim() || trimmedSurfaceId;
+      await store.setActiveWorkspace(resolvedSurfaceId, trimmedWorkspaceId);
+      await applyHeadRecord(head);
+      await store.setLastActiveSurfaceId(resolvedSurfaceId);
+      lastHydratedWorkspaceId = trimmedWorkspaceId;
+    } catch (e) {
+      logWorkspaceWarn("openWorkspace failed", {
+        ws: `ws:${trimmedWorkspaceId}`,
+        surface_id: trimmedSurfaceId,
+        error: String(e),
+      });
+    }
+  };
+
+  const listWorkspaces = async (surfaceId: string): Promise<WorkspaceMeta[]> => {
+    const trimmedSurfaceId = surfaceId.trim();
+    if (!trimmedSurfaceId) {
+      return [];
+    }
+    return store.listWorkspaces(trimmedSurfaceId);
+  };
+
+  const describeWorkspace = async (workspaceId: string) => {
+    const trimmedWorkspaceId = workspaceId.trim();
+    if (!trimmedWorkspaceId) {
+      return null;
+    }
+    return store.getWorkspaceHead(trimmedWorkspaceId);
+  };
+
+  const getCurrentWorkspace = async (): Promise<WorkspaceCurrentContext | null> => {
+    const snapshot = getViewStateSnapshot();
+    const activeViewId = snapshot.active_view_id?.trim() || "";
+    if (!activeViewId) {
+      return null;
+    }
+    const registration = getViewRegistration(activeViewId);
+    if (!registration?.persistence || registration.state_mode !== "stateful") {
+      return null;
+    }
+    const workspaceId = await store.getActiveWorkspaceId(activeViewId);
+    if (!workspaceId) {
+      return null;
+    }
+    const head = await store.getWorkspaceHead(workspaceId);
+    if (!head) {
+      return null;
+    }
+    return {
+      workspace_id: head.workspace_id,
+      surface_id: head.surface_id,
+      title: head.title,
+      view_id: head.view_id,
+    };
+  };
+
+  const createWorkspace = async (
+    surfaceId: string,
+    options?: { title?: string }
+  ): Promise<WorkspaceMeta | null> => {
+    const trimmedSurfaceId = surfaceId.trim();
+    if (!trimmedSurfaceId) {
+      return null;
+    }
+    const registration = getViewRegistration(trimmedSurfaceId);
+    if (!registration?.persistence || registration.state_mode !== "stateful") {
+      return null;
+    }
+    const workspaceId = crypto.randomUUID();
+    const initial = buildInitialHead(registration);
+    await store.createWorkspaceWithHead({
+      workspace_id: workspaceId,
+      surface_id: trimmedSurfaceId,
+      title: options?.title?.trim() || registration.title,
+      ...initial,
+    });
+    const head = await store.getWorkspaceHead(workspaceId);
+    if (!head) {
+      return null;
+    }
+    return {
+      workspace_id: head.workspace_id,
+      surface_id: head.surface_id,
+      title: head.title,
+      created_at_ms: head.created_at_ms,
+      updated_at_ms: head.updated_at_ms,
+    };
+  };
+
+  const renameWorkspace = async (
+    workspaceId: string,
+    title: string
+  ): Promise<WorkspaceMeta | null> => {
+    const trimmedWorkspaceId = workspaceId.trim();
+    const nextTitle = title.trim();
+    if (!trimmedWorkspaceId || !nextTitle) {
+      return null;
+    }
+    return store.renameWorkspace(trimmedWorkspaceId, nextTitle);
+  };
+
+  const listWorkspaceHistory = async (
+    workspaceId: string,
+    options?: { limit?: number }
+  ): Promise<WorkspaceSnapshotSummary[]> => {
+    const trimmedWorkspaceId = workspaceId.trim();
+    if (!trimmedWorkspaceId) {
+      return [];
+    }
+    return store.listSnapshots(trimmedWorkspaceId, {
+      limit: toPositiveInteger(options?.limit),
+    });
+  };
+
+  const checkoutSnapshot = async (
+    workspaceId: string,
+    snapshotSeq: number
+  ): Promise<boolean> => {
+    const trimmedWorkspaceId = workspaceId.trim();
+    if (!trimmedWorkspaceId || !Number.isFinite(snapshotSeq) || snapshotSeq <= 0) {
+      return false;
+    }
+    try {
+      const [snapshot, head] = await Promise.all([
+        store.getSnapshotBySeq(trimmedWorkspaceId, Math.trunc(snapshotSeq)),
+        store.getWorkspaceHead(trimmedWorkspaceId),
+      ]);
+      if (!snapshot || !head) {
+        return false;
+      }
+      await store.updateHead(trimmedWorkspaceId, {
+        persistence_version: head.persistence_version,
+        view_id: head.view_id,
+        head_payload: cloneJsonValue(snapshot.payload),
+      });
+      await store.setActiveWorkspace(head.surface_id, trimmedWorkspaceId);
+      await applyHeadRecord({
+        persistence_version: head.persistence_version,
+        view_id: head.view_id,
+        head_payload: cloneJsonValue(snapshot.payload),
+      });
+      await store.setLastActiveSurfaceId(head.surface_id);
+      lastHydratedWorkspaceId = trimmedWorkspaceId;
+      return true;
+    } catch (e) {
+      logWorkspaceWarn("checkoutSnapshot failed", {
+        ws: `ws:${trimmedWorkspaceId}`,
+        seq: snapshotSeq,
+        error: String(e),
+      });
+      return false;
+    }
+  };
+
   const handleVisibilityChange = () => {
     if (typeof document !== "undefined" && document.visibilityState === "hidden") {
       void flushActiveView();
@@ -398,6 +572,14 @@ export function createWorkspacePersistenceRuntime(options: WorkspacePersistenceR
     getLastHydratedWorkspaceId: () => lastHydratedWorkspaceId,
     handleSessionStepApplied,
     checkpointFromCurrentView,
+    openWorkspace,
+    listWorkspaces,
+    describeWorkspace,
+    getCurrentWorkspace,
+    createWorkspace,
+    renameWorkspace,
+    listWorkspaceHistory,
+    checkoutSnapshot,
     getWorkspaceStore: () => store,
   };
 }

@@ -152,8 +152,28 @@ describe("assistant.view.list", () => {
             },
           },
           {
-            name: "assistant.workspace_checkpoint",
-            description: "Append a manual_checkpoint snapshot for the active workspace (stateful view).",
+            name: "assistant.workspace.get_current",
+            description: "Get the current active workspace context for the active stateful surface.",
+            input_schema: {
+              type: "object",
+              properties: {},
+            },
+          },
+          {
+            name: "assistant.workspace.open",
+            description: "Restore one workspace head into the target surface.",
+            input_schema: {
+              type: "object",
+              properties: {
+                surface_id: { type: "string" },
+                workspace_id: { type: "string" },
+              },
+              required: ["surface_id", "workspace_id"],
+            },
+          },
+          {
+            name: "assistant.workspace.checkpoint",
+            description: "Append a manual checkpoint snapshot for the active workspace (stateful view).",
             input_schema: {
               type: "object",
               properties: {},

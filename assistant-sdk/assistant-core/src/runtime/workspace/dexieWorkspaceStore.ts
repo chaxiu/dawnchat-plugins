@@ -4,6 +4,7 @@ import {
   WORKSPACE_HISTORY_LIMIT,
   type WorkspaceHeadRecord,
   type WorkspaceMeta,
+  type WorkspaceSnapshotSummary,
   type WorkspaceSnapshotReason,
   type WorkspaceStore,
 } from "./types";
@@ -109,6 +110,26 @@ export class DexieWorkspaceStore implements WorkspaceStore {
     }));
   }
 
+  async renameWorkspace(workspaceId: string, title: string): Promise<WorkspaceMeta | null> {
+    const existing = await this.inner.workspaces.get(workspaceId);
+    if (!existing) {
+      return null;
+    }
+    const next: WorkspaceDexieRow = {
+      ...existing,
+      title,
+      updated_at_ms: nowMs(),
+    };
+    await this.inner.workspaces.put(next);
+    return {
+      workspace_id: next.workspace_id,
+      surface_id: next.surface_id,
+      title: next.title,
+      created_at_ms: next.created_at_ms,
+      updated_at_ms: next.updated_at_ms,
+    };
+  }
+
   async createWorkspaceWithHead(input: {
     workspace_id: string;
     surface_id: string;
@@ -211,6 +232,50 @@ export class DexieWorkspaceStore implements WorkspaceStore {
 
   async countHistorySnapshots(workspaceId: string): Promise<number> {
     return this.inner.workspace_history.where("workspace_id").equals(workspaceId).count();
+  }
+
+  async listSnapshots(
+    workspaceId: string,
+    options?: { limit?: number }
+  ): Promise<WorkspaceSnapshotSummary[]> {
+    const rows = await this.inner.workspace_history
+      .where("workspace_id")
+      .equals(workspaceId)
+      .toArray();
+    rows.sort((a, b) => b.seq - a.seq);
+    const limit = typeof options?.limit === "number" && options.limit > 0
+      ? Math.trunc(options.limit)
+      : rows.length;
+    return rows.slice(0, limit).map((row) => ({
+      workspace_id: row.workspace_id,
+      seq: row.seq,
+      reason: row.reason,
+      author: row.author,
+      session_id: row.session_id,
+      created_at_ms: row.created_at_ms,
+    }));
+  }
+
+  async getSnapshotBySeq(
+    workspaceId: string,
+    seq: number
+  ): Promise<(WorkspaceSnapshotSummary & { payload: Record<string, unknown> }) | null> {
+    const row = await this.inner.workspace_history
+      .where("[workspace_id+seq]")
+      .equals([workspaceId, seq])
+      .first();
+    if (!row) {
+      return null;
+    }
+    return {
+      workspace_id: row.workspace_id,
+      seq: row.seq,
+      reason: row.reason,
+      author: row.author,
+      session_id: row.session_id,
+      created_at_ms: row.created_at_ms,
+      payload: JSON.parse(JSON.stringify(row.payload)) as Record<string, unknown>,
+    };
   }
 
   async clearAll(): Promise<void> {

@@ -2,7 +2,14 @@ export {
   composeAssistantCoreRuntime,
   type ComposeAssistantCoreRuntimeOptions,
 } from "./runtime/bootstrap/composeRuntime";
+export {
+  getPersistenceRuntimeHandle,
+  getTaskRuntimeHandle,
+  setPersistenceRuntimeHandle,
+  setTaskRuntimeHandle,
+} from "./runtime/bootstrap/runtimeHandles";
 export type { WorkspaceStore } from "./runtime/workspace";
+export type { TaskStore } from "./runtime/task";
 export {
   installAssistantRuntimeEnvironment,
   uninstallAssistantRuntimeEnvironment,
@@ -24,3 +31,5 @@ export {
 } from "./runtime/runtimeEventBridge";
 export * from "./runtime/assistantUiLayout";
 export * from "./runtime/capabilities";
+export * from "./runtime/task";
+export * from "./runtime/workspace";

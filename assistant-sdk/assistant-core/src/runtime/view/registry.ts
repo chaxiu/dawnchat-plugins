@@ -1,6 +1,7 @@
 import { boardMainView } from "../../views/pages/board/boardMain.view";
 import { coordinatePlaneMainView } from "../../views/pages/coordinate-plane/coordinatePlaneMain.view";
 import { imageExplainerMainView } from "../../views/pages/image-explainer/imageExplainerMain.view";
+import { taskMainView } from "../../views/pages/task/taskMain.view";
 import { tictactoeMainView } from "../../views/pages/tictactoe/tictactoeMain.view";
 import type { ViewRegistration, ViewRouteDefinition } from "./manifest";
 
@@ -14,6 +15,7 @@ const viewRegistry: Record<string, ViewRegistration> = {
   [boardMainView.view_id]: boardMainView,
   [coordinatePlaneMainView.view_id]: coordinatePlaneMainView,
   [imageExplainerMainView.view_id]: imageExplainerMainView,
+  [taskMainView.view_id]: taskMainView,
   [tictactoeMainView.view_id]: tictactoeMainView,
 };
 

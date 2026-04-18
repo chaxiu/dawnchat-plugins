@@ -2,14 +2,15 @@ import { registerCapabilities } from "../capabilities";
 import { installRuntimeEventEmitter } from "../runtimeEventBridge";
 
 import { composeAssistantRuntimeRegistrations } from "./composeRuntime";
-import { setPersistenceRuntimeHandle } from "./runtimeHandles";
+import { setPersistenceRuntimeHandle, setTaskRuntimeHandle } from "./runtimeHandles";
 
 export function installAssistantRuntimeCapabilities(): string[] {
-  const { registrations, emitRuntimeEvent, persistenceRuntime } = composeAssistantRuntimeRegistrations();
+  const { registrations, emitRuntimeEvent, persistenceRuntime, taskRuntime } = composeAssistantRuntimeRegistrations();
   // The event bus is the authoritative runtime stream.
   // UI cards can emit into the same stream through the bridge outside step execution.
   installRuntimeEventEmitter(emitRuntimeEvent);
   setPersistenceRuntimeHandle(persistenceRuntime);
+  setTaskRuntimeHandle(taskRuntime);
   persistenceRuntime.start();
   void persistenceRuntime.hydrate();
   return registerCapabilities(registrations).registered;

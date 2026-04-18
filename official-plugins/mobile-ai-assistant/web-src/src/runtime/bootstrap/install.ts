@@ -4,19 +4,25 @@ import { installRuntimeEventEmitter } from "../runtimeEventBridge";
 import { composeMobileAssistantRuntime } from "./composeMobileAssistantRuntime";
 import {
   setPersistenceRuntimeHandle,
+  setTaskRuntimeHandle,
   setRuntimeCapabilityRegistrations,
   setMobileAssistantIdentityHandle,
 } from "./runtimeHandles";
 
 export function installAssistantRuntimeCapabilities(): string[] {
+  const runtime = composeMobileAssistantRuntime() as ReturnType<typeof composeMobileAssistantRuntime> & {
+    taskRuntime: unknown;
+  };
   const {
     registrations,
     emitRuntimeEvent,
     persistenceRuntime,
+    taskRuntime,
     identity,
-  } = composeMobileAssistantRuntime();
+  } = runtime;
   installRuntimeEventEmitter(emitRuntimeEvent);
   setPersistenceRuntimeHandle(persistenceRuntime);
+  setTaskRuntimeHandle(taskRuntime);
   setRuntimeCapabilityRegistrations(registrations);
   setMobileAssistantIdentityHandle(identity);
   persistenceRuntime.start();

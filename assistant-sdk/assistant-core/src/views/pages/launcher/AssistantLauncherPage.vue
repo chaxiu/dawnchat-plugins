@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ChevronLeft } from "lucide-vue-next";
-import { computed, ref } from "vue";
+import { ChevronLeft, LayoutGrid } from "lucide-vue-next";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
+import { GENERAL_TASK_TEMPLATE_ID, getTaskRuntimeHandle, type TaskSummary, type TaskTemplateSummary } from "../../../runtime";
 import {
   goBackFromAssistantLauncher,
   hasLauncherBackTarget,
@@ -15,9 +16,12 @@ import { openAssistantViewFromShell } from "../../../runtime/view/runtime.open";
 const router = useRouter();
 const route = useRoute();
 
-const items = computed(() => filterRegistrationsForLauncher(listViewRegistrations()));
+const toolItems = computed(() => filterRegistrationsForLauncher(listViewRegistrations()));
 
 const openingId = ref<string | null>(null);
+const creatingTask = ref(false);
+const recentTasks = ref<TaskSummary[]>([]);
+const taskTemplates = ref<TaskTemplateSummary[]>([]);
 
 /** Reacts to route + tracked exit path so Back hides on cold start (no prior content). */
 const showBack = computed(() => {
@@ -28,6 +32,21 @@ const showBack = computed(() => {
 
 function goBack() {
   void goBackFromAssistantLauncher(router);
+}
+
+async function refreshTaskLauncherData() {
+  const taskRuntime = getTaskRuntimeHandle();
+  if (!taskRuntime) {
+    recentTasks.value = [];
+    taskTemplates.value = [];
+    return;
+  }
+  const [tasks, templates] = await Promise.all([
+    taskRuntime.listTasks({ limit: 12 }),
+    taskRuntime.listTaskTemplates(),
+  ]);
+  recentTasks.value = tasks;
+  taskTemplates.value = templates;
 }
 
 async function openView(viewId: string) {
@@ -41,6 +60,42 @@ async function openView(viewId: string) {
     openingId.value = null;
   }
 }
+
+async function openTask(taskId: string) {
+  const taskRuntime = getTaskRuntimeHandle();
+  if (!taskRuntime || openingId.value) {
+    return;
+  }
+  openingId.value = `task:${taskId}`;
+  try {
+    await taskRuntime.openTask(taskId);
+    await refreshTaskLauncherData();
+  } finally {
+    openingId.value = null;
+  }
+}
+
+async function createTask(templateId: string) {
+  const taskRuntime = getTaskRuntimeHandle();
+  if (!taskRuntime || creatingTask.value) {
+    return;
+  }
+  creatingTask.value = true;
+  try {
+    const task = await taskRuntime.createTask({
+      template_id: templateId || GENERAL_TASK_TEMPLATE_ID,
+      title: "New Task",
+    });
+    await taskRuntime.openTask(task.task_id);
+    await refreshTaskLauncherData();
+  } finally {
+    creatingTask.value = false;
+  }
+}
+
+onMounted(() => {
+  void refreshTaskLauncherData();
+});
 </script>
 
 <template>
@@ -59,41 +114,110 @@ async function openView(viewId: string) {
         <ChevronLeft :size="22" aria-hidden="true" />
         <span>Back</span>
       </button>
-      <h1 class="assistant-launcher__title">Apps</h1>
+      <h1 class="assistant-launcher__title">Tasks</h1>
     </header>
 
     <div class="assistant-launcher__scroll">
-      <div
-        v-if="items.length === 0"
-        class="assistant-launcher__empty"
-      >
-        No views available.
-      </div>
-      <div
-        v-else
-        class="assistant-launcher__grid"
-        role="list"
-      >
-        <button
-          v-for="reg in items"
-          :key="reg.view_id"
-          type="button"
-          class="assistant-launcher__tile"
-          role="listitem"
-          :disabled="openingId === reg.view_id"
-          :aria-label="`Open ${reg.title}`"
-          @click="openView(reg.view_id)"
+      <section class="assistant-launcher__section">
+        <div class="assistant-launcher__section-header">
+          <h2>Continue Tasks</h2>
+        </div>
+        <div
+          v-if="recentTasks.length === 0"
+          class="assistant-launcher__empty"
         >
-          <span class="assistant-launcher__icon-wrap">
-            <component
-              :is="resolveLauncherIconComponent(reg.view_id)"
-              :size="28"
-              aria-hidden="true"
-            />
-          </span>
-          <span class="assistant-launcher__label">{{ reg.title }}</span>
-        </button>
-      </div>
+          No recent tasks yet.
+        </div>
+        <div
+          v-else
+          class="assistant-launcher__task-list"
+          role="list"
+        >
+          <button
+            v-for="task in recentTasks"
+            :key="task.task_id"
+            type="button"
+            class="assistant-launcher__task-card"
+            role="listitem"
+            :disabled="openingId === `task:${task.task_id}`"
+            @click="openTask(task.task_id)"
+          >
+            <span class="assistant-launcher__task-title">{{ task.title }}</span>
+            <span class="assistant-launcher__task-meta">
+              {{ task.summary || task.template_id }}
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <section class="assistant-launcher__section">
+        <div class="assistant-launcher__section-header">
+          <h2>New Task</h2>
+        </div>
+        <div
+          v-if="taskTemplates.length === 0"
+          class="assistant-launcher__empty"
+        >
+          No task templates available.
+        </div>
+        <div
+          v-else
+          class="assistant-launcher__grid"
+          role="list"
+        >
+          <button
+            v-for="template in taskTemplates"
+            :key="template.template_id"
+            type="button"
+            class="assistant-launcher__tile"
+            role="listitem"
+            :disabled="creatingTask"
+            @click="createTask(template.template_id)"
+          >
+            <span class="assistant-launcher__icon-wrap">
+              <LayoutGrid :size="28" aria-hidden="true" />
+            </span>
+            <span class="assistant-launcher__label">{{ template.title }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="assistant-launcher__section">
+        <div class="assistant-launcher__section-header">
+          <h2>Tools &amp; Views</h2>
+        </div>
+        <div
+          v-if="toolItems.length === 0"
+          class="assistant-launcher__empty"
+        >
+          No views available.
+        </div>
+        <div
+          v-else
+          class="assistant-launcher__grid"
+          role="list"
+        >
+          <button
+            v-for="reg in toolItems"
+            :key="reg.view_id"
+            type="button"
+            class="assistant-launcher__tile"
+            role="listitem"
+            :disabled="openingId === reg.view_id"
+            :aria-label="`Open ${reg.title}`"
+            @click="openView(reg.view_id)"
+          >
+            <span class="assistant-launcher__icon-wrap">
+              <component
+                :is="resolveLauncherIconComponent(reg.view_id)"
+                :size="28"
+                aria-hidden="true"
+              />
+            </span>
+            <span class="assistant-launcher__label">{{ reg.title }}</span>
+          </button>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -178,12 +302,31 @@ async function openView(viewId: string) {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .assistant-launcher__empty {
-  padding: 24px 12px;
-  text-align: center;
+  padding: 12px 0;
   color: var(--launcher-fg-muted);
+  font-size: 0.95rem;
+}
+
+.assistant-launcher__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assistant-launcher__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.assistant-launcher__section-header h2 {
+  margin: 0;
   font-size: 0.95rem;
 }
 
@@ -237,7 +380,49 @@ async function openView(viewId: string) {
   max-width: 100%;
   overflow: hidden;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.assistant-launcher__task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assistant-launcher__task-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--launcher-border);
+  border-radius: 14px;
+  background: var(--launcher-bg-subtle);
+  color: var(--launcher-fg);
+  font: inherit;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.assistant-launcher__task-card:hover:not(:disabled) {
+  border-color: var(--launcher-tile-hover-border);
+  background: var(--launcher-icon-surface);
+}
+
+.assistant-launcher__task-card:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.assistant-launcher__task-title {
+  font-weight: 600;
+}
+
+.assistant-launcher__task-meta {
+  font-size: 0.85rem;
+  color: var(--launcher-fg-muted);
 }
 </style>

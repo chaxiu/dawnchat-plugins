@@ -1,7 +1,9 @@
 export {
   WORKSPACE_HISTORY_LIMIT,
+  type WorkspaceCurrentContext,
   type WorkspaceHeadRecord,
   type WorkspaceMeta,
+  type WorkspaceSnapshotSummary,
   type WorkspaceSnapshotReason,
   type WorkspaceStore,
 } from "./types";
@@ -14,4 +16,4 @@ export {
   type WorkspacePersistenceRuntime,
   type WorkspacePersistenceRuntimeOptions,
 } from "./workspaceRuntime";
-export { createWorkspaceCheckpointCapabilityRegistration } from "./workspaceCheckpointCapability";
+export { createWorkspaceCapabilityRegistrations } from "./runtime.contract";

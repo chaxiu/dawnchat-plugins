@@ -134,6 +134,10 @@ describe("workspace persistence runtime", () => {
 
     const count = await store.countHistorySnapshots(wid);
     expect(count).toBe(smallLimit);
+    const snapshots = await store.listSnapshots(wid);
+    expect(snapshots).toHaveLength(smallLimit);
+    expect(snapshots[0]?.seq).toBe(extra);
+    expect(snapshots[snapshots.length - 1]?.seq).toBe(extra - smallLimit + 1);
 
     await store.clearAll();
   });
@@ -182,6 +186,65 @@ describe("workspace persistence runtime", () => {
     });
 
     expect(await store.countHistorySnapshots(wid)).toBe(1);
+
+    await store.clearAll();
+  });
+
+  it("opens a specific workspace by surface and can checkout one snapshot into head", async () => {
+    const store = createStore();
+    const viewState = useViewState();
+    const navigateToView = vi.fn();
+    const registration = getViewRegistration("board.main");
+    expect(registration).not.toBeNull();
+    const runtime = createWorkspacePersistenceRuntime({
+      store,
+      getViewStateSnapshot: viewState.getViewStateSnapshot,
+      setActiveViewState: viewState.setActiveViewState,
+      navigateToView,
+    });
+    const wid = crypto.randomUUID();
+    const baseResource = cloneBoardStateBinding(BOARD_DEFAULT_RESOURCE);
+    const basePayload = registration!.persistence!.serialize({
+      state_binding: baseResource,
+      activeAnchor: "board.canvas",
+    }) as Record<string, unknown>;
+    await store.createWorkspaceWithHead({
+      workspace_id: wid,
+      surface_id: "board.main",
+      persistence_version: registration!.persistence!.version,
+      view_id: "board.main",
+      head_payload: basePayload,
+    });
+    const changedResource = cloneBoardStateBinding({
+      ...BOARD_DEFAULT_RESOURCE,
+      title: "Changed board",
+      data: {
+        ...BOARD_DEFAULT_RESOURCE.data,
+        description: "changed",
+      },
+    });
+    await store.appendSnapshot(wid, {
+      reason: "manual_checkpoint",
+      payload: registration!.persistence!.serialize({
+        state_binding: changedResource,
+        activeAnchor: "board.canvas",
+      }) as Record<string, unknown>,
+    });
+
+    await runtime.openWorkspace("board.main", wid);
+    expect(await store.getActiveWorkspaceId("board.main")).toBe(wid);
+    expect(viewState.getViewStateSnapshot().active_view_id).toBe("board.main");
+
+    const restored = await runtime.checkoutSnapshot(wid, 1);
+    expect(restored).toBe(true);
+    const head = await store.getWorkspaceHead(wid);
+    expect(head?.head_payload).toEqual(
+      expect.objectContaining({
+        state_binding: expect.objectContaining({
+          title: "Changed board",
+        }),
+      })
+    );
 
     await store.clearAll();
   });

@@ -45,6 +45,12 @@ describe("assistant.view.describe", () => {
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
+      getActiveWorkspaceSnapshot: vi.fn(() => ({
+        workspace_id: "ws-1",
+        surface_id: "board.main",
+        title: "Board Workspace",
+        view_id: "board.main",
+      })),
       navigateToView: vi.fn(),
     });
 
@@ -70,6 +76,11 @@ describe("assistant.view.describe", () => {
         active_state_binding: expect.objectContaining({
           binding_type: "board.workspace",
           binding_label: BOARD_DEFAULT_RESOURCE.binding_label,
+          view_id: "board.main",
+        }),
+        active_workspace: expect.objectContaining({
+          workspace_id: "ws-1",
+          surface_id: "board.main",
           view_id: "board.main",
         }),
         continuation: expect.objectContaining({
@@ -115,6 +126,7 @@ describe("assistant.view.describe", () => {
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
+      getActiveWorkspaceSnapshot: vi.fn(() => null),
       navigateToView: vi.fn(),
     });
 
@@ -228,6 +240,12 @@ describe("assistant.view.describe", () => {
       getContinuationSnapshot: vi.fn(() => ({
         pending_wait: null,
       })),
+      getActiveWorkspaceSnapshot: vi.fn(() => ({
+        workspace_id: "ws-2",
+        surface_id: "board.main",
+        title: "Test Board",
+        view_id: "board.main",
+      })),
       navigateToView: vi.fn(),
     });
 
@@ -237,6 +255,9 @@ describe("assistant.view.describe", () => {
       ok: true,
       data: expect.objectContaining({
         active_view_id: "board.main",
+        active_workspace: expect.objectContaining({
+          workspace_id: "ws-2",
+        }),
         current_state_binding_summary: expect.objectContaining({
           node_count: 2,
           edge_count: 1,
@@ -260,6 +281,56 @@ describe("assistant.view.describe", () => {
             has_more_edges: false,
           }),
         }),
+      }),
+    });
+  });
+
+  it("returns active_workspace as null on non-workspace pages such as task.main", async () => {
+    const registration = createViewDescribeCapabilityRegistration({
+      setActiveViewState: vi.fn(() => 1),
+      getViewStateSnapshot: vi.fn(() => ({
+        active_view_id: "task.main",
+        active_anchor: "task.overview",
+        current_state_binding: {
+          binding_type: "task.selection",
+          binding_label: "task.current",
+          title: "Current Task",
+          data: {},
+        },
+        active_manifest: {
+          view_id: "task.main",
+          binding_type: "task.selection",
+          title: "Task Main",
+          route_name: "view-task-main",
+          route_path: "/views/task/main",
+          state_mode: "lightweight" as const,
+          anchors: [],
+          capabilities: [],
+          interaction_hints: null,
+          state_summary: {
+            title: "Current Task",
+          },
+        },
+        view_state_version: 2,
+      })),
+      getTaskProgressSnapshot: vi.fn(() => ({
+        status: "idle" as const,
+      })),
+      getActiveStateBindingContextSnapshot: vi.fn(() => null),
+      getContinuationSnapshot: vi.fn(() => ({
+        pending_wait: null,
+      })),
+      getActiveWorkspaceSnapshot: vi.fn(() => null),
+      navigateToView: vi.fn(),
+    });
+
+    const result = await registration.handler({}, {});
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        active_view_id: "task.main",
+        active_workspace: null,
       }),
     });
   });

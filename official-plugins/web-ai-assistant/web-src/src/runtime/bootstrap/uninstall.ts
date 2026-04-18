@@ -9,6 +9,7 @@ import { uninstallRuntimeEventEmitter } from "../runtimeEventBridge";
 import {
   getPersistenceRuntimeHandle,
   setPersistenceRuntimeHandle,
+  setTaskRuntimeHandle,
   setRuntimeCapabilityRegistrations,
   setWebAssistantIdentityHandle,
 } from "./runtimeHandles";
@@ -18,6 +19,7 @@ export function uninstallAssistantRuntimeCapabilities(names: string[]) {
   void persistenceRuntime?.flushActiveView();
   persistenceRuntime?.dispose();
   setPersistenceRuntimeHandle(null);
+  setTaskRuntimeHandle(null);
   setRuntimeCapabilityRegistrations([]);
   setWebAssistantIdentityHandle(null);
   useSessionVisualState().setSessionIdle();

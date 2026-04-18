@@ -16,6 +16,7 @@ import type {
   SessionContinuation,
   SessionTaskProgress,
 } from "../observation/types";
+import type { WorkspaceCurrentContext } from "../workspace";
 
 export type ViewActionHandler = (
   payload: Record<string, unknown>,
@@ -29,6 +30,7 @@ export interface ViewRuntimeDeps {
   getTaskProgressSnapshot?: () => SessionTaskProgress;
   getActiveStateBindingContextSnapshot?: () => ActiveStateBindingContext | null;
   getContinuationSnapshot?: () => SessionContinuation;
+  getActiveWorkspaceSnapshot?: () => Promise<WorkspaceCurrentContext | null> | WorkspaceCurrentContext | null;
   navigateToView: (viewId: string) => Promise<void> | void;
   emitRuntimeEvent?: (input: AssistantRuntimeEventInput) => void;
 }

@@ -42,8 +42,14 @@ describe("assistant.runtime.bootstrap", () => {
             view_contract: expect.objectContaining({
               function: "assistant.view.contract",
             }),
-            workspace_checkpoint: expect.objectContaining({
-              function: "assistant.workspace_checkpoint",
+            workspace_get_current: expect.objectContaining({
+              function: "assistant.workspace.get_current",
+            }),
+            workspace_open: expect.objectContaining({
+              function: "assistant.workspace.open",
+            }),
+            checkpoint_workspace: expect.objectContaining({
+              function: "assistant.workspace.checkpoint",
             }),
           }),
         }),

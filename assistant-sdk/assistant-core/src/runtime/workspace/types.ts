@@ -16,6 +16,22 @@ export interface WorkspaceHeadRecord extends WorkspaceMeta {
   head_payload: Record<string, unknown>;
 }
 
+export interface WorkspaceSnapshotSummary {
+  workspace_id: string;
+  seq: number;
+  reason: WorkspaceSnapshotReason;
+  author?: string;
+  session_id?: string;
+  created_at_ms: number;
+}
+
+export interface WorkspaceCurrentContext {
+  workspace_id: string;
+  surface_id: string;
+  title?: string;
+  view_id: string;
+}
+
 export interface WorkspaceStore {
   getLastActiveSurfaceId(): Promise<string | null>;
   setLastActiveSurfaceId(surfaceId: string | null): Promise<void>;
@@ -24,6 +40,8 @@ export interface WorkspaceStore {
   setActiveWorkspace(surfaceId: string, workspaceId: string): Promise<void>;
 
   listWorkspaces(surfaceId: string): Promise<WorkspaceMeta[]>;
+
+  renameWorkspace(workspaceId: string, title: string): Promise<WorkspaceMeta | null>;
 
   createWorkspaceWithHead(input: {
     workspace_id: string;
@@ -50,6 +68,16 @@ export interface WorkspaceStore {
   }): Promise<void>;
 
   countHistorySnapshots(workspaceId: string): Promise<number>;
+
+  listSnapshots(
+    workspaceId: string,
+    options?: { limit?: number }
+  ): Promise<WorkspaceSnapshotSummary[]>;
+
+  getSnapshotBySeq(
+    workspaceId: string,
+    seq: number
+  ): Promise<(WorkspaceSnapshotSummary & { payload: Record<string, unknown> }) | null>;
 
   /** Test / reset only */
   clearAll(): Promise<void>;

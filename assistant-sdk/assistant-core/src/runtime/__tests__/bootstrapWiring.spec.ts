@@ -49,7 +49,9 @@ describe("runtime bootstrap wiring", () => {
       "assistant.view.list",
       "assistant.view.describe",
       "assistant.view.contract",
-      "assistant.workspace_checkpoint",
+      "assistant.workspace.list",
+      "assistant.workspace.get_current",
+      "assistant.workspace.checkpoint",
     ]));
     expect(registered.size).toBe(names.length);
     expect(emitAssistantRuntimeEvent({

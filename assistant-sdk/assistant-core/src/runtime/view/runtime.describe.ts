@@ -40,7 +40,25 @@ function buildViewContractSchema(): Record<string, unknown> {
   };
 }
 
-function buildWorkspaceCheckpointListSchema(): Record<string, unknown> {
+function buildWorkspaceGetCurrentSchema(): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {},
+  };
+}
+
+function buildWorkspaceOpenSchema(): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {
+      surface_id: { type: "string" },
+      workspace_id: { type: "string" },
+    },
+    required: ["surface_id", "workspace_id"],
+  };
+}
+
+function buildWorkspaceCheckpointSchema(): Record<string, unknown> {
   return {
     type: "object",
     properties: {},
@@ -136,12 +154,33 @@ function buildRuntimeBootstrapData() {
           },
         },
       },
-      workspace_checkpoint: {
+      workspace_get_current: {
         tool: "dawnchat.ui.capability.invoke",
-        function: "assistant.workspace_checkpoint",
+        function: "assistant.workspace.get_current",
         payload_example: {
           plugin_id: "<plugin_id>",
-          function: "assistant.workspace_checkpoint",
+          function: "assistant.workspace.get_current",
+          payload: {},
+        },
+      },
+      workspace_open: {
+        tool: "dawnchat.ui.capability.invoke",
+        function: "assistant.workspace.open",
+        payload_example: {
+          plugin_id: "<plugin_id>",
+          function: "assistant.workspace.open",
+          payload: {
+            surface_id: "<surface_id>",
+            workspace_id: "<workspace_id>",
+          },
+        },
+      },
+      checkpoint_workspace: {
+        tool: "dawnchat.ui.capability.invoke",
+        function: "assistant.workspace.checkpoint",
+        payload_example: {
+          plugin_id: "<plugin_id>",
+          function: "assistant.workspace.checkpoint",
           payload: {},
         },
       },
@@ -378,9 +417,19 @@ export function createViewListCapabilityRegistration(
             input_schema: buildViewContractSchema(),
           },
           {
-            name: "assistant.workspace_checkpoint",
-            description: "Append a manual_checkpoint snapshot for the active workspace (stateful view).",
-            input_schema: buildWorkspaceCheckpointListSchema(),
+            name: "assistant.workspace.get_current",
+            description: "Get the current active workspace context for the active stateful surface.",
+            input_schema: buildWorkspaceGetCurrentSchema(),
+          },
+          {
+            name: "assistant.workspace.open",
+            description: "Restore one workspace head into the target surface.",
+            input_schema: buildWorkspaceOpenSchema(),
+          },
+          {
+            name: "assistant.workspace.checkpoint",
+            description: "Append a manual checkpoint snapshot for the active workspace (stateful view).",
+            input_schema: buildWorkspaceCheckpointSchema(),
           },
         ],
       },
@@ -406,6 +455,7 @@ export function createViewDescribeCapabilityRegistration(
     const taskProgress = deps.getTaskProgressSnapshot?.() || null;
     const activeStateBindingContext = deps.getActiveStateBindingContextSnapshot?.() || null;
     const continuation = deps.getContinuationSnapshot?.() || null;
+    const activeWorkspace = await deps.getActiveWorkspaceSnapshot?.() || null;
 
     return {
       ok: true,
@@ -416,6 +466,7 @@ export function createViewDescribeCapabilityRegistration(
         view_state_version: currentSnapshot.view_state_version,
         task_progress: taskProgress,
         active_state_binding: activeStateBindingContext,
+        active_workspace: activeWorkspace,
         continuation,
       },
     };

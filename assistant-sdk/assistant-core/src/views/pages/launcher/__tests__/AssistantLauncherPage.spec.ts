@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, nextTick } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
+import { resetTaskRuntimeState, setTaskRuntimeHandle } from "../../../../runtime";
 
 import {
   installAssistantLauncherNavigation,
@@ -43,6 +44,8 @@ import AssistantLauncherPage from "../AssistantLauncherPage.vue";
 describe("AssistantLauncherPage", () => {
   beforeEach(() => {
     resetLauncherContentExitForTests();
+    resetTaskRuntimeState();
+    setTaskRuntimeHandle(null);
   });
 
   it("navigates back to the last tracked content route on back click", async () => {
@@ -85,8 +88,49 @@ describe("AssistantLauncherPage", () => {
     wrapper.unmount();
   });
 
-  it("invokes openAssistantViewFromShell when a tile is clicked", async () => {
+  it("renders task-first sections and opens tools via view.open", async () => {
     openSpy.mockClear();
+    const taskHandle = {
+      listTasks: vi.fn().mockResolvedValue([
+        {
+          task_id: "task-1",
+          template_id: "general.task",
+          title: "Task One",
+          summary: "Recent task",
+          status: "draft",
+          updated_at_ms: Date.now(),
+        },
+      ]),
+      listTaskTemplates: vi.fn().mockResolvedValue([
+        {
+          template_id: "general.task",
+          title: "General Task",
+          description: "Start blank",
+        },
+      ]),
+      createTask: vi.fn().mockResolvedValue({
+        task_id: "task-2",
+        template_id: "general.task",
+        title: "New Task",
+        status: "draft",
+        created_at_ms: 1,
+        updated_at_ms: 1,
+        surface_workspace_refs: {},
+      }),
+      openTask: vi.fn().mockResolvedValue({
+        task_id: "task-1",
+        opened_view_id: "task.main",
+        status: "opened",
+      }),
+      getCurrentTask: vi.fn(),
+      getTask: vi.fn(),
+      renameTask: vi.fn(),
+      setTaskActiveSurface: vi.fn(),
+      bindTaskWorkspace: vi.fn(),
+      openWorkspaceForTask: vi.fn(),
+    } as never;
+    setTaskRuntimeHandle(taskHandle);
+
     const Placeholder = defineComponent({ name: "RoutePlaceholder", template: "<div />" });
     const router = createRouter({
       history: createMemoryHistory({ initialEntries: ["/views/launcher"] }),
@@ -109,11 +153,94 @@ describe("AssistantLauncherPage", () => {
       attachTo: document.body,
     });
 
-    const tile = wrapper.find(".assistant-launcher__tile");
-    expect(tile.exists()).toBe(true);
+    await Promise.resolve();
+    await nextTick();
+
+    expect(wrapper.text()).toContain("Continue Tasks");
+    expect(wrapper.text()).toContain("New Task");
+    expect(wrapper.text()).toContain("Tools & Views");
     expect(wrapper.find(".assistant-launcher__back").exists()).toBe(false);
-    await tile.trigger("click");
+
+    const toolTile = wrapper.findAll(".assistant-launcher__tile").at(-1);
+    expect(toolTile?.exists()).toBe(true);
+    await toolTile!.trigger("click");
     expect(openSpy).toHaveBeenCalledWith("board.main");
+    wrapper.unmount();
+  });
+
+  it("creates and opens a task from the template section", async () => {
+    const taskHandle = {
+      listTasks: vi.fn().mockResolvedValue([]),
+      listTaskTemplates: vi.fn().mockResolvedValue([
+        {
+          template_id: "general.task",
+          title: "General Task",
+          description: "Start blank",
+        },
+      ]),
+      createTask: vi.fn().mockResolvedValue({
+        task_id: "task-2",
+        template_id: "general.task",
+        title: "New Task",
+        status: "draft",
+        created_at_ms: 1,
+        updated_at_ms: 1,
+        surface_workspace_refs: {},
+      }),
+      openTask: vi.fn().mockResolvedValue({
+        task_id: "task-2",
+        opened_view_id: "task.main",
+        status: "opened",
+      }),
+      getCurrentTask: vi.fn(),
+      getTask: vi.fn(),
+      renameTask: vi.fn(),
+      setTaskActiveSurface: vi.fn(),
+      bindTaskWorkspace: vi.fn(),
+      openWorkspaceForTask: vi.fn(),
+    } as never;
+    setTaskRuntimeHandle(taskHandle);
+
+    const Placeholder = defineComponent({ name: "RoutePlaceholder", template: "<div />" });
+    const router = createRouter({
+      history: createMemoryHistory({ initialEntries: ["/views/launcher"] }),
+      routes: [
+        {
+          path: "/views/launcher",
+          name: "launcher",
+          component: Placeholder,
+        },
+      ],
+    });
+    installAssistantLauncherNavigation(router);
+    await router.push("/views/launcher");
+    await nextTick();
+
+    const wrapper = mount(AssistantLauncherPage, {
+      global: {
+        plugins: [router],
+      },
+      attachTo: document.body,
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await nextTick();
+    await nextTick();
+
+    expect(taskHandle.listTaskTemplates).toHaveBeenCalled();
+
+    const templateTile = wrapper
+      .findAll(".assistant-launcher__tile")
+      .find((candidate) => candidate.text().includes("General Task"));
+    expect(templateTile?.exists()).toBe(true);
+    await templateTile!.trigger("click");
+
+    expect(taskHandle.createTask).toHaveBeenCalledWith({
+      template_id: "general.task",
+      title: "New Task",
+    });
+    expect(taskHandle.openTask).toHaveBeenCalledWith("task-2");
     wrapper.unmount();
   });
 });

@@ -11,6 +11,7 @@ import {
 
 import type { ViewRegistration } from "./manifest";
 import { ASSISTANT_LAUNCHER_ROUTE } from "./assistantNavigationRoutes";
+import { TASK_MAIN_VIEW_ID } from "../task";
 
 const VIEW_ID_TO_ICON: Record<string, Component> = {
   "board.main": LayoutDashboard,
@@ -29,7 +30,7 @@ export function filterRegistrationsForLauncher(
   registrations: ViewRegistration[]
 ): ViewRegistration[] {
   return registrations
-    .filter((r) => r.route.full_path !== ASSISTANT_LAUNCHER_ROUTE)
+    .filter((r) => r.route.full_path !== ASSISTANT_LAUNCHER_ROUTE && r.view_id !== TASK_MAIN_VIEW_ID)
     .slice()
     .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
 }
