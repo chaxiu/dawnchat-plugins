@@ -16,6 +16,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
+const DEFAULT_FLOATING_POPOVER_Z_INDEX = 1000;
+
 const props = withDefaults(
   defineProps<{
     visible: boolean;
@@ -38,7 +40,7 @@ const props = withDefaults(
     width: 360,
     maxWidth: "min(520px, calc(100vw - 16px))",
     maxHeight: "320px",
-    zIndex: 8,
+    zIndex: DEFAULT_FLOATING_POPOVER_Z_INDEX,
     placement: "auto",
     panelClass: "",
     surfaceMix: 92,
@@ -172,6 +174,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .floating-popover {
   position: fixed;
+  isolation: isolate;
   border: 1px solid color-mix(
     in srgb,
     var(--color-border, var(--border, rgba(148, 163, 184, 0.38))) 82%,
@@ -190,6 +193,7 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(14px) saturate(1.08);
   padding: 0.55rem 0.6rem;
   overflow: auto;
+  will-change: top, left, transform;
 }
 
 .floating-popover-enter-active,

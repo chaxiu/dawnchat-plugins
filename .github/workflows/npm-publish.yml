@@ -10,6 +10,7 @@ on:
       - "auth-bridge/**"
       - "shared-protocol/**"
       - "shared-ui/**"
+      - "assistant-sdk/assistant-chat-ui/**"
       - ".github/workflows/npm-publish.yml"
   release:
     types:
@@ -39,6 +40,7 @@ jobs:
           cache-dependency-path: |
             shared-protocol/package-lock.json
             shared-ui/package-lock.json
+            assistant-sdk/assistant-chat-ui/package-lock.json
 
       - name: Build and publish packages when local version is newer
         shell: bash
@@ -118,3 +120,4 @@ jobs:
           publish_if_needed "shared-protocol"
           publish_if_needed "shared-ui"
           publish_if_needed "auth-bridge"
+          publish_if_needed "assistant-sdk/assistant-chat-ui"

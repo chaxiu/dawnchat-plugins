@@ -58,6 +58,7 @@
     :visible="showInputPopover"
     :anchor-el="infoButtonRef"
     :width="520"
+    :z-index="TOOL_INPUT_POPOVER_Z_INDEX"
     placement="auto"
     panel-class="tool-input-popover"
     :surface-mix="96"
@@ -78,6 +79,8 @@ import { ChevronRight, Info, Wrench } from "lucide-vue-next";
 import type { ChatToolDisplayMeta } from "../types";
 import ChatCodeBlock from "./ChatCodeBlock.vue";
 import FloatingPopover from "./FloatingPopover.vue";
+
+const TOOL_INPUT_POPOVER_Z_INDEX = 1000;
 
 const props = withDefaults(
   defineProps<{

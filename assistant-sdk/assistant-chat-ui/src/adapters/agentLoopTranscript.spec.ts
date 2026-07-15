@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { agentLoopTranscriptToTimelineItems, type AgentLoopLikeMessage } from "./agentLoopTranscript";
+import {
+  agentLoopTranscriptToTimelineItems,
+  projectAgentLoopTranscript,
+  type AgentLoopLikeMessage,
+} from "./agentLoopTranscript";
 
 describe("agentLoopTranscriptToTimelineItems", () => {
   it("maps user, assistant, and pending tool call messages", () => {
@@ -175,6 +179,90 @@ describe("agentLoopTranscriptToTimelineItems", () => {
         toolDisplay: {
           title: "assistant.unknown",
         },
+      },
+    });
+  });
+
+  it("supports part-aware assistant transcript including reasoning", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "assistant",
+        content: "",
+        parts: [
+          {
+            id: "reasoning-1",
+            type: "reasoning",
+            text: "先判断当前页面是否可控",
+          },
+          {
+            id: "text-1",
+            type: "text",
+            text: "我先检查当前页面状态。",
+          },
+          {
+            id: "tool-1",
+            type: "tool",
+            tool: "host.get_current_page",
+            callID: "call-1",
+            state: {
+              status: "running",
+              input: {},
+            },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: "",
+        parts: [
+          {
+            id: "tool-result-1",
+            type: "tool",
+            tool: "host.get_current_page",
+            callID: "call-1",
+            state: {
+              status: "completed",
+              output: {
+                page_id: "host.apps_home",
+              },
+            },
+          },
+        ],
+      },
+    ];
+
+    const projection = projectAgentLoopTranscript(transcript, {
+      isRunning: true,
+    });
+
+    expect(projection.activeReasoningItemId).toBe("reasoning-1");
+    expect(projection.timelineItems).toHaveLength(3);
+    expect(projection.timelineItems[0]).toMatchObject({
+      kind: "part",
+      role: "assistant",
+      item: {
+        id: "reasoning-1",
+        type: "reasoning",
+        text: "先判断当前页面是否可控",
+        isStreaming: true,
+      },
+    });
+    expect(projection.timelineItems[1]).toMatchObject({
+      kind: "part",
+      role: "assistant",
+      item: {
+        id: "text-1",
+        type: "text",
+        text: "我先检查当前页面状态。",
+      },
+    });
+    expect(projection.timelineItems[2]).toMatchObject({
+      kind: "part",
+      role: "assistant",
+      item: {
+        id: "tool-1",
+        type: "tool",
+        status: "completed",
       },
     });
   });

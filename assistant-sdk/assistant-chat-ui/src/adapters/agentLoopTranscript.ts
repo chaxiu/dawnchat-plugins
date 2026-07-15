@@ -10,11 +10,25 @@ export interface AgentLoopLikeToolCall {
   input?: unknown;
 }
 
+export interface AgentLoopLikeMessagePart {
+  id: string;
+  type: string;
+  text?: string;
+  tool?: string;
+  callID?: string;
+  callId?: string;
+  status?: string;
+  state?: Record<string, unknown>;
+  reason?: string;
+  [key: string]: unknown;
+}
+
 export interface AgentLoopLikeAssistantMessage {
   role: "assistant";
   content: unknown;
   toolCalls?: AgentLoopLikeToolCall[];
   name?: string;
+  parts?: AgentLoopLikeMessagePart[];
 }
 
 export interface AgentLoopLikeToolMessage {
@@ -22,12 +36,14 @@ export interface AgentLoopLikeToolMessage {
   content: unknown;
   name?: string;
   toolCallId?: string;
+  parts?: AgentLoopLikeMessagePart[];
 }
 
 export interface AgentLoopLikeUserOrSystemMessage {
   role: "user" | "system";
   content: unknown;
   name?: string;
+  parts?: AgentLoopLikeMessagePart[];
 }
 
 export type AgentLoopLikeMessage =
@@ -38,6 +54,11 @@ export type AgentLoopLikeMessage =
 export interface AgentLoopTranscriptToTimelineItemsOptions {
   isRunning: boolean;
   getToolDescription?: (toolName: string) => string;
+}
+
+export interface AgentLoopTranscriptProjection {
+  timelineItems: ChatTimelineItem[];
+  activeReasoningItemId: string;
 }
 
 interface ToolDisplayBuildOptions {
@@ -164,15 +185,143 @@ function getAssistantContentText(message: AgentLoopLikeMessage): string {
   return stringifyContent(message.content);
 }
 
-export function agentLoopTranscriptToTimelineItems(
+function normalizePartType(part: AgentLoopLikeMessagePart): string {
+  const rawType = String(part.type || "").trim().toLowerCase();
+  if (!rawType) return "unknown";
+  if (rawType === "step-start" || rawType === "step-finish") return "step";
+  return rawType;
+}
+
+function getPartCallId(part: AgentLoopLikeMessagePart): string {
+  return String(part.callID || part.callId || "").trim();
+}
+
+function getPartStatus(part: AgentLoopLikeMessagePart, fallback: "pending" | "completed" | "error"): "pending" | "completed" | "error" {
+  const state = toRecord(part.state);
+  const rawStatus = String(state.status || part.status || "").trim().toLowerCase();
+  if (rawStatus === "completed" || rawStatus === "success" || rawStatus === "done") return "completed";
+  if (rawStatus === "error" || rawStatus === "failed" || rawStatus === "rejected") return "error";
+  if (rawStatus === "running" || rawStatus === "pending" || rawStatus === "streaming") return "pending";
+  return fallback;
+}
+
+function createToolRenderItem(
+  part: AgentLoopLikeMessagePart,
+  options: AgentLoopTranscriptToTimelineItemsOptions,
+  fallbackStatus: "pending" | "completed" | "error"
+): ChatRenderItem {
+  const state = toRecord(part.state);
+  const status = getPartStatus(part, fallbackStatus);
+  const toolName = String(part.tool || "tool");
+  const input = state.input ?? part.input;
+  const error = state.error ?? part.error;
+  const output = state.output ?? part.output;
+  const result = error !== undefined ? { ok: false, error } : output !== undefined ? { ok: true, output } : undefined;
+
+  return {
+    id: String(part.id || `${toolName}-${getPartCallId(part) || "tool"}`),
+    type: "tool",
+    tool: toolName,
+    status,
+    text: toolName,
+    callID: getPartCallId(part),
+    toolDisplay: buildToolDisplay({
+      toolName,
+      input,
+      result,
+      status,
+      getToolDescription: options.getToolDescription,
+    }),
+    raw: part,
+    isStreaming: options.isRunning && status === "pending",
+  };
+}
+
+function appendPartTimelineItems(
+  items: ChatTimelineItem[],
+  toolItemByCallId: Map<string, ChatRenderItem>,
+  role: "user" | "assistant",
+  parts: AgentLoopLikeMessagePart[],
+  options: AgentLoopTranscriptToTimelineItemsOptions,
+  index: number
+) {
+  parts.forEach((part, partIndex) => {
+    const id = String(part.id || `${role}-part-${index}-${partIndex}`);
+    const type = normalizePartType(part);
+    if (type === "tool") {
+      const toolItem = createToolRenderItem(part, options, role === "assistant" ? "pending" : "completed");
+      const callId = getPartCallId(part);
+      if (callId) {
+        toolItemByCallId.set(callId, toolItem);
+      }
+      items.push({
+        id: `${role}-tool-${index}-${partIndex}`,
+        kind: "part",
+        role,
+        item: toolItem,
+      });
+      return;
+    }
+
+    const itemType = type === "text" || type === "reasoning" || type === "step" ? type : "unknown";
+    items.push({
+      id: `${role}-${itemType}-${index}-${partIndex}`,
+      kind: "part",
+      role,
+      item: {
+        id,
+        type: itemType,
+        text: String(part.text || ""),
+        reason: String(part.reason || ""),
+        callID: getPartCallId(part),
+        raw: part,
+        isStreaming: options.isRunning && role === "assistant",
+      },
+    });
+  });
+}
+
+function mergeToolMessagePart(
+  items: ChatTimelineItem[],
+  toolItemByCallId: Map<string, ChatRenderItem>,
+  part: AgentLoopLikeMessagePart,
+  options: AgentLoopTranscriptToTimelineItemsOptions,
+  index: number,
+  partIndex: number
+) {
+  const toolItem = createToolRenderItem(part, options, "completed");
+  const callId = getPartCallId(part);
+  const matchedToolItem = callId ? toolItemByCallId.get(callId) : null;
+  if (matchedToolItem) {
+    matchedToolItem.status = toolItem.status;
+    matchedToolItem.isStreaming = false;
+    matchedToolItem.toolDisplay = toolItem.toolDisplay;
+    matchedToolItem.raw = part;
+    return;
+  }
+
+  items.push({
+    id: `tool-part-${index}-${partIndex}`,
+    kind: "part",
+    role: "assistant",
+    item: toolItem,
+  });
+}
+
+export function projectAgentLoopTranscript(
   transcript: AgentLoopLikeMessage[],
   options: AgentLoopTranscriptToTimelineItemsOptions
-): ChatTimelineItem[] {
+): AgentLoopTranscriptProjection {
   const items: ChatTimelineItem[] = [];
   const toolItemByCallId = new Map<string, ChatRenderItem>();
 
   transcript.forEach((message, index) => {
+    const parts = Array.isArray(message.parts) ? message.parts.filter((part): part is AgentLoopLikeMessagePart => Boolean(part)) : [];
     if (message.role === "user") {
+      if (parts.length > 0) {
+        appendPartTimelineItems(items, toolItemByCallId, "user", parts, options, index);
+        return;
+      }
       items.push({
         id: `user-${index}`,
         kind: "part",
@@ -188,6 +337,10 @@ export function agentLoopTranscriptToTimelineItems(
     }
 
     if (message.role === "assistant") {
+      if (parts.length > 0) {
+        appendPartTimelineItems(items, toolItemByCallId, "assistant", parts, options, index);
+        return;
+      }
       const assistantText = getAssistantContentText(message);
       if (assistantText) {
         items.push({
@@ -233,6 +386,13 @@ export function agentLoopTranscriptToTimelineItems(
     }
 
     if (message.role === "tool") {
+      if (parts.length > 0) {
+        parts.forEach((part, partIndex) => {
+          if (normalizePartType(part) !== "tool") return;
+          mergeToolMessagePart(items, toolItemByCallId, part, options, index, partIndex);
+        });
+        return;
+      }
       const toolName = message.name || "tool";
       const toolContent = message.content;
       const isError = Boolean(
@@ -282,5 +442,25 @@ export function agentLoopTranscriptToTimelineItems(
     }
   });
 
-  return items;
+  let activeReasoningItemId = "";
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const timeline = items[i];
+    if (timeline.kind !== "part") continue;
+    if (timeline.item.type === "reasoning" && timeline.item.isStreaming) {
+      activeReasoningItemId = timeline.item.id;
+      break;
+    }
+  }
+
+  return {
+    timelineItems: items,
+    activeReasoningItemId,
+  };
+}
+
+export function agentLoopTranscriptToTimelineItems(
+  transcript: AgentLoopLikeMessage[],
+  options: AgentLoopTranscriptToTimelineItemsOptions
+): ChatTimelineItem[] {
+  return projectAgentLoopTranscript(transcript, options).timelineItems;
 }

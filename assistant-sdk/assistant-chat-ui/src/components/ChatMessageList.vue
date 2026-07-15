@@ -257,6 +257,7 @@ const handleScroll = () => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1rem;
   display: flex;
   flex-direction: column;

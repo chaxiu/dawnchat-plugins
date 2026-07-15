@@ -29,7 +29,7 @@ export default defineConfig({
     },
     minify: false,
     rollupOptions: {
-      external: ["vue"],
+      external: ["vue", "lucide-vue-next"],
       output: {
         assetFileNames: (assetInfo) => {
           if (assetInfo.name === "style.css") {
