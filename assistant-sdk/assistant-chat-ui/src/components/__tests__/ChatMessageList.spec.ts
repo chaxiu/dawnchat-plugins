@@ -258,4 +258,34 @@ describe("ChatMessageList", () => {
       vi.useRealTimers();
     }
   });
+
+  it("task 卡片点击发出 task-open", async () => {
+    const wrapper = mount(ChatMessageList, {
+      props: {
+        timelineItems: [
+          {
+            id: "task_1",
+            kind: "task",
+            task: {
+              id: "task_1",
+              title: "Research topic",
+              status: "running",
+              agentLabel: "research",
+              summary: "Gathering sources",
+            },
+          },
+        ],
+        activeReasoningItemId: "",
+        isStreaming: false,
+        waitingReason: "",
+        canSwitchPlanToBuild: false,
+        lastError: null,
+      },
+    });
+
+    expect(wrapper.find(".task-card").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Research topic");
+    await wrapper.find(".task-card").trigger("click");
+    expect(wrapper.emitted("task-open")?.[0]).toEqual(["task_1"]);
+  });
 });

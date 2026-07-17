@@ -55,6 +55,14 @@
         @permission="(id, response, remember) => emit('permission', id, response, remember)"
       />
 
+      <ChatTaskCard
+        v-else-if="timeline.kind === 'task'"
+        :task="timeline.task"
+        :agent-label="mergedLabels.assistantLabel"
+        :open-hint-label="mergedLabels.taskOpenHintLabel"
+        @task-open="(id) => emit('task-open', id)"
+      />
+
       <div v-else-if="timeline.kind === 'todo'" class="todo-timeline-item" :class="{ pinned: isScrollingDown }">
         <ChatTodoDock
           :todos="timeline.todos"
@@ -102,6 +110,7 @@ import ChatAssistantWaiting from "./ChatAssistantWaiting.vue";
 import ChatMessagePartRenderer from "./ChatMessagePartRenderer.vue";
 import ChatPermissionCard from "./ChatPermissionCard.vue";
 import ChatQuestionCard from "./ChatQuestionCard.vue";
+import ChatTaskCard from "./ChatTaskCard.vue";
 import ChatTodoDock from "./ChatTodoDock.vue";
 
 const props = defineProps<{
@@ -120,6 +129,7 @@ const emit = defineEmits<{
   "question-reply": [requestID: string, answers: string[][]];
   "question-reject": [requestID: string];
   "switch-to-build": [];
+  "task-open": [taskId: string];
 }>();
 
 const messageListRef = ref<HTMLElement | null>(null);
@@ -198,6 +208,16 @@ const renderActivitySignature = computed(() => {
       props.isStreaming ? "1" : "0",
       last.id,
       last.permission.status,
+    ].join(":");
+  }
+  if (last.kind === "task") {
+    return [
+      "task",
+      presentedTimelineItems.value.length,
+      props.isStreaming ? "1" : "0",
+      last.id,
+      last.task.status || "",
+      String(last.task.summary || "").length,
     ].join(":");
   }
   return [

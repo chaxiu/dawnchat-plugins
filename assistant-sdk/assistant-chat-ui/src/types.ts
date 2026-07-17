@@ -97,11 +97,26 @@ export interface ChatTimelineTodo {
   todos: ChatTodoItem[];
 }
 
+export interface ChatTaskInfo {
+  id: string;
+  title: string;
+  status?: "pending" | "running" | "completed" | "failed" | string;
+  summary?: string;
+  agentLabel?: string;
+}
+
+export interface ChatTimelineTask {
+  id: string;
+  kind: "task";
+  task: ChatTaskInfo;
+}
+
 export type ChatTimelineItem =
   | ChatTimelinePart
   | ChatTimelinePermission
   | ChatTimelineQuestion
-  | ChatTimelineTodo;
+  | ChatTimelineTodo
+  | ChatTimelineTask;
 
 export type ChatWaitingReason =
   | ""
@@ -133,6 +148,7 @@ export interface ChatMessageListLabels {
   todoTitle: string;
   todoCollapseLabel: string;
   todoExpandLabel: string;
+  taskOpenHintLabel: string;
   waitingGeneratingText: string;
   waitingPermissionText: string;
   waitingQuestionText: string;
@@ -162,6 +178,7 @@ export const DEFAULT_CHAT_MESSAGE_LIST_LABELS: ChatMessageListLabels = {
   todoTitle: "Todo",
   todoCollapseLabel: "Collapse",
   todoExpandLabel: "Expand",
+  taskOpenHintLabel: "View details",
   waitingGeneratingText: "Thinking...",
   waitingPermissionText: "Waiting for permission to continue",
   waitingQuestionText: "Waiting for your answer to continue",

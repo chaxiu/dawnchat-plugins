@@ -83,6 +83,9 @@ const activitySignature = computed(() => {
         if (item.kind === "permission") {
           return [item.kind, item.id, item.permission.status].join(":");
         }
+        if (item.kind === "task") {
+          return [item.kind, item.id, item.task.status || "", String(item.task.summary || "").length].join(":");
+        }
         return [item.kind, item.id, item.question.id].join(":");
       })
       .join(";"),
