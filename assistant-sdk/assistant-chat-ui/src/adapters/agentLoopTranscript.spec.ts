@@ -183,8 +183,28 @@ describe("agentLoopTranscriptToTimelineItems", () => {
     });
   });
 
-  it("supports part-aware assistant transcript including reasoning", () => {
+  it("keeps only live-turn reasoning streaming until text/tool appears", () => {
     const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "assistant",
+        content: "",
+        parts: [
+          {
+            id: "reasoning-hist",
+            type: "reasoning",
+            text: "历史推理",
+          },
+          {
+            id: "text-hist",
+            type: "text",
+            text: "历史正文",
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: "继续",
+      },
       {
         role: "assistant",
         content: "",
@@ -235,34 +255,100 @@ describe("agentLoopTranscriptToTimelineItems", () => {
       isRunning: true,
     });
 
-    expect(projection.activeReasoningItemId).toBe("reasoning-1");
-    expect(projection.timelineItems).toHaveLength(3);
+    expect(projection.activeReasoningItemId).toBe("");
     expect(projection.timelineItems[0]).toMatchObject({
-      kind: "part",
-      role: "assistant",
+      item: {
+        id: "reasoning-hist",
+        type: "reasoning",
+        isStreaming: false,
+      },
+    });
+    expect(projection.timelineItems[3]).toMatchObject({
       item: {
         id: "reasoning-1",
         type: "reasoning",
-        text: "先判断当前页面是否可控",
-        isStreaming: true,
+        isStreaming: false,
       },
     });
-    expect(projection.timelineItems[1]).toMatchObject({
-      kind: "part",
-      role: "assistant",
+    expect(projection.timelineItems[4]).toMatchObject({
       item: {
         id: "text-1",
         type: "text",
-        text: "我先检查当前页面状态。",
+        isStreaming: true,
       },
     });
-    expect(projection.timelineItems[2]).toMatchObject({
-      kind: "part",
-      role: "assistant",
+    expect(projection.timelineItems[5]).toMatchObject({
       item: {
         id: "tool-1",
         type: "tool",
         status: "completed",
+        isStreaming: false,
+      },
+    });
+  });
+
+  it("marks live reasoning streaming before text starts", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "assistant",
+        content: "",
+        parts: [
+          {
+            id: "reasoning-live",
+            type: "reasoning",
+            text: "思考中",
+          },
+        ],
+      },
+    ];
+
+    const projection = projectAgentLoopTranscript(transcript, {
+      isRunning: true,
+    });
+
+    expect(projection.activeReasoningItemId).toBe("reasoning-live");
+    expect(projection.timelineItems[0]).toMatchObject({
+      item: {
+        id: "reasoning-live",
+        type: "reasoning",
+        isStreaming: true,
+      },
+    });
+  });
+
+  it("does not stream historical reasoning while a newer turn is running", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "assistant",
+        content: "",
+        parts: [
+          {
+            id: "reasoning-old",
+            type: "reasoning",
+            text: "旧推理",
+          },
+          {
+            id: "text-old",
+            type: "text",
+            text: "旧正文",
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: "下一轮",
+      },
+    ];
+
+    const projection = projectAgentLoopTranscript(transcript, {
+      isRunning: true,
+    });
+
+    expect(projection.activeReasoningItemId).toBe("");
+    expect(projection.timelineItems[0]).toMatchObject({
+      item: {
+        id: "reasoning-old",
+        isStreaming: false,
       },
     });
   });

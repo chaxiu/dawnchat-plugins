@@ -205,10 +205,64 @@ function getPartStatus(part: AgentLoopLikeMessagePart, fallback: "pending" | "co
   return fallback;
 }
 
+function findLastAssistantIndex(transcript: AgentLoopLikeMessage[]): number {
+  for (let i = transcript.length - 1; i >= 0; i -= 1) {
+    if (transcript[i]?.role === "assistant") {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function partSupersedesReasoning(type: string): boolean {
+  return type === "text" || type === "tool";
+}
+
+/**
+ * Streaming flags drive ChatMessageList reasoning expand/collapse:
+ * - historical turns: never streaming
+ * - live reasoning: streaming only until later text/tool appears
+ * - live text: streaming only for the latest text part in the turn
+ */
+function isAssistantPartStreaming(opts: {
+  role: "user" | "assistant";
+  type: string;
+  partIndex: number;
+  parts: AgentLoopLikeMessagePart[];
+  isRunning: boolean;
+  isCurrentAssistantTurn: boolean;
+}): boolean {
+  if (!opts.isRunning || opts.role !== "assistant" || !opts.isCurrentAssistantTurn) {
+    return false;
+  }
+  if (opts.type === "reasoning") {
+    for (let i = opts.partIndex + 1; i < opts.parts.length; i += 1) {
+      const later = opts.parts[i];
+      if (!later) continue;
+      if (partSupersedesReasoning(normalizePartType(later))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (opts.type === "text") {
+    for (let i = opts.partIndex + 1; i < opts.parts.length; i += 1) {
+      const later = opts.parts[i];
+      if (!later) continue;
+      if (normalizePartType(later) === "text") {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 function createToolRenderItem(
   part: AgentLoopLikeMessagePart,
   options: AgentLoopTranscriptToTimelineItemsOptions,
-  fallbackStatus: "pending" | "completed" | "error"
+  fallbackStatus: "pending" | "completed" | "error",
+  isCurrentAssistantTurn: boolean
 ): ChatRenderItem {
   const state = toRecord(part.state);
   const status = getPartStatus(part, fallbackStatus);
@@ -233,7 +287,7 @@ function createToolRenderItem(
       getToolDescription: options.getToolDescription,
     }),
     raw: part,
-    isStreaming: options.isRunning && status === "pending",
+    isStreaming: options.isRunning && isCurrentAssistantTurn && status === "pending",
   };
 }
 
@@ -243,13 +297,19 @@ function appendPartTimelineItems(
   role: "user" | "assistant",
   parts: AgentLoopLikeMessagePart[],
   options: AgentLoopTranscriptToTimelineItemsOptions,
-  index: number
+  index: number,
+  isCurrentAssistantTurn: boolean
 ) {
   parts.forEach((part, partIndex) => {
     const id = String(part.id || `${role}-part-${index}-${partIndex}`);
     const type = normalizePartType(part);
     if (type === "tool") {
-      const toolItem = createToolRenderItem(part, options, role === "assistant" ? "pending" : "completed");
+      const toolItem = createToolRenderItem(
+        part,
+        options,
+        role === "assistant" ? "pending" : "completed",
+        isCurrentAssistantTurn
+      );
       const callId = getPartCallId(part);
       if (callId) {
         toolItemByCallId.set(callId, toolItem);
@@ -275,7 +335,14 @@ function appendPartTimelineItems(
         reason: String(part.reason || ""),
         callID: getPartCallId(part),
         raw: part,
-        isStreaming: options.isRunning && role === "assistant",
+        isStreaming: isAssistantPartStreaming({
+          role,
+          type: itemType,
+          partIndex,
+          parts,
+          isRunning: options.isRunning,
+          isCurrentAssistantTurn,
+        }),
       },
     });
   });
@@ -289,7 +356,7 @@ function mergeToolMessagePart(
   index: number,
   partIndex: number
 ) {
-  const toolItem = createToolRenderItem(part, options, "completed");
+  const toolItem = createToolRenderItem(part, options, "completed", true);
   const callId = getPartCallId(part);
   const matchedToolItem = callId ? toolItemByCallId.get(callId) : null;
   if (matchedToolItem) {
@@ -314,12 +381,15 @@ export function projectAgentLoopTranscript(
 ): AgentLoopTranscriptProjection {
   const items: ChatTimelineItem[] = [];
   const toolItemByCallId = new Map<string, ChatRenderItem>();
+  const lastAssistantIndex = findLastAssistantIndex(transcript);
 
   transcript.forEach((message, index) => {
     const parts = Array.isArray(message.parts) ? message.parts.filter((part): part is AgentLoopLikeMessagePart => Boolean(part)) : [];
+    const isCurrentAssistantTurn = options.isRunning && index === lastAssistantIndex;
+
     if (message.role === "user") {
       if (parts.length > 0) {
-        appendPartTimelineItems(items, toolItemByCallId, "user", parts, options, index);
+        appendPartTimelineItems(items, toolItemByCallId, "user", parts, options, index, false);
         return;
       }
       items.push({
@@ -338,7 +408,15 @@ export function projectAgentLoopTranscript(
 
     if (message.role === "assistant") {
       if (parts.length > 0) {
-        appendPartTimelineItems(items, toolItemByCallId, "assistant", parts, options, index);
+        appendPartTimelineItems(
+          items,
+          toolItemByCallId,
+          "assistant",
+          parts,
+          options,
+          index,
+          isCurrentAssistantTurn
+        );
         return;
       }
       const assistantText = getAssistantContentText(message);
@@ -351,7 +429,7 @@ export function projectAgentLoopTranscript(
             id: `assistant-text-${index}`,
             type: "text",
             text: assistantText,
-            isStreaming: options.isRunning && index === transcript.length - 1,
+            isStreaming: isCurrentAssistantTurn,
           },
         });
       }
@@ -371,7 +449,7 @@ export function projectAgentLoopTranscript(
               status: "pending",
               getToolDescription: options.getToolDescription,
             }),
-            isStreaming: options.isRunning,
+            isStreaming: isCurrentAssistantTurn,
           };
           toolItemByCallId.set(toolCall.id, item);
           items.push({
