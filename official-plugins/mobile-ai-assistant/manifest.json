@@ -1,7 +1,7 @@
 {
   "id": "com.dawnchat.mobile-ai-assistant",
   "name": "Mobile AI Assistant",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "app_type": "mobile",
   "description": "Official Ionic + Capacitor assistant template with DawnChat Assistant SDK, chat UI, and host tool routing",
   "author": "DawnChat Team",
