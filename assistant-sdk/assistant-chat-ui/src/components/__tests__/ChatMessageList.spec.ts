@@ -288,4 +288,49 @@ describe("ChatMessageList", () => {
     await wrapper.find(".task-card").trigger("click");
     expect(wrapper.emitted("task-open")?.[0]).toEqual(["task_1"]);
   });
+
+  it("file-edit 卡片点击文件名发出 file-open，并支持展开", async () => {
+    const wrapper = mount(ChatMessageList, {
+      props: {
+        timelineItems: [
+          {
+            id: "edit_1",
+            kind: "file-edit",
+            fileEdit: {
+              id: "prt_edit",
+              callId: "call_1",
+              tool: "edit",
+              status: "completed",
+              files: [
+                {
+                  path: "src/foo.ts",
+                  displayName: "foo.ts",
+                  unifiedDiff: "--- a/src/foo.ts\n+++ b/src/foo.ts\n@@ -1 +1 @@\n-old\n+new\n",
+                  additions: 1,
+                  deletions: 1,
+                  previewMode: "diff",
+                },
+              ],
+            },
+          },
+        ],
+        activeReasoningItemId: "",
+        isStreaming: false,
+        waitingReason: "",
+        canSwitchPlanToBuild: false,
+        lastError: null,
+      },
+    });
+
+    expect(wrapper.find(".file-edit-card").exists()).toBe(true);
+    expect(wrapper.text()).toContain("foo.ts");
+    expect(wrapper.text()).toContain("+new");
+    expect(wrapper.find(".file-edit-body--collapsed").exists()).toBe(true);
+    expect(wrapper.find(".file-edit-body--expanded").exists()).toBe(false);
+    await wrapper.find(".file-edit-toggle").trigger("click");
+    expect(wrapper.find(".file-edit-body--expanded").exists()).toBe(true);
+    expect(wrapper.find(".file-edit-body--collapsed").exists()).toBe(false);
+    await wrapper.find(".file-edit-name").trigger("click");
+    expect(wrapper.emitted("file-open")?.[0]).toEqual(["src/foo.ts"]);
+  });
 });

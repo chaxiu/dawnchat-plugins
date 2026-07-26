@@ -63,6 +63,19 @@
         @task-open="(id) => emit('task-open', id)"
       />
 
+      <ChatFileEditCard
+        v-else-if="timeline.kind === 'file-edit'"
+        :file-edit="timeline.fileEdit"
+        :agent-label="mergedLabels.assistantLabel"
+        :expand-label="mergedLabels.fileEditExpandLabel"
+        :collapse-label="mergedLabels.fileEditCollapseLabel"
+        @file-open="(path) => emit('file-open', path)"
+      >
+        <template v-if="hasFileEditBodySlot" #body="slotProps">
+          <slot name="file-edit-body" v-bind="slotProps" />
+        </template>
+      </ChatFileEditCard>
+
       <div v-else-if="timeline.kind === 'todo'" class="todo-timeline-item" :class="{ pinned: isScrollingDown }">
         <ChatTodoDock
           :todos="timeline.todos"
@@ -97,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, useSlots, watch } from "vue";
 
 import {
   DEFAULT_CHAT_MESSAGE_LIST_LABELS,
@@ -110,6 +123,7 @@ import ChatAssistantWaiting from "./ChatAssistantWaiting.vue";
 import ChatMessagePartRenderer from "./ChatMessagePartRenderer.vue";
 import ChatPermissionCard from "./ChatPermissionCard.vue";
 import ChatQuestionCard from "./ChatQuestionCard.vue";
+import ChatFileEditCard from "./ChatFileEditCard.vue";
 import ChatTaskCard from "./ChatTaskCard.vue";
 import ChatTodoDock from "./ChatTodoDock.vue";
 
@@ -130,7 +144,11 @@ const emit = defineEmits<{
   "question-reject": [requestID: string];
   "switch-to-build": [];
   "task-open": [taskId: string];
+  "file-open": [path: string];
 }>();
+
+const slots = useSlots();
+const hasFileEditBodySlot = computed(() => Boolean(slots["file-edit-body"]));
 
 const messageListRef = ref<HTMLElement | null>(null);
 const reasoningExpanded = ref<Record<string, boolean>>({});
@@ -218,6 +236,16 @@ const renderActivitySignature = computed(() => {
       last.id,
       last.task.status || "",
       String(last.task.summary || "").length,
+    ].join(":");
+  }
+  if (last.kind === "file-edit") {
+    return [
+      "file-edit",
+      presentedTimelineItems.value.length,
+      props.isStreaming ? "1" : "0",
+      last.id,
+      last.fileEdit.status || "",
+      last.fileEdit.files.map((file) => `${file.path}:${file.unifiedDiff.length}`).join("|"),
     ].join(":");
   }
   return [

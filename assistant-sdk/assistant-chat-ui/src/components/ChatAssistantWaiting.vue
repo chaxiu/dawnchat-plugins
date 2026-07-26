@@ -86,6 +86,14 @@ const activitySignature = computed(() => {
         if (item.kind === "task") {
           return [item.kind, item.id, item.task.status || "", String(item.task.summary || "").length].join(":");
         }
+        if (item.kind === "file-edit") {
+          return [
+            item.kind,
+            item.id,
+            item.fileEdit.status || "",
+            item.fileEdit.files.map((file) => `${file.path}:${file.additions}:${file.deletions}`).join("|"),
+          ].join(":");
+        }
         return [item.kind, item.id, item.question.id].join(":");
       })
       .join(";"),

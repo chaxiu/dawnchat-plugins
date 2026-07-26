@@ -111,12 +111,37 @@ export interface ChatTimelineTask {
   task: ChatTaskInfo;
 }
 
+export interface ChatFileEditFile {
+  path: string;
+  displayName: string;
+  unifiedDiff: string;
+  additions: number;
+  deletions: number;
+  previewMode: "diff" | "content";
+  contentPreview?: string;
+}
+
+export interface ChatFileEditInfo {
+  id: string;
+  callId: string | null;
+  tool: "edit" | "write" | "apply_patch";
+  status: string;
+  files: ChatFileEditFile[];
+}
+
+export interface ChatTimelineFileEdit {
+  id: string;
+  kind: "file-edit";
+  fileEdit: ChatFileEditInfo;
+}
+
 export type ChatTimelineItem =
   | ChatTimelinePart
   | ChatTimelinePermission
   | ChatTimelineQuestion
   | ChatTimelineTodo
-  | ChatTimelineTask;
+  | ChatTimelineTask
+  | ChatTimelineFileEdit;
 
 export type ChatWaitingReason =
   | ""
@@ -149,6 +174,8 @@ export interface ChatMessageListLabels {
   todoCollapseLabel: string;
   todoExpandLabel: string;
   taskOpenHintLabel: string;
+  fileEditExpandLabel: string;
+  fileEditCollapseLabel: string;
   waitingGeneratingText: string;
   waitingPermissionText: string;
   waitingQuestionText: string;
@@ -179,6 +206,8 @@ export const DEFAULT_CHAT_MESSAGE_LIST_LABELS: ChatMessageListLabels = {
   todoCollapseLabel: "Collapse",
   todoExpandLabel: "Expand",
   taskOpenHintLabel: "View details",
+  fileEditExpandLabel: "Expand",
+  fileEditCollapseLabel: "Collapse",
   waitingGeneratingText: "Thinking...",
   waitingPermissionText: "Waiting for permission to continue",
   waitingQuestionText: "Waiting for your answer to continue",

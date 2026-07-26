@@ -15,6 +15,7 @@ export { default as ChatPartUnknown } from "./components/ChatPartUnknown.vue";
 export { default as ChatPermissionCard } from "./components/ChatPermissionCard.vue";
 export { default as ChatQuestionCard } from "./components/ChatQuestionCard.vue";
 export { default as ChatTaskCard } from "./components/ChatTaskCard.vue";
+export { default as ChatFileEditCard } from "./components/ChatFileEditCard.vue";
 export { default as ChatTodoDock } from "./components/ChatTodoDock.vue";
 
 export * from "./types";
