@@ -148,6 +148,7 @@ function buildToolDisplay({
     toolName,
     argsText: "",
     argsPreview: "",
+    openPath: "",
     fullInputText: rawInputText,
     fullOutputText: detailsText,
     fullErrorText: isError ? detailsText : "",

@@ -9,6 +9,7 @@
     :tool-input-aria-label="toolInputAriaLabel"
     :tool-input-title="toolInputTitle"
     :tool-name-label="toolNameLabel"
+    @file-open="(path) => emit('file-open', path)"
   />
   <ChatPartReasoning
     v-else-if="item.type === 'reasoning'"
@@ -38,5 +39,6 @@ defineProps<{
 
 const emit = defineEmits<{
   "toggle-reasoning": [];
+  "file-open": [path: string];
 }>();
 </script>

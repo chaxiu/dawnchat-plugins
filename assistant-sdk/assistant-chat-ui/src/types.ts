@@ -6,6 +6,8 @@ export interface ChatToolDisplayMeta {
   toolName: string;
   argsText: string;
   argsPreview: string;
+  /** When set, argsPreview is clickable and emits file-open with this path. */
+  openPath: string;
   fullInputText: string;
   fullOutputText: string;
   fullErrorText: string;

@@ -16,6 +16,7 @@
               :tool-input-title="mergedLabels.toolInputTitle"
               :tool-name-label="mergedLabels.toolNameLabel"
               @toggle-reasoning="toggleReasoning(timeline.item.id, timeline.item.isStreaming)"
+              @file-open="(path) => emit('file-open', path)"
             />
           </div>
         </template>
@@ -27,6 +28,7 @@
             :tool-input-title="mergedLabels.toolInputTitle"
             :tool-name-label="mergedLabels.toolNameLabel"
             @toggle-reasoning="toggleReasoning(timeline.item.id, timeline.item.isStreaming)"
+            @file-open="(path) => emit('file-open', path)"
           />
         </template>
       </div>

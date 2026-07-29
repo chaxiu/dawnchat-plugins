@@ -2,24 +2,39 @@
   <div class="tool-wrap" :data-kind="displayModel.kind">
     <div class="tool-anchor">
       <div class="tool-line">
-        <button
-          v-if="isCollapsible"
-          class="tool-main tool-toggle"
-          type="button"
-          :aria-expanded="expanded ? 'true' : 'false'"
-          @click="expanded = !expanded"
+        <div
+          class="tool-main"
+          :class="{ 'tool-toggle': isCollapsible }"
+          :role="isCollapsible ? 'button' : undefined"
+          :tabindex="isCollapsible ? 0 : undefined"
+          :aria-expanded="isCollapsible ? (expanded ? 'true' : 'false') : undefined"
+          @click="onToggleClick"
+          @keydown.enter.prevent="onToggleClick"
+          @keydown.space.prevent="onToggleClick"
         >
           <Wrench class="tool-icon" :size="13" />
           <span class="tool-name" :title="displayModel.title">{{ displayModel.title }}</span>
-          <span v-if="displayModel.argsPreview" class="tool-args" :title="displayModel.argsText">{{ displayModel.argsPreview }}</span>
+          <button
+            v-if="displayModel.argsPreview && displayModel.openPath"
+            class="tool-args tool-args--link"
+            type="button"
+            :title="displayModel.argsText || displayModel.openPath"
+            @click.stop="emit('file-open', displayModel.openPath)"
+          >
+            {{ displayModel.argsPreview }}
+          </button>
+          <span
+            v-else-if="displayModel.argsPreview"
+            class="tool-args"
+            :title="displayModel.argsText"
+          >{{ displayModel.argsPreview }}</span>
           <span v-if="isWriteKind && displayModel.diffStat" class="tool-diff">{{ displayModel.diffStat }}</span>
-          <ChevronRight class="tool-chevron" :size="12" :class="{ open: expanded }" />
-        </button>
-        <div v-else class="tool-main">
-          <Wrench class="tool-icon" :size="13" />
-          <span class="tool-name" :title="displayModel.title">{{ displayModel.title }}</span>
-          <span v-if="displayModel.argsPreview" class="tool-args" :title="displayModel.argsText">{{ displayModel.argsPreview }}</span>
-          <span v-if="isWriteKind && displayModel.diffStat" class="tool-diff">{{ displayModel.diffStat }}</span>
+          <ChevronRight
+            v-if="isCollapsible"
+            class="tool-chevron"
+            :size="12"
+            :class="{ open: expanded }"
+          />
         </div>
         <button
           v-if="displayModel.hasInput"
@@ -99,6 +114,10 @@ const props = withDefaults(
   }
 );
 
+const emit = defineEmits<{
+  "file-open": [path: string];
+}>();
+
 const expanded = ref(false);
 const showInputPopover = ref(false);
 const infoButtonRef = ref<HTMLButtonElement | null>(null);
@@ -107,10 +126,16 @@ const isCollapsible = computed(() => {
   if (props.display?.renderMode !== "collapsible") return false;
   return Boolean(displayModel.value.hasDetails);
 });
+
+function onToggleClick() {
+  if (!isCollapsible.value) return;
+  expanded.value = !expanded.value;
+}
 const displayModel = computed(() => {
   const name = String(props.display?.toolName || props.tool || "tool");
   const args = String(props.display?.argsText || "").trim();
   const argsPreview = String(props.display?.argsPreview || args).trim();
+  const openPath = String(props.display?.openPath || "").trim();
   const summary = String(props.display?.summary || props.text || "").trim();
   const title = String(props.display?.title || summary || name).trim() || name;
   const hasError = Boolean(props.display?.hasError);
@@ -131,6 +156,7 @@ const displayModel = computed(() => {
     toolName: name,
     argsText: args,
     argsPreview,
+    openPath,
     fullInputText: String(props.display?.fullInputText || "").trim(),
     hasInput: Boolean(props.display?.hasInput),
     hasDetails,
@@ -208,6 +234,12 @@ const showDetails = computed(() => {
   color: inherit;
 }
 
+.tool-main.tool-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .tool-line:hover {
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
@@ -218,13 +250,11 @@ const showDetails = computed(() => {
 }
 
 .tool-name {
-  min-width: 0;
-  max-width: min(52vw, 320px);
+  flex: 0 0 auto;
+  flex-shrink: 0;
   color: var(--color-text);
   font-size: 0.78rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tool-wrap[data-kind="write"] .tool-name {
@@ -232,6 +262,7 @@ const showDetails = computed(() => {
 }
 
 .tool-args {
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 0.77rem;
   color: var(--color-text-secondary);
@@ -240,6 +271,23 @@ const showDetails = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: min(52vw, 460px);
+}
+
+.tool-args--link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 0.77rem;
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-text-secondary));
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tool-args--link:hover {
+  color: var(--color-primary);
 }
 
 .tool-chevron {

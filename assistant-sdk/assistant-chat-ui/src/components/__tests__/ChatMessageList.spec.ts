@@ -333,4 +333,43 @@ describe("ChatMessageList", () => {
     await wrapper.find(".file-edit-name").trigger("click");
     expect(wrapper.emitted("file-open")?.[0]).toEqual(["src/foo.ts"]);
   });
+
+  it("tool 行带 openPath 的 argsPreview 点击发出 file-open", async () => {
+    const wrapper = mount(ChatMessageList, {
+      props: {
+        timelineItems: [
+          {
+            id: "tool_read",
+            kind: "part",
+            role: "assistant",
+            item: {
+              id: "prt_read",
+              type: "tool",
+              tool: "read",
+              status: "completed",
+              isStreaming: false,
+              toolDisplay: {
+                toolName: "read",
+                title: "read",
+                argsPreview: "foo.ts",
+                argsText: "src/foo.ts",
+                openPath: "src/foo.ts",
+                hasInput: true,
+                fullInputText: '{"filePath":"src/foo.ts"}',
+              },
+            },
+          },
+        ],
+        activeReasoningItemId: "",
+        isStreaming: false,
+        waitingReason: "",
+        canSwitchPlanToBuild: false,
+        lastError: null,
+      },
+    });
+
+    expect(wrapper.find(".tool-args--link").text()).toContain("foo.ts");
+    await wrapper.find(".tool-args--link").trigger("click");
+    expect(wrapper.emitted("file-open")?.[0]).toEqual(["src/foo.ts"]);
+  });
 });
