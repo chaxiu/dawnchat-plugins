@@ -150,7 +150,10 @@ describe("ChatMessageList", () => {
         lastError: null,
       },
     });
+    expect(wrapper.find(".permission-tool").text()).toBe("bash");
+    expect(wrapper.find(".permission-badge").text()).toBe("待确认");
     const buttons = wrapper.findAll(".permission-actions .permission-btn");
+    expect(buttons).toHaveLength(3);
     await buttons[0].trigger("click");
     await buttons[1].trigger("click");
     await buttons[2].trigger("click");
@@ -158,6 +161,32 @@ describe("ChatMessageList", () => {
     expect(events[0]).toEqual(["perm_1", "once", undefined]);
     expect(events[1]).toEqual(["perm_1", "always", true]);
     expect(events[2]).toEqual(["perm_1", "reject", undefined]);
+  });
+
+  it("非 pending permission 不渲染操作按钮", async () => {
+    const wrapper = mount(ChatMessageList, {
+      props: {
+        timelineItems: [
+          {
+            id: "perm_2",
+            kind: "permission",
+            permission: {
+              id: "perm_2",
+              tool: "bash",
+              detail: "已处理",
+              status: "approved",
+            },
+          },
+        ],
+        activeReasoningItemId: "",
+        isStreaming: false,
+        waitingReason: "",
+        canSwitchPlanToBuild: false,
+        lastError: null,
+      },
+    });
+    expect(wrapper.find(".permission-actions").exists()).toBe(false);
+    expect(wrapper.find(".permission-badge").text()).toBe("已批准");
   });
 
   it("timeline 数量不变但文本增量变长时仍会触发自动滚动", async () => {
@@ -324,7 +353,8 @@ describe("ChatMessageList", () => {
 
     expect(wrapper.find(".file-edit-card").exists()).toBe(true);
     expect(wrapper.text()).toContain("foo.ts");
-    expect(wrapper.text()).toContain("+new");
+    expect(wrapper.text()).toContain("new");
+    expect(wrapper.text()).not.toContain("+new");
     expect(wrapper.find(".file-edit-body--collapsed").exists()).toBe(true);
     expect(wrapper.find(".file-edit-body--expanded").exists()).toBe(false);
     await wrapper.find(".file-edit-toggle").trigger("click");

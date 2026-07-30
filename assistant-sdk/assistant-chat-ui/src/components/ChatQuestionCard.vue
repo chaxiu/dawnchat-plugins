@@ -103,37 +103,31 @@ const buildQuestionAnswers = (): string[][] => {
 </script>
 
 <style scoped>
-.msg-item-row {
+.question-row.msg-item-row {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  width: 100%;
 }
 
-.msg-item-row.assistant {
-  align-items: flex-start;
+.question-row.msg-item-row.assistant {
+  align-items: stretch;
 }
 
-.msg-role {
+.question-row > .msg-role {
   display: block;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   padding: 0 0.1rem;
 }
 
-.msg-item {
-  max-width: 92%;
+.question-item.msg-item {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
-}
-
-.question-row .msg-item {
-  width: min(640px, 92%);
-}
-
-.question-item {
   background: var(--color-surface-2);
 }
 

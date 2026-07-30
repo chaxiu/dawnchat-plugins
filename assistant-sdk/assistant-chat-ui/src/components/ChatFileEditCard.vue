@@ -44,7 +44,7 @@
                 class="file-edit-diff-line"
                 :class="`file-edit-diff-line--${line.kind}`"
               >
-                <code>{{ line.text || " " }}</code>
+                <code>{{ line.displayText || " " }}</code>
               </div>
               <div v-if="!file.unifiedDiff.trim()" class="file-edit-diff-empty">
                 {{ emptyDiffHint }}
@@ -69,7 +69,7 @@
                 class="file-edit-diff-line"
                 :class="`file-edit-diff-line--${line.kind}`"
               >
-                <code>{{ line.text || " " }}</code>
+                <code>{{ line.displayText || " " }}</code>
               </div>
               <div v-if="!file.unifiedDiff.trim()" class="file-edit-diff-empty">
                 {{ emptyDiffHint }}
@@ -96,6 +96,7 @@ type DiffLineKind = "add" | "del" | "hunk" | "meta" | "context" | "empty";
 type DiffLine = {
   kind: DiffLineKind;
   text: string;
+  displayText: string;
 };
 
 withDefaults(
@@ -138,16 +139,27 @@ function classifyDiffLine(line: string): DiffLineKind {
   return "context";
 }
 
+function displayTextFor(kind: DiffLineKind, text: string): string {
+  if (kind === "add" || kind === "del" || kind === "context") {
+    return text.length > 0 ? text.slice(1) : "";
+  }
+  return text;
+}
+
 function diffLinesFor(source: string): DiffLine[] {
   if (!source) return [];
   const rawLines = source.replace(/\r\n/g, "\n").split("\n");
   if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "") {
     rawLines.pop();
   }
-  return rawLines.map((text: string) => ({
-    kind: classifyDiffLine(text),
-    text,
-  }));
+  return rawLines.map((text: string) => {
+    const kind = classifyDiffLine(text);
+    return {
+      kind,
+      text,
+      displayText: displayTextFor(kind, text),
+    };
+  });
 }
 </script>
 
