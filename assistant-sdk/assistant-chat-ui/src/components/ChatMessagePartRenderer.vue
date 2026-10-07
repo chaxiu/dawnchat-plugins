@@ -1,5 +1,6 @@
 <template>
   <ChatPartText v-if="item.type === 'text'" :text="item.text" />
+  <ChatPartImage v-else-if="item.type === 'image' && item.image" :image="item.image" />
   <ChatPartTool
     v-else-if="item.type === 'tool'"
     :tool="item.tool"
@@ -23,6 +24,7 @@
 
 <script setup lang="ts">
 import type { ChatRenderItem } from "../types";
+import ChatPartImage from "./ChatPartImage.vue";
 import ChatPartReasoning from "./ChatPartReasoning.vue";
 import ChatPartStep from "./ChatPartStep.vue";
 import ChatPartText from "./ChatPartText.vue";

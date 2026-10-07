@@ -7,6 +7,8 @@ export { default as AssistantChatSettingsFields } from "./components/AssistantCh
 export { default as ChatAssistantWaiting } from "./components/ChatAssistantWaiting.vue";
 export { default as ChatMessageList } from "./components/ChatMessageList.vue";
 export { default as ChatMessagePartRenderer } from "./components/ChatMessagePartRenderer.vue";
+export { default as ChatImageStrip } from "./components/ChatImageStrip.vue";
+export { default as ChatPartImage } from "./components/ChatPartImage.vue";
 export { default as ChatPartReasoning } from "./components/ChatPartReasoning.vue";
 export { default as ChatPartStep } from "./components/ChatPartStep.vue";
 export { default as ChatPartText } from "./components/ChatPartText.vue";

@@ -352,4 +352,145 @@ describe("agentLoopTranscriptToTimelineItems", () => {
       },
     });
   });
+
+  it("maps image file parts to image timeline items", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "user",
+        content: "",
+        parts: [
+          {
+            id: "file-1",
+            type: "file",
+            mime: "image/png",
+            filename: "shot.png",
+            url: "data:image/png;base64,abc",
+          },
+        ],
+      },
+    ];
+
+    const items = agentLoopTranscriptToTimelineItems(transcript, { isRunning: false });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      kind: "part",
+      role: "user",
+      item: {
+        type: "image",
+        image: {
+          url: "data:image/png;base64,abc",
+          mime: "image/png",
+          filename: "shot.png",
+        },
+      },
+    });
+  });
+
+  it("maps non-image file parts to attachment text chips", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "user",
+        content: "",
+        parts: [
+          {
+            id: "file-2",
+            type: "file",
+            mime: "application/pdf",
+            filename: "spec.pdf",
+            url: "data:application/pdf;base64,abc",
+          },
+        ],
+      },
+    ];
+
+    const items = agentLoopTranscriptToTimelineItems(transcript, { isRunning: false });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      kind: "part",
+      role: "user",
+      item: {
+        type: "text",
+        text: "📎 spec.pdf",
+      },
+    });
+  });
+
+  it("projects tool state.attachments into toolDisplay.images", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "assistant",
+        content: "",
+        parts: [
+          {
+            id: "tool-1",
+            type: "tool",
+            tool: "session_observe",
+            callID: "call-obs",
+            status: "completed",
+            state: {
+              status: "completed",
+              output: { ok: true },
+              attachments: [
+                {
+                  type: "file",
+                  mime: "image/png",
+                  filename: "observe.png",
+                  url: "data:image/png;base64,xyz",
+                },
+                {
+                  type: "file",
+                  mime: "text/plain",
+                  filename: "note.txt",
+                  url: "data:text/plain;base64,abc",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ];
+
+    const items = agentLoopTranscriptToTimelineItems(transcript, { isRunning: false });
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      kind: "part",
+      item: {
+        type: "tool",
+        toolDisplay: {
+          images: [
+            {
+              url: "data:image/png;base64,xyz",
+              mime: "image/png",
+              filename: "observe.png",
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it("accepts mediaType alias on file parts", () => {
+    const transcript: AgentLoopLikeMessage[] = [
+      {
+        role: "user",
+        content: "",
+        parts: [
+          {
+            id: "file-3",
+            type: "file",
+            mediaType: "image/webp",
+            url: "data:image/webp;base64,abc",
+          },
+        ],
+      },
+    ];
+
+    const items = agentLoopTranscriptToTimelineItems(transcript, { isRunning: false });
+    expect(items[0]).toMatchObject({
+      item: {
+        type: "image",
+        image: { mime: "image/webp", url: "data:image/webp;base64,abc" },
+      },
+    });
+  });
 });

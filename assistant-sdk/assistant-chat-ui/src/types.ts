@@ -1,4 +1,11 @@
-export type ChatRenderItemType = "text" | "tool" | "reasoning" | "step" | "unknown";
+export type ChatRenderItemType = "text" | "image" | "tool" | "reasoning" | "step" | "unknown";
+
+export interface ChatImageInfo {
+  url: string;
+  mime: string;
+  filename?: string;
+  alt?: string;
+}
 
 export interface ChatToolDisplayMeta {
   kind: "read" | "write" | "search" | "bash" | "other";
@@ -27,6 +34,8 @@ export interface ChatToolDisplayMeta {
   codeLines: string[];
   previewLineCount: number;
   hiddenLineCount: number;
+  /** Image attachments from tool results (e.g. MCP screenshots). */
+  images?: ChatImageInfo[];
 }
 
 export interface ChatRenderItem {
@@ -38,6 +47,7 @@ export interface ChatRenderItem {
   reason?: string;
   messageID?: string;
   callID?: string;
+  image?: ChatImageInfo;
   toolDisplay?: Partial<ChatToolDisplayMeta>;
   raw?: unknown;
   isStreaming: boolean;

@@ -1,4 +1,5 @@
 import type {
+  ChatImageInfo,
   ChatRenderItem,
   ChatTimelineItem,
   ChatToolDisplayMeta,
@@ -67,6 +68,7 @@ interface ToolDisplayBuildOptions {
   result?: unknown;
   status: "pending" | "completed" | "error";
   getToolDescription?: (toolName: string) => string;
+  images?: ChatImageInfo[];
 }
 
 function stringifyContent(content: unknown): string {
@@ -85,6 +87,62 @@ function toRecord(value: unknown): Record<string, unknown> {
     return {};
   }
   return value as Record<string, unknown>;
+}
+
+function partMime(part: Record<string, unknown> | AgentLoopLikeMessagePart): string {
+  const mime = String(part.mime || part.mediaType || "").trim().toLowerCase();
+  return mime;
+}
+
+function partFilename(part: Record<string, unknown> | AgentLoopLikeMessagePart): string {
+  const filename = String(part.filename || part.name || "").trim();
+  return filename || "attachment";
+}
+
+function extractImageInfo(value: unknown): ChatImageInfo | null {
+  const rec = toRecord(value);
+  const url = String(rec.url || "").trim();
+  if (!url) return null;
+  const mime = partMime(rec);
+  if (!mime.startsWith("image/")) return null;
+  const filename = String(rec.filename || rec.name || "").trim();
+  const alt = String(rec.alt || "").trim();
+  return {
+    url,
+    mime,
+    ...(filename ? { filename } : {}),
+    ...(alt ? { alt } : {}),
+  };
+}
+
+function extractToolImages(part: AgentLoopLikeMessagePart): ChatImageInfo[] {
+  const state = toRecord(part.state);
+  const candidates = [
+    state.attachments,
+    part.attachments,
+  ];
+  const out: ChatImageInfo[] = [];
+  for (const candidate of candidates) {
+    if (!Array.isArray(candidate)) continue;
+    for (const item of candidate) {
+      const image = extractImageInfo(item);
+      if (image) out.push(image);
+    }
+  }
+  return out;
+}
+
+function filePartToRenderFields(part: AgentLoopLikeMessagePart): {
+  type: "image" | "text";
+  text?: string;
+  image?: ChatImageInfo;
+} {
+  const image = extractImageInfo(part);
+  if (image) {
+    return { type: "image", image };
+  }
+  const filename = partFilename(part);
+  return { type: "text", text: `📎 ${filename}` };
 }
 
 function extractDisplayTitle(content: unknown): string {
@@ -128,6 +186,7 @@ function buildToolDisplay({
   result,
   status,
   getToolDescription,
+  images,
 }: ToolDisplayBuildOptions): Partial<ChatToolDisplayMeta> {
   const rawInputText = input === undefined ? "" : stringifyContent(input).trim();
   const detailsText = result === undefined ? "" : stringifyContent(result).trim();
@@ -168,6 +227,7 @@ function buildToolDisplay({
     codeLines: [],
     previewLineCount: 4,
     hiddenLineCount: 0,
+    ...(images && images.length > 0 ? { images } : {}),
   };
 }
 
@@ -216,7 +276,7 @@ function findLastAssistantIndex(transcript: AgentLoopLikeMessage[]): number {
 }
 
 function partSupersedesReasoning(type: string): boolean {
-  return type === "text" || type === "tool";
+  return type === "text" || type === "tool" || type === "image";
 }
 
 /**
@@ -272,6 +332,7 @@ function createToolRenderItem(
   const error = state.error ?? part.error;
   const output = state.output ?? part.output;
   const result = error !== undefined ? { ok: false, error } : output !== undefined ? { ok: true, output } : undefined;
+  const images = extractToolImages(part);
 
   return {
     id: String(part.id || `${toolName}-${getPartCallId(part) || "tool"}`),
@@ -286,6 +347,7 @@ function createToolRenderItem(
       result,
       status,
       getToolDescription: options.getToolDescription,
+      images,
     }),
     raw: part,
     isStreaming: options.isRunning && isCurrentAssistantTurn && status === "pending",
@@ -320,6 +382,49 @@ function appendPartTimelineItems(
         kind: "part",
         role,
         item: toolItem,
+      });
+      return;
+    }
+
+    if (type === "file" || type === "image") {
+      const mapped =
+        type === "image"
+          ? (() => {
+              const image = extractImageInfo(part);
+              return image
+                ? { type: "image" as const, image }
+                : { type: "text" as const, text: String(part.text || `📎 ${partFilename(part)}`) };
+            })()
+          : filePartToRenderFields(part);
+      if (mapped.type === "image" && mapped.image) {
+        items.push({
+          id: `${role}-image-${index}-${partIndex}`,
+          kind: "part",
+          role,
+          item: {
+            id,
+            type: "image",
+            image: mapped.image,
+            text: mapped.image.filename || "",
+            callID: getPartCallId(part),
+            raw: part,
+            isStreaming: false,
+          },
+        });
+        return;
+      }
+      items.push({
+        id: `${role}-text-${index}-${partIndex}`,
+        kind: "part",
+        role,
+        item: {
+          id,
+          type: "text",
+          text: mapped.text || `📎 ${partFilename(part)}`,
+          callID: getPartCallId(part),
+          raw: part,
+          isStreaming: false,
+        },
       });
       return;
     }

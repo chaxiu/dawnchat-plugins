@@ -52,6 +52,7 @@
         </span>
       </div>
     </div>
+    <ChatImageStrip v-if="displayImages.length > 0" :images="displayImages" />
     <div v-if="showDetails" class="tool-details">
       <template v-if="isReadKind || isWriteKind">
         <div class="tool-details-scroll">
@@ -91,8 +92,9 @@
 import { computed, ref } from "vue";
 import { ChevronRight, Info, Wrench } from "lucide-vue-next";
 
-import type { ChatToolDisplayMeta } from "../types";
+import type { ChatImageInfo, ChatToolDisplayMeta } from "../types";
 import ChatCodeBlock from "./ChatCodeBlock.vue";
+import ChatImageStrip from "./ChatImageStrip.vue";
 import FloatingPopover from "./FloatingPopover.vue";
 
 const TOOL_INPUT_POPOVER_Z_INDEX = 1000;
@@ -168,6 +170,18 @@ const displayModel = computed(() => {
     previewLineCount: Number(props.display?.previewLineCount || 4),
     hiddenLineCount: Number(props.display?.hiddenLineCount || 0),
   };
+});
+const displayImages = computed((): ChatImageInfo[] => {
+  const images = props.display?.images;
+  if (!Array.isArray(images)) return [];
+  return images.filter(
+    (image): image is ChatImageInfo =>
+      Boolean(image)
+      && typeof image.url === "string"
+      && image.url.length > 0
+      && typeof image.mime === "string"
+      && image.mime.startsWith("image/"),
+  );
 });
 const isReadKind = computed(() => displayModel.value.kind === "read");
 const isWriteKind = computed(() => displayModel.value.kind === "write");
