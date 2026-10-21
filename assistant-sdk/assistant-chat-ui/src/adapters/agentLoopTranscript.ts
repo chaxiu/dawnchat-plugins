@@ -1,6 +1,7 @@
 import type {
   ChatImageInfo,
   ChatRenderItem,
+  ChatTaskInfo,
   ChatTimelineItem,
   ChatToolDisplayMeta,
 } from "../types";
@@ -648,3 +649,137 @@ export function agentLoopTranscriptToTimelineItems(
 ): ChatTimelineItem[] {
   return projectAgentLoopTranscript(transcript, options).timelineItems;
 }
+
+function parseJsonRecord(raw: unknown): Record<string, unknown> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(raw);
+      return toRecord(parsed);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function lastNonEmptyLine(text: string): string {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines[lines.length - 1]?.slice(0, 180) || "";
+}
+
+/**
+ * Extracts a `ChatTaskInfo` with `expandableInline: true` from a `munk_local_cli_exec`
+ * tool part or render item (supports both live `state.metadata` via SSE and historical `state.output`).
+ */
+export function extractLocalCliTaskInfo(partOrItem: unknown): ChatTaskInfo | null {
+  const root = toRecord(partOrItem);
+  const raw = Object.keys(toRecord(root.raw)).length > 0 ? toRecord(root.raw) : root;
+  const toolName = String(raw.tool || root.tool || raw.name || "").trim();
+  if (toolName !== "munk_local_cli_exec") {
+    return null;
+  }
+
+  const state = toRecord(raw.state);
+  const input = parseJsonRecord(state.input ?? raw.input);
+  const metadata = toRecord(state.metadata);
+  const parsedOutput = parseJsonRecord(state.output ?? raw.output);
+
+  const provider = String(
+    metadata.provider || input.provider || parsedOutput.provider || "local-cli",
+  ).trim();
+  const model = String(
+    metadata.model || input.model || parsedOutput.model || "",
+  ).trim();
+  const mode = String(
+    metadata.mode || input.mode || "write",
+  ).trim();
+
+  const rawStatus = String(
+    metadata.status || parsedOutput.status || state.status || raw.status || root.status || "running",
+  ).trim();
+
+  const providerTitle =
+    provider === "claude-cli"
+      ? "Claude CLI"
+      : provider === "cursor-cli"
+        ? "Cursor CLI"
+        : provider;
+
+  const title =
+    String(
+      metadata.description ||
+        state.title ||
+        raw.title ||
+        input.description ||
+        `${providerTitle} (${mode})`,
+    ).trim() || `${providerTitle} (${mode})`;
+
+  const agentLabel = [provider, model, mode].filter(Boolean).join(" · ");
+
+  const output = String(
+    metadata.liveOutput ||
+      parsedOutput.output ||
+      parsedOutput.message ||
+      (typeof state.output === "string" && !state.output.trim().startsWith("{") ? state.output : "") ||
+      (typeof state.error === "string" ? state.error : ""),
+  ).trim();
+
+  const summary =
+    String(
+      metadata.summaryLine ||
+        parsedOutput.message ||
+        lastNonEmptyLine(output) ||
+        "",
+    ).trim() || undefined;
+
+  const prompt = String(metadata.prompt || input.prompt || "").trim() || undefined;
+
+  const rawScopes = Array.isArray(metadata.writeScope)
+    ? metadata.writeScope
+    : Array.isArray(input.write_scope)
+      ? input.write_scope
+      : [];
+  const writeScope = rawScopes
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+
+  const durationMs =
+    typeof metadata.durationMs === "number"
+      ? metadata.durationMs
+      : typeof parsedOutput.durationMs === "number"
+        ? parsedOutput.durationMs
+        : undefined;
+
+  const exitCode =
+    typeof metadata.exitCode === "number"
+      ? metadata.exitCode
+      : typeof parsedOutput.exitCode === "number"
+        ? parsedOutput.exitCode
+        : null;
+
+  const id = String(
+    raw.callID || raw.callId || root.callID || raw.id || root.id || "local-cli-task",
+  ).trim();
+
+  return {
+    id,
+    title,
+    status: rawStatus,
+    ...(summary ? { summary } : {}),
+    ...(agentLabel ? { agentLabel } : {}),
+    expandableInline: true,
+    ...(prompt ? { prompt } : {}),
+    ...(output ? { output } : {}),
+    ...(writeScope.length > 0 ? { writeScope } : {}),
+    ...(mode ? { mode } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {}),
+    exitCode,
+  };
+}
+

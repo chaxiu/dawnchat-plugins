@@ -115,6 +115,14 @@ export interface ChatTaskInfo {
   status?: "pending" | "running" | "completed" | "failed" | string;
   summary?: string;
   agentLabel?: string;
+  /** When true, clicking the card toggles inline inspection of prompt & live/historical CLI output. */
+  expandableInline?: boolean;
+  prompt?: string;
+  output?: string;
+  writeScope?: string[];
+  mode?: string;
+  durationMs?: number;
+  exitCode?: number | null;
 }
 
 export interface ChatTimelineTask {
