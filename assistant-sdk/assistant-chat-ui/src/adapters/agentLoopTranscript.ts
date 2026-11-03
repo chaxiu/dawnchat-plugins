@@ -730,13 +730,13 @@ export function extractLocalCliTaskInfo(partOrItem: unknown): ChatTaskInfo | nul
       (typeof state.error === "string" ? state.error : ""),
   ).trim();
 
-  const summary =
-    String(
-      metadata.summaryLine ||
-        parsedOutput.message ||
-        lastNonEmptyLine(output) ||
-        "",
-    ).trim() || undefined;
+  const rawSummary = String(
+    metadata.summaryLine ||
+      parsedOutput.message ||
+      lastNonEmptyLine(output) ||
+      "",
+  ).trim();
+  const summary = lastNonEmptyLine(rawSummary) || undefined;
 
   const prompt = String(metadata.prompt || input.prompt || "").trim() || undefined;
 

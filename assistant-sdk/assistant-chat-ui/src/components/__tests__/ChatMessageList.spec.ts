@@ -318,6 +318,41 @@ describe("ChatMessageList", () => {
     expect(wrapper.emitted("task-open")?.[0]).toEqual(["task_1"]);
   });
 
+  it("task 卡片在返回超长结果时自动剥离标签并截断 summary，避免撑高卡片", () => {
+    const longBody = Array.from({ length: 60 }, (_, idx) => `Line ${idx + 1}: detailed analysis content for sub-agent output`).join("\n");
+    const rawSummary = `task_id: ses_abc123 (for resuming to continue this task if needed)\n\n<task_result>\n${longBody}\n</task_result>`;
+    const wrapper = mount(ChatMessageList, {
+      props: {
+        timelineItems: [
+          {
+            id: "task_long",
+            kind: "task",
+            task: {
+              id: "task_long",
+              title: "Deep codebase audit",
+              status: "completed",
+              agentLabel: "explore",
+              summary: rawSummary,
+            },
+          },
+        ],
+        activeReasoningItemId: "",
+        isStreaming: false,
+        waitingReason: "",
+        canSwitchPlanToBuild: false,
+        lastError: null,
+      },
+    });
+
+    const summaryEl = wrapper.find(".task-summary");
+    expect(summaryEl.exists()).toBe(true);
+    const rendered = summaryEl.text();
+    expect(rendered).not.toContain("task_id:");
+    expect(rendered).not.toContain("<task_result>");
+    expect(rendered.length).toBeLessThanOrEqual(321);
+    expect(rendered.endsWith("…")).toBe(true);
+  });
+
   it("file-edit 卡片点击文件名发出 file-open，并支持展开", async () => {
     const wrapper = mount(ChatMessageList, {
       props: {

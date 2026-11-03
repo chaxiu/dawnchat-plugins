@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   agentLoopTranscriptToTimelineItems,
+  extractLocalCliTaskInfo,
   projectAgentLoopTranscript,
   type AgentLoopLikeMessage,
 } from "./agentLoopTranscript";
@@ -492,5 +493,36 @@ describe("agentLoopTranscriptToTimelineItems", () => {
         image: { mime: "image/webp", url: "data:image/webp;base64,abc" },
       },
     });
+  });
+
+  it("extractLocalCliTaskInfo truncates multi-line or long summary from munk_local_cli_exec", () => {
+    const hugeOutput = Array.from({ length: 100 }, (_, i) => `Step ${i + 1}: ${"x".repeat(220)}`).join("\n");
+    const info = extractLocalCliTaskInfo({
+      id: "part-cli-1",
+      tool: "munk_local_cli_exec",
+      callID: "call-cli-1",
+      state: {
+        status: "completed",
+        input: {
+          provider: "claude-cli",
+          mode: "readonly",
+          description: "Inspect repository",
+          prompt: "Check all files",
+        },
+        output: JSON.stringify({
+          status: "completed",
+          provider: "claude-cli",
+          model: "sonnet",
+          exitCode: 0,
+          durationMs: 4200,
+          output: hugeOutput,
+        }),
+      },
+    });
+
+    expect(info).not.toBeNull();
+    expect(info?.summary).toBeDefined();
+    expect(info?.summary?.includes("\n")).toBe(false);
+    expect((info?.summary ?? "").length).toBeLessThanOrEqual(180);
   });
 });

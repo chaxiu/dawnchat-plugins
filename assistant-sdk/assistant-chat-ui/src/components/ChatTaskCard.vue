@@ -17,8 +17,8 @@
           {{ statusLabel }}
         </span>
       </div>
-      <p v-if="task.agentLabel" class="task-agent">{{ task.agentLabel }}</p>
-      <p v-if="task.summary" class="task-summary">{{ task.summary }}</p>
+      <p v-if=" task.agentLabel" class="task-agent">{{ task.agentLabel }}</p>
+      <p v-if="displaySummary" class="task-summary">{{ displaySummary }}</p>
 
       <div
         v-if="task.expandableInline && inlineExpanded"
@@ -96,6 +96,23 @@ const statusLabel = computed(() => {
   if (status === "running" || status === "pending") return "Running";
   return props.task.status || "Pending";
 });
+
+const MAX_SUMMARY_CHARS = 320;
+
+function formatTaskSummary(raw: string | undefined): string {
+  if (!raw) return "";
+  const cleaned = raw
+    .replace(/^task_id:\s*\S+[^\r\n]*$/gim, "")
+    .replace(/<\/?task_result>/gi, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+  if (!cleaned) return "";
+  if (cleaned.length <= MAX_SUMMARY_CHARS) return cleaned;
+  return `${cleaned.slice(0, MAX_SUMMARY_CHARS).trimEnd()}…`;
+}
+
+const displaySummary = computed(() => formatTaskSummary(props.task.summary));
 
 const formattedDuration = computed(() => {
   const ms = props.task.durationMs;
@@ -177,6 +194,10 @@ function onCardClick() {
 .task-title {
   font-size: 0.82rem;
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-status {
@@ -211,8 +232,16 @@ function onCardClick() {
 .task-summary {
   margin: 0.35rem 0 0;
   font-size: 0.8rem;
+  line-height: 1.45;
   color: var(--color-text-secondary);
   white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+  max-height: calc(1.45em * 4);
 }
 
 .task-inline-details {
