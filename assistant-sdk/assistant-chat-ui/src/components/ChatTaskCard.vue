@@ -18,6 +18,9 @@
         </span>
       </div>
       <p v-if=" task.agentLabel" class="task-agent">{{ task.agentLabel }}</p>
+      <div v-if="modelLabel" class="task-model-row">
+        <span class="task-meta-chip" :title="modelTitleAttr">{{ modelLabel }}</span>
+      </div>
       <p v-if="displaySummary" class="task-summary">{{ displaySummary }}</p>
 
       <div
@@ -113,6 +116,17 @@ function formatTaskSummary(raw: string | undefined): string {
 }
 
 const displaySummary = computed(() => formatTaskSummary(props.task.summary));
+
+const modelLabel = computed(() => {
+  const raw = props.task.modelLabel;
+  return typeof raw === "string" ? raw.trim() : "";
+});
+
+const modelTitleAttr = computed(() => {
+  const rawTitle = props.task.modelTitle;
+  if (typeof rawTitle === "string" && rawTitle.trim()) return rawTitle.trim();
+  return modelLabel.value;
+});
 
 const formattedDuration = computed(() => {
   const ms = props.task.durationMs;
@@ -227,6 +241,13 @@ function onCardClick() {
   margin: 0.28rem 0 0;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
+}
+
+.task-model-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
 }
 
 .task-summary {

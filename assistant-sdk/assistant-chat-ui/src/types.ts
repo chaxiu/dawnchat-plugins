@@ -115,6 +115,10 @@ export interface ChatTaskInfo {
   status?: "pending" | "running" | "completed" | "failed" | string;
   summary?: string;
   agentLabel?: string;
+  /** Short model name shown as a badge on the task card, e.g. "gpt-5.1". */
+  modelLabel?: string;
+  /** Full provider/model identifier used as the badge tooltip; falls back to modelLabel. */
+  modelTitle?: string;
   /** When true, clicking the card toggles inline inspection of prompt & live/historical CLI output. */
   expandableInline?: boolean;
   prompt?: string;

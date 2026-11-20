@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": "install",
+      "cwd": "assistant-sdk/assistant-chat-ui",
+      "command": "npm ci"
+    },
+    {
+      "id": "typecheck",
+      "cwd": "assistant-sdk/assistant-chat-ui",
+      "command": "npm run typecheck"
+    },
+    {
+      "id": "test",
+      "cwd": "assistant-sdk/assistant-chat-ui",
+      "command": "npm run test"
+    },
+    {
+      "id": "build",
+      "cwd": "assistant-sdk/assistant-chat-ui",
+      "command": "npm run build"
+    }
+  ]
+}
