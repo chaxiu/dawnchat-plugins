@@ -54,6 +54,60 @@ describe("ChatTaskCard model badge", () => {
     expect(wrapper.find(".task-model-row").exists()).toBe(false);
   });
 
+  it("renders agent label, separator and model chip inline in one row", () => {
+    const wrapper = mountCard({
+      agentLabel: "scout",
+      modelLabel: "deepseek-v4.1-flash",
+      modelTitle: "deepseek/deepseek-v4.1-flash",
+    });
+
+    const row = wrapper.find(".task-model-row");
+    expect(row.exists()).toBe(true);
+    expect(row.find(".task-agent").text()).toBe("scout");
+
+    const separator = row.find(".task-meta-separator");
+    expect(separator.exists()).toBe(true);
+    expect(separator.text()).toBe("·");
+
+    const chip = row.find(".task-meta-chip");
+    expect(chip.text()).toBe("deepseek-v4.1-flash");
+    expect(chip.attributes("title")).toBe("deepseek/deepseek-v4.1-flash");
+
+    const inlineChildren = Array.from(row.element.children);
+    expect(inlineChildren.map((child) => child.className)).toEqual([
+      "task-agent",
+      "task-meta-separator",
+      "task-meta-chip",
+    ]);
+  });
+
+  it("omits the separator when only the agent label is present", () => {
+    const wrapper = mountCard({ agentLabel: "scout" });
+
+    const row = wrapper.find(".task-model-row");
+    expect(row.exists()).toBe(true);
+    expect(row.find(".task-agent").text()).toBe("scout");
+    expect(row.find(".task-meta-separator").exists()).toBe(false);
+    expect(row.find(".task-meta-chip").exists()).toBe(false);
+  });
+
+  it("omits the separator when only the model chip is present", () => {
+    const wrapper = mountCard({ modelLabel: "gpt-5.1" });
+
+    const row = wrapper.find(".task-model-row");
+    expect(row.exists()).toBe(true);
+    expect(row.find(".task-agent").exists()).toBe(false);
+    expect(row.find(".task-meta-separator").exists()).toBe(false);
+    expect(row.find(".task-meta-chip").text()).toBe("gpt-5.1");
+  });
+
+  it("omits the inline row when both agent label and model label are blank", () => {
+    const wrapper = mountCard({ agentLabel: "   ", modelLabel: "   " });
+
+    expect(wrapper.find(".task-model-row").exists()).toBe(false);
+    expect(wrapper.find(".task-meta-separator").exists()).toBe(false);
+  });
+
   it("keeps existing agent, summary and expanded meta rendering intact", async () => {
     const wrapper = mountCard({
       agentLabel: "Scout",
