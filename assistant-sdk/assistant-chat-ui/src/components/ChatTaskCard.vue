@@ -17,9 +17,15 @@
           {{ statusLabel }}
         </span>
       </div>
-      <p v-if=" task.agentLabel" class="task-agent">{{ task.agentLabel }}</p>
-      <div v-if="modelLabel" class="task-model-row">
-        <span class="task-meta-chip" :title="modelTitleAttr">{{ modelLabel }}</span>
+      <div v-if="agentLabelText || modelLabel" class="task-model-row">
+        <span v-if="agentLabelText" class="task-agent">{{ agentLabelText }}</span>
+        <span
+          v-if="agentLabelText && modelLabel"
+          class="task-meta-separator"
+          aria-hidden="true"
+          >·</span
+        >
+        <span v-if="modelLabel" class="task-meta-chip" :title="modelTitleAttr">{{ modelLabel }}</span>
       </div>
       <p v-if="displaySummary" class="task-summary">{{ displaySummary }}</p>
 
@@ -119,6 +125,11 @@ const displaySummary = computed(() => formatTaskSummary(props.task.summary));
 
 const modelLabel = computed(() => {
   const raw = props.task.modelLabel;
+  return typeof raw === "string" ? raw.trim() : "";
+});
+
+const agentLabelText = computed(() => {
+  const raw = props.task.agentLabel;
   return typeof raw === "string" ? raw.trim() : "";
 });
 
@@ -238,16 +249,24 @@ function onCardClick() {
 }
 
 .task-agent {
-  margin: 0.28rem 0 0;
+  margin: 0;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
 }
 
 .task-model-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-top: 0.35rem;
+}
+
+.task-meta-separator {
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
 }
 
 .task-summary {
